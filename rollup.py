@@ -38,7 +38,7 @@ rows = []
 
 for i in range(0,8):
     p = 'part-0000%s' % i
-    with open('/Users/philpot/Documents/project/dig-mturk/spark/data/output-compare/bodies/' + p, 'r') as f:
+    with open('/Users/philpot/Documents/project/dig-crf/data/output-compare/bodies/' + p, 'r') as f:
         for l in f:
             uri, body = eval(l)
             rows.append({"uri": uri, "body": body})
@@ -46,7 +46,7 @@ for i in range(0,8):
 
 for i in range(0,8):
     p = 'part-0000%s' % i
-    with open('/Users/philpot/Documents/project/dig-mturk/spark/data/output-compare/baseEyecolor/' + p, 'r') as f:
+    with open('/Users/philpot/Documents/project/dig-crf/data/output-compare/baseEyecolor/' + p, 'r') as f:
         for l in f:
             uri, eyeColor = eval(l)
             if eyeColor is not None:
@@ -54,7 +54,7 @@ for i in range(0,8):
 
 for i in range(0,8):
     p = 'part-0000%s' % i
-    with open('/Users/philpot/Documents/project/dig-mturk/spark/data/output-compare/baseHaircolor/' + p, 'r') as f:
+    with open('/Users/philpot/Documents/project/dig-crf/data/output-compare/baseHaircolor/' + p, 'r') as f:
         for l in f:
             uri, hairColor = eval(l)
             if hairColor is not None:
@@ -62,7 +62,7 @@ for i in range(0,8):
 
 for i in range(0,8):
     p = 'part-0000%s' % i
-    with open('/Users/philpot/Documents/project/dig-mturk/spark/data/output-compare/crfOutput/' + p, 'r') as f:
+    with open('/Users/philpot/Documents/project/dig-crf/data/output-compare/crfOutput/' + p, 'r') as f:
         for l in f:
             uri, dict = eval(l)
             crfHair = None
@@ -76,7 +76,7 @@ for i in range(0,8):
 
 # for i in range(0,8):
 #     p = 'part-0000%s' % i
-#     with open('/Users/philpot/Documents/project/dig-mturk/spark/data/output-compare/extractedHairtype/' + p, 'r') as f:
+#     with open('/Users/philpot/Documents/project/dig-crf/data/output-compare/extractedHairtype/' + p, 'r') as f:
 #         for l in f:
 #             uri, hairColor = eval(l)
 #             if hairColor is not None:
@@ -84,7 +84,7 @@ for i in range(0,8):
 
 # for i in range(0,8):
 #     p = 'part-0000%s' % i
-#     with open('/Users/philpot/Documents/project/dig-mturk/spark/data/output-compare/extractedEyecolor/' + p, 'r') as f:
+#     with open('/Users/philpot/Documents/project/dig-crf/data/output-compare/extractedEyecolor/' + p, 'r') as f:
 #         for l in f:
 #             uri, eyeColor = eval(l)
 #             if eyeColor is not None:

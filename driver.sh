@@ -1,7 +1,7 @@
 #!/bin/sh
 
 SPARKDIR=/tmp/spark-1.4.0-bin-hadoop2.4
-HERE=/Users/philpot/Documents/project/dig-mturk/spark
+HERE=/Users/philpot/Documents/project/dig-crf
 CONFIG=$HERE/data/config
 
 rm -rf $HERE/data/output

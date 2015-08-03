@@ -49,7 +49,7 @@ def input(year=2015, month=07, day=01, hour=01, location='hdfs', tag='incrementa
         else:
             raise RuntimeError("Unknown tag %r" % tag)
     elif location == 'local':
-        return ("/Users/philpot/Documents/project/dig-mturk/spark/data/input/%s/%04d-%02d-%02d-%02d-00/part-r-%05d"
+        return ("/Users/philpot/Documents/project/dig-crf/data/input/%s/%04d-%02d-%02d-%02d-00/part-r-%05d"
                 % (tag, year, month, day, hour, int(partNum)))
     else:
         raise RuntimeError("Unknown location: %s" % location)
@@ -73,10 +73,10 @@ def output(year=2015, month=07, day=01, hour=01, location='hdfs', tag='increment
     elif location == 'local':
         if tag == 'incremental':
             # Let's mirror the HDFS convention for local as well
-            return ("/Users/philpot/Documents/project/dig-mturk/spark/data/output/incremental/pilot/refactor/ads_attrs_crfoutput/%04d-%02d-%02d-%02d-00"
+            return ("/Users/philpot/Documents/project/dig-crf/data/output/incremental/pilot/refactor/ads_attrs_crfoutput/%04d-%02d-%02d-%02d-00"
                     % (year, month, day, hour))
         elif tag == 'istr58m':
-            return ("/Users/philpot/Documents/project/dig-mturk/spark/data/output/istr58m/pilot/ads_attrs_crfoutput/from-part-r-%05d"
+            return ("/Users/philpot/Documents/project/dig-crf/data/output/istr58m/pilot/ads_attrs_crfoutput/from-part-r-%05d"
                     % int(partNum))
         else:
             raise RuntimeError("Unknown tag %r" % tag)

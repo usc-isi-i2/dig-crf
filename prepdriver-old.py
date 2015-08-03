@@ -367,7 +367,7 @@ def input(year=2015, month=07, day=01, hour=01, location='hdfs', tag='incrementa
         return ("/user/worker/process/incremental/pilot/refactor/ads_main/%04d-%02d-%02d-%02d-00/part-r-00000"
                 % (year, month, day, hour))
     elif location == 'local':
-        return ("/Users/philpot/Documents/project/dig-mturk/spark/data/input/%s/%04d-%02d-%02d-%02d-00/part-r-00000"
+        return ("/Users/philpot/Documents/project/dig-crf/data/input/%s/%04d-%02d-%02d-%02d-00/part-r-00000"
                 % (tag, year, month, day, hour))
     else:
         raise RuntimeError("Unknown location: %s" % location)
@@ -393,12 +393,12 @@ def d (sc, day, hour):
     o = output(i)
     print i,o
     driver(sc, i, o, "/usr/local/bin/crf_test",
-           "/home/aphilpot/project/dig-mturk/spark/data/config/features.hair-eye",
-           "/home/aphilpot/project/dig-mturk/spark/data/config/dig-hair-eye-train.model",
-           "/home/aphilpot/project/dig-mturk/spark/data/config/eyeColor_reference_wiki.txt",
-           "/home/aphilpot/project/dig-mturk/spark/data/config/eyeColor_config.txt",
-           "/home/aphilpot/project/dig-mturk/spark/data/config/hairColor_reference_wiki.txt",
-           "/home/aphilpot/project/dig-mturk/spark/data/config/hairColor_config.txt")
+           "/home/aphilpot/project/dig-crf/data/config/features.hair-eye",
+           "/home/aphilpot/project/dig-crf/data/config/dig-hair-eye-train.model",
+           "/home/aphilpot/project/dig-crf/data/config/eyeColor_reference_wiki.txt",
+           "/home/aphilpot/project/dig-crf/data/config/eyeColor_config.txt",
+           "/home/aphilpot/project/dig-crf/data/config/hairColor_reference_wiki.txt",
+           "/home/aphilpot/project/dig-crf/data/config/hairColor_config.txt")
 
 if __name__ == "__main__":
 

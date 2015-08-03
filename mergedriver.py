@@ -489,7 +489,7 @@ def input(year=2015, month=07, day=01, hour=01, location='hdfs', tag='incrementa
         else:
             raise RuntimeError("Unknown tag %r" % tag)
     elif location == 'local':
-        return ("/Users/philpot/Documents/project/dig-mturk/spark/data/input/%s/%04d-%02d-%02d-%02d-00/part-r-%05d"
+        return ("/Users/philpot/Documents/project/dig-crf/data/input/%s/%04d-%02d-%02d-%02d-00/part-r-%05d"
                 % (tag, year, month, day, hour, int(partNum)))
     else:
         raise RuntimeError("Unknown location: %s" % location)
@@ -513,10 +513,10 @@ def output(year=2015, month=07, day=01, hour=01, location='hdfs', tag='increment
     elif location == 'local':
         if tag == 'incremental':
             # Let's mirror the HDFS convention for local as well
-            return ("/Users/philpot/Documents/project/dig-mturk/spark/data/output/incremental/pilot/refactor/ads_attrs_crfinput/%04d-%02d-%02d-%02d-00"
+            return ("/Users/philpot/Documents/project/dig-crf/data/output/incremental/pilot/refactor/ads_attrs_crfinput/%04d-%02d-%02d-%02d-00"
                     % (year, month, day, hour))
         elif tag == 'istr58m':
-            return ("/Users/philpot/Documents/project/dig-mturk/spark/data/output/istr58m/pilot/ads_attrs_crfinput/from-part-r-%05d"
+            return ("/Users/philpot/Documents/project/dig-crf/data/output/istr58m/pilot/ads_attrs_crfinput/from-part-r-%05d"
                     % int(partNum))
         else:
             raise RuntimeError("Unknown tag %r" % tag)
@@ -538,12 +538,12 @@ def d (sc, day, hour):
     o = output(i)
     print i,o
     driver(sc, i, o, "/usr/local/bin/crf_test",
-           "/home/aphilpot/project/dig-mturk/spark/data/config/features.hair-eye",
-           "/home/aphilpot/project/dig-mturk/spark/data/config/dig-hair-eye-train.model",
-           "/home/aphilpot/project/dig-mturk/spark/data/config/eyeColor_reference_wiki.txt",
-           "/home/aphilpot/project/dig-mturk/spark/data/config/eyeColor_config.txt",
-           "/home/aphilpot/project/dig-mturk/spark/data/config/hairColor_reference_wiki.txt",
-           "/home/aphilpot/project/dig-mturk/spark/data/config/hairColor_config.txt")
+           "/home/aphilpot/project/dig-crf/data/config/features.hair-eye",
+           "/home/aphilpot/project/dig-crf/data/config/dig-hair-eye-train.model",
+           "/home/aphilpot/project/dig-crf/data/config/eyeColor_reference_wiki.txt",
+           "/home/aphilpot/project/dig-crf/data/config/eyeColor_config.txt",
+           "/home/aphilpot/project/dig-crf/data/config/hairColor_reference_wiki.txt",
+           "/home/aphilpot/project/dig-crf/data/config/hairColor_config.txt")
 
 if __name__ == "__main__":
 
