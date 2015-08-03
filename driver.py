@@ -226,6 +226,7 @@ def driver(sc, inputFilename, outputDirectory,
            limit=limit, location='hdfs', outputFormat="text", partitions=None):
     dump = False
     partitions = None
+    limit = 100
 
     # Program to compute CRF++
     c = crf_features.CrfFeatures(featureListFilename)
@@ -249,44 +250,43 @@ def driver(sc, inputFilename, outputDirectory,
     else:
         raise RuntimeError("No such location: %s" % location)
 
-    rdd_sequence_file_input = sc.sequenceFile(inputFilename)
-    rdd_sequence_file_input.setName('rdd_sequence_file_input')
-    # rdd_sequence_file_input.persist()
+    rdd = sc.sequenceFile(inputFilename)
     
-    origSize = rdd_sequence_file_input.count()
-#     if limit:
-#         rdd = sc.parallelize(rdd_sequence_file_input.take(limit))
+    origSize = rdd.count()
+    if limit:
+        rdd = sc.parallelize(rdd.take(limit))
     if partitions:
-        rdd_sequence_file_input = rdd_sequence_file_input.repartition(partitions)
-    print "### input %s: %d ads (orig %s, limit was %s), %d partitions" % (inputFilename, rdd_sequence_file_input.count(), origSize, limit, rdd_sequence_file_input.getNumPartitions())
+        rdd = rdd.repartition(partitions)
+    print "### input %s: %d ads (orig %s, limit was %s), %d partitions" % (inputFilename, rdd.count(), origSize, limit, rdd.getNumPartitions())
 
-    rdd_json = rdd_sequence_file_input.mapValues(lambda x: json.loads(x))
-    rdd_json.setName('rdd_json')
-    # rdd_json.persist()
+    rdd_json = rdd.mapValues(lambda x: json.loads(x))
 
     # all below should also be done for title
     rdd_body = rdd_json.mapValues(lambda x: extract_body(x))
-    rdd_body.setName('rdd_body')
-    # rdd_body.persist()
     if dump:
         rdd_body.saveAsTextFile(ff("body"))
         
+#     rdd_body = sc.parallelize([(u, u"My friend is blond with hazel eyes"),
+#                                (u, u"Hello there , I have blue eyes and brown hair.")])
+
+    print "### Before filter %s pairs" % rdd_body.count()
+    # rdd_filter = rdd_body.filter(lambda p: ("eye" in p[1]) or ("hair" in p[1]))
+    # rdd_filter = rdd_body.filter(lambda p: ("ExoTica" in p[1]))
+    # rdd_body = rdd_filter
+    print "### After filter %s pairs" % rdd_body.count()
+    # rdd_body = sc.parallelize(rdd_body.take(min(2,rdd_body.count)))
+    # print "### After take %s pairs" % rdd_body.count()
+    # rdd_body = sc.parallelize(rdd_body.take(100))
+
     rdd_body_tokens = rdd_body.mapValues(lambda x: textTokens(x))
-    rdd_body_tokens.setName('rdd_body_tokens')
-    # rdd_body_tokens.persist()
     if dump:
         rdd_body_tokens.saveAsTextFile(ff("body_tokens"))
-
+    # not a pair RDD?
     rdd_features = rdd_body_tokens.map(lambda x: (x[0], c.computeFeatMatrix(x[1], False, addLabels=[x[0]], addIndex=True)))
-    rdd_features.setName('rdd_features')
-    # rdd_features.persist()
     if dump:
         rdd_features.saveAsTextFile(ff("features"))
     
-    # rdd_pipeinput = rdd_features.mapValues(lambda x: base64.b64encode(vectorToString(x)))
-    rdd_pipeinput = rdd_features.mapValues(lambda x: vectorToString(x))
-    rdd_pipeinput.setName('rdd_pipeinput')
-    # rdd_pipeinput.persist()
+    rdd_pipeinput = rdd_features.mapValues(lambda x: base64.b64encode(vectorToString(x)))
     if dump:
         rdd_pipeinput.values().saveAsTextFile(ff("pi"))
     # This caused a cannot concatenate string + None error
@@ -299,58 +299,54 @@ def driver(sc, inputFilename, outputDirectory,
     elif location == 'local':
         cmd = "%s %s" % (SparkFiles.get(os.path.basename(crfScript)), SparkFiles.get(os.path.basename(crfModelFilename)))
     print "### %s" % cmd
-    rdd_pipeinput.saveAsTextFile(ff("before"))
-    exit(0)
-
     rdd_crf_b64 = rdd_pipeinput.values().pipe(cmd)
-    rdd_crf_b64.setName('rdd_crf_b64')
-    # rdd_crf_b64.persist()
-    if dump:
+    if True:
         rdd_crf_b64.saveAsTextFile(ff("po"))
-
+    rdd_crf = rdd_crf_b64.map(lambda x: base64.b64decode(x))
+    if True:
+        rdd_crf.saveAsTextFile(ff("crf"))
     # Go directly from base64 output to a reconstructed tuple format mapping URI to vector of vectors, 
     # with empty string suffix indicating blank line
     # This is key for avoiding the groupBy step
     rdd_restore = rdd_crf_b64.map(lambda x: restore(x))
-    rdd_restore.setName('rdd_restore')
-    # rdd_restore.persist()
-    if dump:
+    if True:
         rdd_restore.saveAsTextFile(ff("restore"))
 
-    # ### WE NO LONGER HAVE TO GROUPBY
+
+    # "value-only" RDD, not a pair RDD
+    # but we have the URI in the -3 position
+    # and the index in the -2 position
+#     rdd_withuri = rdd_crf.map(lambda x: reconstructTuple(x))
+#     if True:
+#         rdd_withuri.saveAsTextFile(ff("withuri"))
+    # rdd_grouped = rdd_withuri.groupByKey()
+    # rdd_flat = rdd_grouped.mapValues(lambda x: [l[1:] for l in sorted(x, key=lambda r: int(r[0]))])
+    # ### WE NO LONGER HAVE TO GROUP
     # ### BUT WE MUST TREAT EACH LINE INDIVIDUALLY NOW
     # rdd_withuri = sc.parallelize(rdd_withuri.take(10))
 
     rdd_harvested = rdd_restore.mapValues(lambda x: computeSpans(x, indexed=True)).filter(lambda p: p[1])
-    rdd_harvested.setName('rdd_harvested')
-    # rdd_harvested.persist()
-    if dump:
+    if True:
         rdd_harvested.saveAsTextFile(ff("harvested"))
 
     # This has the effect of generating 0, 1, 2, ... lines according to the number of spans
     rdd_controlled = rdd_harvested.flatMapValues(lambda x: list(x))
-    rdd_controlled.setName('rdd_controlled')
-    # rdd_controlled.persist()
 
     # map any eyeColor spans using smEyeColor, hairType spans using smHairColor
     rdd_aligned = rdd_controlled.mapValues(lambda x: alignToControlledVocab(x, {"eyeColor": smEyeColor, "hairType": smHairColor}))
-    rdd_aligned.setName('rdd_aligned')
-    # rdd_aligned.persist()
     if dump:
         rdd_aligned.saveAsTextFile(ff("aligned"))
-
     rdd_aligned_json = rdd_aligned.mapValues(lambda x: json.dumps(x))
-    rdd_aligned_json.setName('rdd_aligned_json')
-    # rdd_aligned_json.persist()
     if dump:
         rdd_aligned_json.saveAsTextFile(ff("aligned_json"))
 
     rdd_final = rdd_aligned_json
-    empty = rdd_final.isEmpty()
+    # rdd_final = rdd_body_tokens
+    l = rdd_final.count()
+    empty = rdd.isEmpty()
     if not empty:
         l = "unknown>1"
         print "### writing %s output (%s records) to %s" % (outputFormat, l, outputDirectory)
-        # print len(rdd_final.collect())
         if outputFormat == "sequence":
             rdd_final.saveAsSequenceFile(outputDirectory)
         elif outputFormat == "text":

@@ -173,6 +173,8 @@ def driver(sc, mode, *args, **kwargs):
         return totalDriver(sc, *args, **kwargs)
     elif mode == 'prep':
         return prepDriver(sc, *args, **kwargs)
+    elif mode == 'mini':
+        return miniDriver(sc, *args, **kwargs)
     else:
         print >> sys.stderr, "Unrecognized mode %s" % mode
 
@@ -182,27 +184,25 @@ def prepDriver(sc, inputFilename, outputDirectory,
                eyeColorRef, eyeColorConfig, hairRef, hairConfig, 
                limit=limit, location='hdfs', outputFormat="text", partitions=None):
     dump = False
-    partitions = None
-    limit = 3
 
     # Program to compute CRF++
     c = crf_features.CrfFeatures(featureListFilename)
     # Add files to be downloaded with this Spark job on every node.
-    sc.addFile(crfExecutable)
-    sc.addFile(crfScript)
-    sc.addFile(crfModelFilename)
+    #sc.addFile(crfExecutable)
+    #sc.addFile(crfScript)
+    #sc.addFile(crfModelFilename)
 
     # Map to reference sets
-    smEyeColor = HybridJaccard(ref_path=eyeColorRef, config_path=eyeColorConfig)
-    smHairColor = HybridJaccard(ref_path=hairRef, config_path=hairConfig)
+    #smEyeColor = HybridJaccard(ref_path=eyeColorRef, config_path=eyeColorConfig)
+    #smHairColor = HybridJaccard(ref_path=hairRef, config_path=hairConfig)
 
     print location
     if location == "hdfs":
-        print "We want to do hdfs dfs -rm -r %s" % outputDirectory
+        print "### We want to do hdfs dfs -rm -r %s" % outputDirectory
     elif location == "local":
         try:
             shutil.rmtree(outputDirectory)
-            print "rmtree %s" % outputDirectory
+            print "### rmtree %s" % outputDirectory
         except:
             pass
     else:
@@ -218,6 +218,8 @@ def prepDriver(sc, inputFilename, outputDirectory,
     if partitions:
         rdd_sequence_file_input = rdd_sequence_file_input.repartition(partitions)
     print "### input %s: %d ads (orig %s, limit was %s), %d partitions" % (inputFilename, rdd_sequence_file_input.count(), origSize, limit, rdd_sequence_file_input.getNumPartitions())
+    l = "uncomputed"
+    print "### writing %s output (%s records) to %s" % (outputFormat, l, outputDirectory)
 
     rdd_json = rdd_sequence_file_input.mapValues(lambda x: json.loads(x))
     rdd_json.setName('rdd_json')
@@ -233,10 +235,11 @@ def prepDriver(sc, inputFilename, outputDirectory,
     rdd_texts_tokens = rdd_texts.mapValues(lambda x: (textTokens(x[0]), textTokens(x[1])))
     rdd_texts_tokens.setName('rdd_texts_tokens')
     # rdd_texts_tokens.persist()
-    if True:
+    if dump:
         rdd_texts_tokens.saveAsTextFile(ff("texts_tokens"))
 
     # This separator could have appeared in original text, and should serve to cleanly delimit the body from the title
+    # Not perfect, it could have appeared between real tokens
     SEPARATOR = '&amp;nbsp;',
     rdd_texts_features = rdd_texts_tokens.map(lambda x: (x[0], 
                                                          c.computeFeatMatrix(list(x[1][0]) + [SEPARATOR] + list(x[1][1]),
@@ -245,9 +248,8 @@ def prepDriver(sc, inputFilename, outputDirectory,
                                                                              addIndex=True)))
     rdd_texts_features.setName('rdd_features')
     # rdd_features.persist()
-    if True:
+    if dump:
         rdd_texts_features.saveAsTextFile(ff("texts_features"))
-    exit(0)
    
     # rdd_pipeinput = rdd_features.mapValues(lambda x: base64.b64encode(vectorToString(x)))
     rdd_pipeinput = rdd_texts_features.mapValues(lambda x: vectorToString(x))
@@ -260,7 +262,7 @@ def prepDriver(sc, inputFilename, outputDirectory,
     empty = rdd_final.isEmpty()
     if not empty:
         l = "unknown>1"
-        print >> sys.stderr, "### writing %s output (%s records) to %s" % (outputFormat, l, outputDirectory)
+        print "### writing %s output (%s records) to %s" % (outputFormat, l, outputDirectory)
         # print len(rdd_final.collect())
         if outputFormat == "sequence":
             rdd_final.saveAsSequenceFile(outputDirectory)
@@ -269,8 +271,72 @@ def prepDriver(sc, inputFilename, outputDirectory,
         else:
             raise RuntimeError("Unrecognized output format: %s" % outputFormat)
     else:
-        print >> sys.stderr, "### No records: no output into %s" % (outputDirectory)
+        print "### No records: no output into %s" % (outputDirectory)
 
+def miniDriver(sc, inputFilename, outputDirectory, 
+               crfExecutable, crfScript, 
+               featureListFilename, crfModelFilename, 
+               eyeColorRef, eyeColorConfig, hairRef, hairConfig, 
+               limit=limit, location='hdfs', outputFormat="text", partitions=None):
+    dump = False
+
+    # Program to compute CRF++
+    # c = crf_features.CrfFeatures(featureListFilename)
+    # Add files to be downloaded with this Spark job on every node.
+    #sc.addFile(crfExecutable)
+    #sc.addFile(crfScript)
+    #sc.addFile(crfModelFilename)
+
+    # Map to reference sets
+    #smEyeColor = HybridJaccard(ref_path=eyeColorRef, config_path=eyeColorConfig)
+    #smHairColor = HybridJaccard(ref_path=hairRef, config_path=hairConfig)
+
+    print location
+    if location == "hdfs":
+        print "### We want to do hdfs dfs -rm -r %s" % outputDirectory
+    elif location == "local":
+        try:
+            shutil.rmtree(outputDirectory)
+            print "### rmtree %s" % outputDirectory
+        except:
+            pass
+    else:
+        raise RuntimeError("No such location: %s" % location)
+
+    rdd_sequence_file_input = sc.sequenceFile(inputFilename)
+    rdd_sequence_file_input.setName('rdd_sequence_file_input')
+    # rdd_sequence_file_input.persist()
+    
+    origSize = rdd_sequence_file_input.count()
+    if limit:
+        rdd_sequence_file_input = sc.parallelize(rdd_sequence_file_input.take(limit))
+    if partitions:
+        rdd_sequence_file_input = rdd_sequence_file_input.repartition(partitions)
+    print "### input %s: %d ads (orig %s, limit was %s), %d partitions" % (inputFilename, rdd_sequence_file_input.count(), origSize, limit, rdd_sequence_file_input.getNumPartitions())
+    l = "uncomputed"
+    print "### writing %s output (%s records) to %s" % (outputFormat, l, outputDirectory)
+
+    rdd_json = rdd_sequence_file_input.mapValues(lambda x: json.loads(x))
+    rdd_json.setName('rdd_json')
+    # rdd_json.persist()
+
+    rdd_final = rdd_json
+    empty = rdd_final.isEmpty()
+    if not empty:
+        l = "unknown>1"
+        print "### writing %s output (%s records) to %s" % (outputFormat, l, outputDirectory)
+        # print len(rdd_final.collect())
+        if outputFormat == "sequence":
+            rdd_final.saveAsSequenceFile(outputDirectory)
+        elif outputFormat == "text":
+            rdd_final.saveAsTextFile(outputDirectory)
+        else:
+            raise RuntimeError("Unrecognized output format: %s" % outputFormat)
+    else:
+        print "### No records: no output into %s" % (outputDirectory)
+
+
+# This might still work, but is currently commented out to avoid inadvertent edits
 # def totalDriver(sc, inputFilename, outputDirectory, 
 #                 crfExecutable, crfScript, 
 #                 featureListFilename, crfModelFilename, 
@@ -431,16 +497,29 @@ def input(year=2015, month=07, day=01, hour=01, location='hdfs', tag='incrementa
 def output(year=2015, month=07, day=01, hour=01, location='hdfs', tag='incremental', partNum=0):
     if location == 'hdfs':
         if tag == 'incremental':
-            return ("/user/worker/process/incremental/pilot/refactor/ads_attrs_crfinput/%04d-%02d-%02d-%02d-00/part-r-%05d"
-                    % (year, month, day, hour, int(partNum)))
+            # For HDFS incrementals, there is always a single part-r-00000
+            # So we can safely drop this when creating an output directory
+            return ("/user/worker/process/incremental/pilot/refactor/ads_attrs_crfinput/%04d-%02d-%02d-%02d-00"
+                    % (year, month, day, hour))
         elif tag == 'istr58m':
-            return ("/user/worker/process/istr58m/pilot01/ads_attrs_crfinput/%04d-%02d-%02d-%02d-00/part-r-%05d"
-                    % (year, month, day, hour, int(partNum)))
+            # An HDFS batch file such as istr58m will generally generate multiple output files
+            # We key them to a directory using the input file part index
+            # /user/worker/process/istr58m/pilot01/ads_main
+            # /user/worker/process/istr58m/pilot01/ads_addrs_crfinput
+            return ("/user/worker/process/istr58m/pilot01/ads_attrs_crfinput/from-part-r-%05d"
+                    % int(partNum))
         else:
-            raise RuntimeError("Unknown tag %r" % rag)
+            raise RuntimeError("Unknown tag %r" % tag)
     elif location == 'local':
-        return ("/Users/philpot/Documents/project/dig-mturk/spark/data/output/%s/%04d-%02d-%02d-%02d-00/part-r-%05d"
-                % (tag, year, month, day, hour, int(partNum)))
+        if tag == 'incremental':
+            # Let's mirror the HDFS convention for local as well
+            return ("/Users/philpot/Documents/project/dig-mturk/spark/data/output/incremental/pilot/refactor/ads_attrs_crfinput/%04d-%02d-%02d-%02d-00"
+                    % (year, month, day, hour))
+        elif tag == 'istr58m':
+            return ("/Users/philpot/Documents/project/dig-mturk/spark/data/output/istr58m/pilot/ads_attrs_crfinput/from-part-r-%05d"
+                    % int(partNum))
+        else:
+            raise RuntimeError("Unknown tag %r" % tag)
     else:
         raise RuntimeError("Unknown location: %s" % location)
 
@@ -489,19 +568,29 @@ if __name__ == "__main__":
     month = int(sys.argv[3])
     day = int(sys.argv[4])
     hour = int(sys.argv[5])
+    partNum = None
+    try:
+        partNum = int(sys.argv[6])
+    except:
+        pass
     limit = None
     try:
-        limit = int(sys.argv[6])
+        limit = int(sys.argv[7])
     except:
         pass
     partitions = None
     try:
-        partitions = int(sys.argv[7])
+        partitions = int(sys.argv[8])
     except:
         pass
+<<<<<<< HEAD
+    inputFilename = input(year=year, month=month, day=day, hour=hour, location=location, tag=tag, partNum=partNum)
+    outputDirectory = output(year=year, month=month, day=day, hour=hour, location=location, tag=tag, partNum=partNum)
+=======
     inputFilename = input(year=year, month=month, day=day, hour=hour, location=location, tag=tag)
     outputDirectory = output(year=year, month=month, day=day, hour=hour, location=location, tag=tag)
     print "read from %s and write to %s" % (inputFilename, outputDirectory)
+>>>>>>> 9ff0533b3b784bb327d3f0ede08df239c5c10e91
     crfExecutable = "/usr/local/bin/crf_test"
     crfScript = "/usr/local/bin/crf_test_b64"
 
