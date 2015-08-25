@@ -39,7 +39,9 @@ def textTokens(texts):
             for tok in genescaped(text):
                 v.append([tok])
         except TypeError as e:
-            print >> sys.stderr, "Error computing textTokens of %s: %s" % (text, e)
+            print >> sys.stderr, "Error %s" % e
+            print >> sys.stderr, type(text)
+            print >> sys.stderr, "Computing textTokens of %s: %s" % (text, e)
         v.append("")
     return v
 
@@ -95,6 +97,67 @@ def vectorToString(v, debug=False):
                 pass
     return "\n".join(rows)
 
+def rowToString(r):
+    if isinstance(r, list):
+        return u"\t".join(r)
+    else:
+        return unicode(r)
+
+def vectorToString(v, debug=False):
+    """Too baroque, too defensive"""
+    rows = []
+    try:
+        if v[-1] == u"":
+            pass
+        else:
+            # print "appending1"
+            v.append(u"")
+    except:
+        # print "appending2"
+        v.append("")
+    for r in v:
+        try:
+            row = rowToString(r)
+            if row:
+                rows.append(row)
+            else:
+                rows.append(u"")
+        except:
+            try:
+                rows.append(rowToString(r))
+            except:
+                pass
+    result = u"\n".join(rows)
+    return result.encode('utf-8')
+
+def vectorToUTF8(v, debug=False):
+    "unicode only"
+
+    def rowToUnicode(r):
+        try:
+            if isinstance(r, list):
+                return u"\t".join([unicode(x) for x in r])
+            else:
+                return unicode(r)
+        except:
+            print >> sys.stderr, "error in rowToUnicode"
+            return u""
+
+    rows = []
+    if v[-1] == u"":
+        pass
+    else:
+        # print "appending1"
+        v.append(u"")
+
+    for r in v:
+        rows.append(rowToUnicode(r))
+
+    result = u"\n".join(rows)
+    # result now a unicode object
+    # here is the only place where we convert to UTF8
+    return result.encode('utf-8')
+
 LIMIT = None
 
 def crfprep(sc, inputFilename, outputDirectory, 
@@ -117,9 +180,15 @@ def crfprep(sc, inputFilename, outputDirectory,
 
     rdd_texts = rdd_json.mapValues(lambda x: (textTokens(extract_body(x)), textTokens(extract_title(x))))
     rdd_texts.setName('rdd_texts')
+    # data format issue?
+    # rdd_texts.saveAsSequenceFile(outputDirectory + "_texts")
 
     # This separator could have appeared in original text, and should serve to cleanly delimit the body from the title
     # Not perfect, it could have appeared between real tokens
+
+    # Needs to have single labels+index feature
+    # former code was lost
+
     c = crf_features.CrfFeatures(featureListFilename)
     SEPARATOR = '&amp;nbsp;',
     rdd_features = rdd_texts.map(lambda x: (x[0], 
@@ -130,7 +199,7 @@ def crfprep(sc, inputFilename, outputDirectory,
     rdd_features.setName('rdd_features')
     # rdd_features.persist()
 
-    rdd_pipeinput = rdd_features.mapValues(lambda x: vectorToString(x)).values()
+    rdd_pipeinput = rdd_features.mapValues(lambda x: vectorToUTF8(x)).values()
     rdd_pipeinput.setName('rdd_pipeinput')
     # rdd_features.persist()
     
