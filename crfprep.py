@@ -191,11 +191,40 @@ def crfprep(sc, inputFilename, outputDirectory,
 
     c = crf_features.CrfFeatures(featureListFilename)
     SEPARATOR = '&amp;nbsp;',
-    rdd_features = rdd_texts.map(lambda x: (x[0], 
-                                            c.computeFeatMatrix(list(x[1][0]) + [SEPARATOR] + list(x[1][1]),
-                                                                False,
-                                                                addLabels=[x[0]],
-                                                                addIndex=True)))
+
+    def makeMatrix(c, uri, bodyTokens, titleTokens):
+        b = c.computeFeatMatrix(bodyTokens, False, addLabels=False, addIndex=False)
+        s = c.computeFeatMatrix([SEPARATOR, ""], False, addLabels=False, addIndex=False)
+        t = c.computeFeatMatrix(titleTokens, False, addLabels=False, addIndex=False)
+        idx = 1
+        for row in b:
+            if row == u"":
+                pass
+            else:
+                label = uri + "/%05d/%05d" % (0, idx)
+                row.append(label)
+                idx += 1
+        idx = 1
+        for row in s:
+            if row == u"":
+                pass
+            else:
+                label = uri + "/%05d/%05d" % (1, idx)
+                row.append(label)
+                idx += 1
+        idx = 1
+        for row in t:
+            if row == u"":
+                pass
+            else:
+                label = uri + "/%05d/%05d" % (2, idx)
+                row.append(label)
+                idx += 1
+        # might be b[0:-1] + s[0:-1] + t?
+        return b[0:-1] + s[0:-1] + t
+
+
+    rdd_features = rdd_texts.map(lambda x: (x[0], makeMatrix(c, x[0], x[1][0], x[1][1])))
     rdd_features.setName('rdd_features')
     # rdd_features.persist()
 
