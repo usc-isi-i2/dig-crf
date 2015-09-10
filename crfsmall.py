@@ -8,7 +8,6 @@ import sys
 import os
 import platform
 import socket
-from harvestspans import computeSpans
 from hybridJaccard import HybridJaccard
 import argparse
 import json
@@ -124,6 +123,72 @@ def vectorToUTF8(v, debug=False):
     # result now a unicode object
     # here is the only place where we convert to UTF8
     return result.encode('utf-8')
+
+### HISTORICAL
+def computeSpans(v, verbose=False, indexed=False):
+    # extract the data and write the result as vector
+    currentLabel = None
+    currentTokens = []
+    spans = []
+    def addSpan(u, l, words):
+        spans.append( {"uri": u, "category": l, "words": " ".join(words) } )
+        if verbose:
+            print >> sys.stderr, "  Added %s" % (spans[-1],)
+
+    uri = 'bogus'
+    currentUri = None
+    for row in v:
+        if (len(row) <= 1):
+            # blank/empty line: expecting "" but might be []
+            if currentLabel and currentTokens:
+                addSpan(currentUri, currentLabel, currentTokens)
+            currentUri = None
+            continue
+        if (len(row) >= 4):
+            # a typical row
+            token = row[0]
+            uri = row[-3] if indexed else row[-2]
+            label = row[-1]
+            if verbose:
+                print >> sys.stderr, "Typical row: token %r uri %r: crflabel %r" % (token, uri, label)
+            # now process this row
+            if label == "O":
+                # unlabeled row
+                if currentLabel:
+                    # so this concludes span in progress
+                    addSpan(uri, currentLabel, currentTokens)
+                    currentLabel = None
+                    currentTokens = []
+                else:
+                    pass
+            else:
+                # Labeled row
+                if label == currentLabel:
+                    # continue span in progress
+                    currentTokens.append(token)
+                elif currentLabel and label != currentLabel:
+                    # span/span boundary
+                    # first conclude old one
+                    addSpan(uri, currentLabel, currentTokens)
+                    currentLabel = None
+                    currentTokens = []
+                    # then begin new one
+                    currentLabel = label
+                    currentTokens = [token]
+                elif not currentLabel:
+                    # begin novel span
+                    currentLabel = label
+                    currentTokens = [token]
+                else:
+                    raise Exception("Unexpected file structure")
+        currentUri = uri
+
+    if currentLabel and currentTokens:
+        # Input ended without blank line after last marked span, so hallucinate one
+        addSpan(uri, currentLabel, currentTokens)
+
+    # Publish results
+    return spans
 
 def crfsmall(sc, input, output, 
             limit=None, location='hdfs', outputFormat="text", numPartitions=None):
