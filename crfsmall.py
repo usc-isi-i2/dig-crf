@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 try:
-    from pyspark import SparkContext
+    from pyspark import SparkContext, SparkFiles
 except:
     print "### NO PYSPARK"
 import sys
@@ -14,6 +14,7 @@ import json
 import cgi
 from htmltoken import tokenize
 import crf_features
+from base64 import b64encode, b64decode
 
 # import snakebite for doing hdfs file manipulations
 from snakebite.client import Client
@@ -195,9 +196,10 @@ def crfsmall(sc, input, output,
 
     crfConfigDir = os.path.join(os.path.dirname(__file__), "data/config")
     featureListFilename = os.path.join(crfConfigDir, "features.hair-eye")
-    crfConfigDir = os.path.join(os.path.dirname(__file__), "data/config")
-    crfExecutable = "/usr/local/bin/crf_test_filter.sh"
+    crfExecutable = "/usr/local/bin/crf_debug.sh"
     crfModelFilename = os.path.join(crfConfigDir, "dig-hair-eye-train.model")
+    sc.addFile(crfExecutable)
+    sc.addFile(crfModelFilename)
 
     # crfConfigDir = os.path.join(os.path.dirname(__file__), "data/config")
     # def cpath(n):
@@ -261,14 +263,40 @@ def crfsmall(sc, input, output,
         # might be b[0:-1] + s[0:-1] + t?
         return b[0:-1] + s[0:-1] + t
 
-    rdd_features = rdd_texts.map(lambda x: (x[0], makeMatrix(c, x[0], x[1][0], x[1][1])))
+    rdd_features = rdd_texts.map(lambda x: makeMatrix(c, x[0], x[1][0], x[1][1]))
     rdd_features.setName('rdd_features')
     # rdd_features.persist()
 
-    rdd_pipeinput = rdd_features.mapValues(lambda x: vectorToUTF8(x)).values()
+    # rdd_pipeinput = rdd_features.map(lambda x: b64encode(vectorToUTF8(x)))
+    rdd_vector = rdd_features.map(lambda x: vectorToUTF8(x))
+    rdd_vector.setName('rdd_vector')
+    rdd_pipeinput = sc.parallelize([b64encode(rdd_vector.reduce(lambda a,b: a+b))])
     rdd_pipeinput.setName('rdd_pipeinput')
 
-    rdd_final = rdd_pipeinput
+    rdd_pipeinput.saveAsTextFile(output + "_pipeinput")
+
+#     if location == 'hdfs':
+#         cmd = "%s %s" % (os.path.basename(crfExecutable), os.path.basename(crfModelFilename))
+#     elif location == 'local':
+#         cmd = "%s %s" % (SparkFiles.get(os.path.basename(crfExecutable)), SparkFiles.get(os.path.basename(crfModelFilename)))
+    # cmd = "/usr/local/bin/crf_debug ./dig-hair-eye-train.model"
+    # cmd = "%s %s" % (SparkFiles.get(os.path.basename(crfExecutable)), SparkFiles.get(os.path.basename(crfModelFilename)))
+    # cmd = "./%s ./%s" % (os.path.basename(crfExecutable), os.path.basename(crfModelFilename))
+    # cmd = "./%s" % (os.path.basename(crfExecutable))
+    executable = SparkFiles.get(os.path.basename(crfExecutable))
+    print "%s %s" % (executable, "exists" if os.path.exists(executable) else "does not exist")
+    model = SparkFiles.get(os.path.basename(crfModelFilename))
+    print "%s %s" % (model, "exists" if os.path.exists(model) else "does not exist")
+    
+    # cmd = "%s" % (os.path.basename(crfExecutable))
+    # cmd = "%s" % executable
+    cmd = "%s %s" % (executable, model)
+    print "###CMD %s" % cmd
+# rdd_crfoutput = rdd_pipeinput.pipe(cmd).map(lambda x: b64decode(x))
+    rdd_crfoutput = rdd_pipeinput.pipe(cmd)
+    rdd_crfoutput.setName('rdd_crfoutput')
+
+    rdd_final = rdd_crfoutput
 
     if outputFormat == "sequence":
         rdd_final.saveAsSequenceFile(output)
