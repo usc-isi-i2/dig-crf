@@ -284,7 +284,69 @@ def crfsmall(sc, input, output,
     rdd_crfoutput = rdd_pipeinput.pipe(cmd)
     rdd_crfoutput.setName('rdd_crfoutput')
 
-    rdd_final = rdd_crfoutput
+    rdd_base64decode = rdd_crfoutput.map(lambda x: b64decode(x))
+    # 1. break into physical lines
+    # 2. turn each line into its own spark row
+    # 3. drop any inter-document empty string markers
+    rdd_lines = rdd_base64decode.map(lambda x: x.split("\n")).flatMap(lambda l: l).filter(lambda x: len(x)>1)
+
+    def processOneLine(l):
+        print l
+        return l.split("\t")
+
+    rdd_triples = rdd_lines.map(lambda l: processOneLine(l))
+    rdd_triples.saveAsTextFile('out_rdd_triples')
+
+    def organizeByOrigDoc(triple):
+        try:
+            (word, uri, label) = triple
+            (parentUri, docId, wordId) = uri.rsplit('/', 2)
+            return ( (parentUri, docId), (wordId, word, label) )
+        except Exception as e:
+            print "Can't destructure %r" % [triple]
+            return ()
+
+    rdd_reorg = rdd_triples.map(lambda l: organizeByOrigDoc(l))
+    rdd_reorg.saveAsTextFile('out_rdd_reorg')
+
+    rdd_sorted = rdd_reorg.sortByKey()
+    rdd_sorted.saveAsTextFile('out_rdd_sorted')
+
+    # each (parentUri, docId) has a sequence of (wordId, word, label)
+    # we want to consider them in order (by wordId)
+
+    rdd_grouped = rdd_sorted.groupByKey()
+
+    def harvest(seq):
+        allSpans = []
+        lastIndex = -2
+        lastLabel = None
+        currentSpan = []
+        for (wordId, word, label) in seq:
+            currentIndex = int(wordId)
+            if lastIndex+1 == currentIndex and lastLabel == label:
+                # continuing current span
+                currentSpan.append( (currentIndex, word, label) )
+            else:
+                # end current span
+                if currentSpan:
+                    allSpans.append(currentSpan)
+                # begin new span
+                currentSpan = [ (currentIndex, word, label) ]
+                lastLabel = label
+            lastIndex = currentIndex
+
+        # end current span
+        if currentSpan:
+            allSpans.append(currentSpan)
+        return allSpans
+            
+    rdd_harvest = rdd_grouped.mapValues(lambda s: harvest(s))
+    rdd_harvest.saveAsTextFile('out_rdd_harvest')
+    exit(1)
+
+
+    rdd_final = rdd_harvest
 
     if outputFormat == "sequence":
         rdd_final.saveAsSequenceFile(output)
