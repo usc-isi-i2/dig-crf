@@ -196,7 +196,7 @@ def crfsmall(sc, input, output,
 
     crfConfigDir = os.path.join(os.path.dirname(__file__), "data/config")
     featureListFilename = os.path.join(crfConfigDir, "features.hair-eye")
-    crfExecutable = "/usr/local/bin/crf_debug.sh"
+    crfExecutable = os.path.join(os.path.dirname(__file__), "bin/crf_test_filter.sh")
     crfModelFilename = os.path.join(crfConfigDir, "dig-hair-eye-train.model")
     sc.addFile(crfExecutable)
     sc.addFile(crfModelFilename)
@@ -267,32 +267,20 @@ def crfsmall(sc, input, output,
     rdd_features.setName('rdd_features')
     # rdd_features.persist()
 
-    # rdd_pipeinput = rdd_features.map(lambda x: b64encode(vectorToUTF8(x)))
+    # unicode/string representation of the feature matrix
     rdd_vector = rdd_features.map(lambda x: vectorToUTF8(x))
     rdd_vector.setName('rdd_vector')
+
+    # all strings concatenated together, then base64 encoded into one input for crf_test
     rdd_pipeinput = sc.parallelize([b64encode(rdd_vector.reduce(lambda a,b: a+b))])
     rdd_pipeinput.setName('rdd_pipeinput')
 
-    rdd_pipeinput.saveAsTextFile(output + "_pipeinput")
-
-#     if location == 'hdfs':
-#         cmd = "%s %s" % (os.path.basename(crfExecutable), os.path.basename(crfModelFilename))
-#     elif location == 'local':
-#         cmd = "%s %s" % (SparkFiles.get(os.path.basename(crfExecutable)), SparkFiles.get(os.path.basename(crfModelFilename)))
-    # cmd = "/usr/local/bin/crf_debug ./dig-hair-eye-train.model"
-    # cmd = "%s %s" % (SparkFiles.get(os.path.basename(crfExecutable)), SparkFiles.get(os.path.basename(crfModelFilename)))
-    # cmd = "./%s ./%s" % (os.path.basename(crfExecutable), os.path.basename(crfModelFilename))
-    # cmd = "./%s" % (os.path.basename(crfExecutable))
     executable = SparkFiles.get(os.path.basename(crfExecutable))
-    print "%s %s" % (executable, "exists" if os.path.exists(executable) else "does not exist")
     model = SparkFiles.get(os.path.basename(crfModelFilename))
-    print "%s %s" % (model, "exists" if os.path.exists(model) else "does not exist")
     
-    # cmd = "%s" % (os.path.basename(crfExecutable))
-    # cmd = "%s" % executable
     cmd = "%s %s" % (executable, model)
-    print "###CMD %s" % cmd
-# rdd_crfoutput = rdd_pipeinput.pipe(cmd).map(lambda x: b64decode(x))
+
+    # this result is base64 encoded
     rdd_crfoutput = rdd_pipeinput.pipe(cmd)
     rdd_crfoutput.setName('rdd_crfoutput')
 
@@ -304,57 +292,6 @@ def crfsmall(sc, input, output,
         rdd_final.saveAsTextFile(output)
     else:
         raise RuntimeError("Unrecognized output format: %s" % outputFormat)
-
-# if __name__ == "__main__":
-
-#     location = "hdfs"
-#     try:
-#         if "avatar" in platform.node():
-#             location = "local"
-#     except:
-#         pass
-#     try:
-#         if "avatar" in socket.gethostname():
-#             location = "local"
-#     except:
-#         pass
-#     print "### location %s" % location
-
-#     year = 2015
-#     mode = sys.argv[1]
-#     tag = sys.argv[2]
-#     month = int(sys.argv[3])
-#     day = int(sys.argv[4])
-#     hour = int(sys.argv[5])
-#     fromPartNum = None
-#     try:
-#         fromPartNum = int(sys.argv[6])
-#     except:
-#         pass
-#     partNum = None
-#     try:
-#         partNum = int(sys.argv[7])
-#     except:
-#         pass
-#     limit = None
-#     try:
-#         limit = int(sys.argv[8])
-#     except:
-#         pass
-#     partitions = None
-#     try:
-#         partitions = int(sys.argv[9])
-#     except:
-#         pass
-#     inputFilename = input(year=year, month=month, day=day, hour=hour, location=location, tag=tag, fromPartNum=fromPartNum, partNum=partNum)
-#     outputDirectory = output(year=year, month=month, day=day, hour=hour, location=location, tag=tag, fromPartNum=fromPartNum, partNum=partNum)
-#     print inputFilename, outputDirectory
-#     docu =("year %s, mode %s, tag %s, month %s, day %s, hour %s, fromPartNum %s, partNum %s, limit %s, partitions %s" %
-#            (year, mode, tag, month, day, hour, fromPartNum, partNum, limit, partitions))
-#     print docu
-#     sc = SparkContext(appName="crfsmall %s %s %s %s %s %s %s %s %s %s" % (year, mode, tag, month, day, hour, fromPartNum, partNum, limit, partitions))
-#     crfsmall(sc, inputFilename, outputDirectory, 
-#              limit=limit, location=location, outputFormat="text", partitions=partitions)
 
 def main(argv=None):
     '''this is called if run from command line'''
