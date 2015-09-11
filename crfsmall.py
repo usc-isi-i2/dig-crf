@@ -376,10 +376,8 @@ def crfsmall(sc, input, output,
 
     rdd_aligned = rdd_flat.mapValues(lambda x: jaccard(x))
     rdd_aligned.saveAsTextFile('out_rdd_aligned')
-    exit(1)
 
-
-    rdd_final = rdd_harvest
+    rdd_final = rdd_aligned
 
     if outputFormat == "sequence":
         rdd_final.saveAsSequenceFile(output)
