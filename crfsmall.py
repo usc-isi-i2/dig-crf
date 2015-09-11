@@ -285,13 +285,14 @@ def crfsmall(sc, input, output,
     rdd_crfoutput.setName('rdd_crfoutput')
 
     rdd_base64decode = rdd_crfoutput.map(lambda x: b64decode(x))
+    ### There may be a need to utf8 decode this data ###
+    ### There are values like \xed\xa0\xbd which might be a broken emoji
     # 1. break into physical lines
     # 2. turn each line into its own spark row
     # 3. drop any inter-document empty string markers
     rdd_lines = rdd_base64decode.map(lambda x: x.split("\n")).flatMap(lambda l: l).filter(lambda x: len(x)>1)
 
     def processOneLine(l):
-        print l
         return l.split("\t")
 
     rdd_triples = rdd_lines.map(lambda l: processOneLine(l))
@@ -350,8 +351,20 @@ def crfsmall(sc, input, output,
             result.append( (' '.join(words), spanLabel) )
         return result
             
+    # ( (parentUri, docId), [ (words1, category1), (words2, category2), ... ]
     rdd_harvest = rdd_grouped.mapValues(lambda s: harvest(s))
     rdd_harvest.saveAsTextFile('out_rdd_harvest')
+
+    # rdd_flat = rdd_harvest.flatMap(lambda r: [ (e[0][0], e[1]) for e in r ])
+    # rdd_flat = rdd_harvest.map(lambda r: (r[0][0], r[1]))
+
+    # parentUri -> (words, category)
+    # we use .distinct() because (e.g.) both title and body might have the same feature
+    rdd_flat = rdd_harvest.map(lambda r: (r[0][0], r[1])).flatMapValues(lambda x: x).distinct()
+    rdd_flat.saveAsTextFile('out_rdd_flat')
+
+    # rdd_aligned = rdd_flat.mapValues(lambda x: alignToControlledVocab(x, {"eyeColor": smEyeColor.findBestMatch, 
+    #                                                                       "hairType": smHairColor.findBestMatch}))
     exit(1)
 
 
