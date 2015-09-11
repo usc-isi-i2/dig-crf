@@ -24,6 +24,36 @@ from base64 import b64encode, b64decode
 # print smHairColor.findBestMatch("redhead")
 # exit(0)
 
+"""We could build this (v1) ES JSON directly or provide enough info for Karma to do it:
+
+         {
+            "_index": "dig-ht-pilot-unfiltered04",
+            "_type": "WebPage",
+            "_id": "http://dig.isi.edu/ht/data/page/31ED1D4F8A85FBB6564602F5F76315A7AD5B7455/1415454378000/processed",
+            "_score": 1,
+            "_source": {
+               "@context": "https://raw.githubusercontent.com/usc-isi-i2/dig-alignment/master/datasets/istr/context-for-istr-datasets.json",
+               "dateModified": "2014-11-08T21:46:18",
+               "a": "WebPage",
+               "hasFeatureCollection": {
+                  "a": "FeatureCollection",
+                  "person_haircolor_feature": {
+                     "featureName": "person_haircolor",
+                     "person_haircolor": "brown",
+                     "a": "Feature",
+                     "wasGeneratedBy": {
+                        "databaseId": "400319347",
+                        "wasAttributedTo": "http://dig.isi.edu/ht/data/software/extractor/ist/attributes/version/unknown",
+                        "a": "Activity",
+                        "endedAtTime": "2014-11-08T21:46:18"
+                     },
+                     "wasDerivedFrom": "http://dig.isi.edu/ht/data/page/31ED1D4F8A85FBB6564602F5F76315A7AD5B7455/1415454378000/processed",
+                     "uri": "http://dig.isi.edu/ht/data/page/31ED1D4F8A85FBB6564602F5F76315A7AD5B7455/1415454378000/processed/featurecollection/person_haircolor/brown",
+                     "featureValue": "brown"
+                  },
+"""
+
+
 # import snakebite for doing hdfs file manipulations
 from snakebite.client import Client
 from snakebite.errors import FileNotFoundException
@@ -199,8 +229,8 @@ def computeSpans(v, verbose=False, indexed=False):
     # Publish results
     return spans
 
-def crfsmall(sc, input, output, 
-            limit=None, location='hdfs', outputFormat="text", numPartitions=None):
+def crfprocess(sc, input, output, 
+               limit=None, location='hdfs', outputFormat="text", numPartitions=None):
 
     configDir = os.path.join(os.path.dirname(__file__), "data/config")
     def configPath(n):
@@ -370,14 +400,17 @@ def crfsmall(sc, input, output,
                                 config_path=configPath("hairColor_config.txt"))
     hybridJaccards = {"eyeColor": smEyeColor.findBestMatch, 
                       "hairType": smHairColor.findBestMatch}
+    featureNames = {"eyeColor": "person_eyecolor",
+                    "hairType": "person_haircolor"}
     def jaccard(tpl):
         (words, category) = tpl
-        return (category, hybridJaccards[category](words))
+        return {"featureName": featureNames[category], 
+                "featureValue": hybridJaccards[category](words)}
 
-    rdd_aligned = rdd_flat.mapValues(lambda x: jaccard(x))
+    rdd_aligned = rdd_flat.mapValues(lambda v: jaccard(v))
     rdd_aligned.saveAsTextFile('out_rdd_aligned')
 
-    rdd_final = rdd_aligned
+    rdd_final = rdd_aligned.mapValues(lambda v: json.dumps(v))
 
     if outputFormat == "sequence":
         rdd_final.saveAsSequenceFile(output)
@@ -415,12 +448,12 @@ def main(argv=None):
         elif location == "hdfs":
             args.numPartitions = 50
 
-    sc = SparkContext(appName="crfsmall")
-    crfsmall(sc, args.input, args.output, 
-             limit=args.limit, 
-             location=location,
-             outputFormat="text",
-             numPartitions=args.numPartitions)
+    sc = SparkContext(appName="crfprocess")
+    crfprocess(sc, args.input, args.output, 
+               limit=args.limit, 
+               location=location,
+               outputFormat="sequence",
+               numPartitions=args.numPartitions)
 
 # call main() if this is run as standalone
 if __name__ == "__main__":
