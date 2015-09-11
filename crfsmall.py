@@ -339,7 +339,16 @@ def crfsmall(sc, input, output,
         # end current span
         if currentSpan:
             allSpans.append(currentSpan)
-        return allSpans
+        
+        result = []
+        for span in allSpans:
+            words = []
+            spanLabel = None
+            for (wordIdx, word, label) in span:
+                spanLabel = label
+                words.append(word)
+            result.append( (' '.join(words), spanLabel) )
+        return result
             
     rdd_harvest = rdd_grouped.mapValues(lambda s: harvest(s))
     rdd_harvest.saveAsTextFile('out_rdd_harvest')
