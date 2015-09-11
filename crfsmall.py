@@ -16,6 +16,14 @@ from htmltoken import tokenize
 import crf_features
 from base64 import b64encode, b64decode
 
+# configDir = os.path.join(os.path.dirname(__file__), "data/config")
+# def configPath(n):
+#     return os.path.join(configDir, n)
+# smHairColor = HybridJaccard(ref_path=configPath("hairColor_reference_wiki.txt"),
+#                            config_path=configPath("hairColor_config.txt"))
+# print smHairColor.findBestMatch("redhead")
+# exit(0)
+
 # import snakebite for doing hdfs file manipulations
 from snakebite.client import Client
 from snakebite.errors import FileNotFoundException
@@ -194,25 +202,18 @@ def computeSpans(v, verbose=False, indexed=False):
 def crfsmall(sc, input, output, 
             limit=None, location='hdfs', outputFormat="text", numPartitions=None):
 
-    crfConfigDir = os.path.join(os.path.dirname(__file__), "data/config")
-    featureListFilename = os.path.join(crfConfigDir, "features.hair-eye")
-    crfExecutable = os.path.join(os.path.dirname(__file__), "bin/crf_test_filter.sh")
-    crfModelFilename = os.path.join(crfConfigDir, "dig-hair-eye-train.model")
+    configDir = os.path.join(os.path.dirname(__file__), "data/config")
+    def configPath(n):
+        return os.path.join(configDir, n)
+    binDir = os.path.join(os.path.dirname(__file__), "bin")
+    def binPath(n):
+        return os.path.join(binDir, n)
+
+    featureListFilename = configPath("features.hair-eye")
+    crfExecutable = binPath("crf_test_filter.sh")
+    crfModelFilename = configPath("dig-hair-eye-train.model")
     sc.addFile(crfExecutable)
     sc.addFile(crfModelFilename)
-
-    # crfConfigDir = os.path.join(os.path.dirname(__file__), "data/config")
-    # def cpath(n):
-    #     return os.path.join(crfConfigDir, n)
-
-    # smEyeColor = HybridJaccard(ref_path=cpath("eyeColor_reference_wiki.txt"),
-    #                            config_path=cpath("eyeColor_config.txt"))
-    # smHairColor = HybridJaccard(ref_path=cpath("hairColor_reference_wiki.txt"),
-    #                             config_path=cpath("hairColor_config.txt"))
-    # print smEyeColor, smHairColor
-
-    # hypothesis1: data fetched this way prompts the lzo compression error
-    # hypothesis2: but it doesn't matter, error is just a warning
 
     rdd_crfl = sc.sequenceFile(input)
     rdd_crfl.setName('rdd_crfl')
@@ -304,7 +305,7 @@ def crfsmall(sc, input, output,
             (parentUri, docId, wordId) = uri.rsplit('/', 2)
             return ( (parentUri, docId), (wordId, word, label) )
         except Exception as e:
-            print "Can't destructure %r" % [triple]
+            print >> sys.stderr, "Can't destructure %r: %s" % (triple, e)
             return ()
 
     rdd_reorg = rdd_triples.map(lambda l: organizeByOrigDoc(l))
@@ -363,8 +364,18 @@ def crfsmall(sc, input, output,
     rdd_flat = rdd_harvest.map(lambda r: (r[0][0], r[1])).flatMapValues(lambda x: x).distinct()
     rdd_flat.saveAsTextFile('out_rdd_flat')
 
-    # rdd_aligned = rdd_flat.mapValues(lambda x: alignToControlledVocab(x, {"eyeColor": smEyeColor.findBestMatch, 
-    #                                                                       "hairType": smHairColor.findBestMatch}))
+    smEyeColor = HybridJaccard(ref_path=configPath("eyeColor_reference_wiki.txt"),
+                               config_path=configPath("eyeColor_config.txt"))
+    smHairColor = HybridJaccard(ref_path=configPath("hairColor_reference_wiki.txt"),
+                                config_path=configPath("hairColor_config.txt"))
+    hybridJaccards = {"eyeColor": smEyeColor.findBestMatch, 
+                      "hairType": smHairColor.findBestMatch}
+    def jaccard(tpl):
+        (words, category) = tpl
+        return (category, hybridJaccards[category](words))
+
+    rdd_aligned = rdd_flat.mapValues(lambda x: jaccard(x))
+    rdd_aligned.saveAsTextFile('out_rdd_aligned')
     exit(1)
 
 
