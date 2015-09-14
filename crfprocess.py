@@ -206,13 +206,47 @@ def crfprocess(sc, input, output,
 
     # page feature matrix including body, separator, title
     # (vector of vectors, includes separator rows)
-    rdd_features = rdd_texts.map(lambda x: makeMatrix(c, x[0], x[1][0], x[1][1]))
+    # rdd_features = rdd_texts.map(lambda x: makeMatrix(c, x[0], x[1][0], x[1][1]))
+    # pageUri -> (python) vector of vectors
+    rdd_features = rdd_texts.map(lambda (k,v): (k, makeMatrix(c, k, v[0], v[1])))
     rdd_features.setName('rdd_features')
     rdd_features.saveAsTextFile('out_rdd_features')
 
-    #  unicode UTF-8 representation of the feature matrix
-    rdd_vector = rdd_features.map(lambda x: vectorToUTF8(x))
+    # unicode UTF-8 representation of the feature matrix
+    # pageUri -> unicode UTF-8 representation of the feature matrix
+    rdd_vector = rdd_features.mapValues(lambda x: vectorToUTF8(x))
     rdd_vector.setName('rdd_vector')
+    rdd_vector.saveAsTextFile('out_rdd_vector')
+
+    # NEW
+    # rdd_partition01 = rdd_vector.sortByKey()
+
+    def generatePrefixKey(uri, hexDigits=3):
+        """http://dig.isi.edu/ht/data/page/0040378735A6B350D3B2F639FF4EE72AE4956171/1433150471000/processed"""
+        words = uri.split('/')
+        # first 6 fields + prefix of 7th field
+        # [u'http:', u'', u'dig.isi.edu', u'ht', u'data', u'page', u'004']
+        # This ought to work, but seems to always return the same thing
+        return "/".join(words[0:5] + [words[6][0:hexDigits]])
+        # equivalent, but less general
+        # return uri[0:35]
+        # slightly more general
+        # return uri[0:32+hexDigits]
+      
+    # e.g. http://dig.isi.edu/ht/data/page/004 -> serialized representation of one document
+    rdd_partition02 = rdd_vector.map(lambda (k,v): (generatePrefixKey(k), v) )
+    # e.g. http://dig.isi.edu/ht/data/page/004 -> (<full word uri>, serialized representation of one document)
+    rdd_partition02 = rdd_vector.map(lambda (k,v): (generatePrefixKey(k), (k, v) ))
+    rdd_partition02.saveAsTextFile('out_rdd_partition02')
+
+    # performing a full sort now will put group contiguous prefixes; within which order by word index
+    rdd_partition03 = rdd_partition02.sortBy(lambda x: x)
+    rdd_partition03.saveAsTextFile('out_rdd_partition03')
+    exit(0)
+
+    rdd_partition04 = rdd_partition02.reduceByKey(lambda a,b: a+b)
+    rdd_partition04.saveAsTextFile('out_rdd_partition04')
+    exit(0)
 
     # all strings concatenated together, then base64 encoded into one input for crf_test
     rdd_pipeinput = sc.parallelize([b64encode(rdd_vector.reduce(lambda a,b: a+b))])
