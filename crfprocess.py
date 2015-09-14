@@ -226,12 +226,7 @@ def crfprocess(sc, input, output,
         words = uri.split('/')
         # first 6 fields + prefix of 7th field
         # [u'http:', u'', u'dig.isi.edu', u'ht', u'data', u'page', u'004']
-        # This ought to work, but seems to always return the same thing
-        return "/".join(words[0:5] + [words[6][0:hexDigits]])
-        # equivalent, but less general
-        # return uri[0:35]
-        # slightly more general
-        # return uri[0:32+hexDigits]
+        return "/".join(words[0:6] + [words[6][0:hexDigits]])
       
     # e.g. http://dig.isi.edu/ht/data/page/004 -> serialized representation of one document
     rdd_partition02 = rdd_vector.map(lambda (k,v): (generatePrefixKey(k), v) )
@@ -240,12 +235,20 @@ def crfprocess(sc, input, output,
     rdd_partition02.saveAsTextFile('out_rdd_partition02')
 
     # performing a full sort now will put group contiguous prefixes; within which order by word index
+    # SORTED e.g. http://dig.isi.edu/ht/data/page/004 -> (<full word uri>, serialized representation of one document)
     rdd_partition03 = rdd_partition02.sortBy(lambda x: x)
     rdd_partition03.saveAsTextFile('out_rdd_partition03')
-    exit(0)
 
-    rdd_partition04 = rdd_partition02.reduceByKey(lambda a,b: a+b)
+    # rdd_partition04 = rdd_partition02.reduceByKey(lambda a,b: a+b)
+    # a, b are now tuples
+    # discard the first, concat only the second
+    # prefixUri -> serialized representations of all documents with that prefix, in order, concatenated
+    rdd_partition04 = rdd_partition03.reduceByKey(lambda ta,tb: ta[1]+tb[1])
     rdd_partition04.saveAsTextFile('out_rdd_partition04')
+
+    # rdd_partition05 = rdd_partition04.mapValues(lambda u: b64encode(u))
+    rdd_partition05 = rdd_partition04.mapValues(lambda u: type(u))
+    rdd_partition05.saveAsTextFile('out_rdd_partition05')    
     exit(0)
 
     # all strings concatenated together, then base64 encoded into one input for crf_test
