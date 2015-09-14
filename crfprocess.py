@@ -53,11 +53,6 @@ from base64 import b64encode, b64decode
                   },
 """
 
-
-# import snakebite for doing hdfs file manipulations
-from snakebite.client import Client
-from snakebite.errors import FileNotFoundException
-
 def extract_body(main_json):
     try:
         return main_json["hasBodyPart"]["text"]
@@ -95,46 +90,6 @@ def genescaped(text, maxTokenLength=40):
             # yield tok
             yield tok.replace('\t', ' ')
 
-### The URI + index mechanism isn't good enough to recover data when there are multiple sentences per URI
-### which can occur from (a) title + body as separate documents (b) sentence breaking of body
-### The intra-sentence space rows won't be maintained by reconstructTuple + groupBy
-### Proposed future workarounds:
-### (a) sentence-specific temporary URIs ending /processed/title or /processed/1
-### (b) and/or sentence-specific indexing 1.1, 1.2, ... 1.N, 2.1, etc. could work
-
-def reconstructTuple(tabsep):
-    """Works only for old multi-line invocation of crf_test, not crf_test_b64"""
-    fields = tabsep.split('\t')
-    try:
-        uri = fields[-3]
-        idx = fields[-2]
-    except:
-        uri = "endOfDocument"
-        idx = "0"
-    return (uri, [idx] + fields)
-
-def fakeFindBestMatch(words):
-    if 'blue' in words:
-        return 'blue'
-    else:
-        return 'NONE'
-
-def alignToControlledVocab(harvested, vocabs):
-    """harvested is a dict matching category 'eyeColor', 'hairType' to a function"""
-    try:
-        category = harvested['category']
-        # f = vocabs[category]
-        f = fakeFindBestMatch
-        words = harvested['words']
-        try:
-            harvested['bestMatch'] = f(words)
-        except Exception as e:
-            return "sm.findBestMatch error:" + str(e) + ":" + str(words)
-        return harvested
-    except Exception as e:
-        return str(e)
-    return None
-
 def vectorToUTF8(v, debug=False):
     "unicode only"
 
@@ -163,72 +118,6 @@ def vectorToUTF8(v, debug=False):
     # here is the only place where we convert to UTF8
     return result.encode('utf-8')
 
-### HISTORICAL
-def computeSpans(v, verbose=False, indexed=False):
-    # extract the data and write the result as vector
-    currentLabel = None
-    currentTokens = []
-    spans = []
-    def addSpan(u, l, words):
-        spans.append( {"uri": u, "category": l, "words": " ".join(words) } )
-        if verbose:
-            print >> sys.stderr, "  Added %s" % (spans[-1],)
-
-    uri = 'bogus'
-    currentUri = None
-    for row in v:
-        if (len(row) <= 1):
-            # blank/empty line: expecting "" but might be []
-            if currentLabel and currentTokens:
-                addSpan(currentUri, currentLabel, currentTokens)
-            currentUri = None
-            continue
-        if (len(row) >= 4):
-            # a typical row
-            token = row[0]
-            uri = row[-3] if indexed else row[-2]
-            label = row[-1]
-            if verbose:
-                print >> sys.stderr, "Typical row: token %r uri %r: crflabel %r" % (token, uri, label)
-            # now process this row
-            if label == "O":
-                # unlabeled row
-                if currentLabel:
-                    # so this concludes span in progress
-                    addSpan(uri, currentLabel, currentTokens)
-                    currentLabel = None
-                    currentTokens = []
-                else:
-                    pass
-            else:
-                # Labeled row
-                if label == currentLabel:
-                    # continue span in progress
-                    currentTokens.append(token)
-                elif currentLabel and label != currentLabel:
-                    # span/span boundary
-                    # first conclude old one
-                    addSpan(uri, currentLabel, currentTokens)
-                    currentLabel = None
-                    currentTokens = []
-                    # then begin new one
-                    currentLabel = label
-                    currentTokens = [token]
-                elif not currentLabel:
-                    # begin novel span
-                    currentLabel = label
-                    currentTokens = [token]
-                else:
-                    raise Exception("Unexpected file structure")
-        currentUri = uri
-
-    if currentLabel and currentTokens:
-        # Input ended without blank line after last marked span, so hallucinate one
-        addSpan(uri, currentLabel, currentTokens)
-
-    # Publish results
-    return spans
-
 def crfprocess(sc, input, output, 
                limit=None, location='hdfs', outputFormat="text", numPartitions=None):
 
@@ -245,23 +134,43 @@ def crfprocess(sc, input, output,
     sc.addFile(crfExecutable)
     sc.addFile(crfModelFilename)
 
+    # pageUri -> content
     rdd_crfl = sc.sequenceFile(input)
     rdd_crfl.setName('rdd_crfl')
-
     if limit:
         rdd_crfl = sc.parallelize(rdd_crfl.take(limit))
     if numPartitions:
         rdd_crfl = rdd_crfl.repartition(numPartitions)
+    rdd_crfl.saveAsTextFile('out_rdd_crfl')
 
+    # pageUri -> dict from json
     rdd_json = rdd_crfl.mapValues(lambda x: json.loads(x))
     rdd_json.setName('rdd_json')
-    # rdd_json.persist()
 
+    # pageUri -> (body tokens, title tokens)
     rdd_texts = rdd_json.mapValues(lambda x: (textTokens(extract_body(x)), textTokens(extract_title(x))))
     rdd_texts.setName('rdd_texts')
 
+    # We use the following encoding for values for CRF++'s so-called
+    # labels to reduce the data size and complexity of referring to
+    # words.  Each word is assigned a URI constructed from the page
+    # URI (Karma URI) plus a 5 digit zero-padded number for the
+    # subdocument plus a 5 digit zero-padded number for the word
+    # index (1-based).  By "subdocument" we mean the page body and
+    # page title (for HT; there could be others in other domains).
+    # Additionally, an artificial "separator" document is used to
+    # generate a barrier to avoid inadvertent capture of spurious
+    # spans between subdocuments.
+    #
+    # Example: the first word of the body of
+    # http://dig.isi.edu/ht/data/page/0434CB3BDFE3839D6CAC6DBE0EBED0278D3634D8/1433149274000/processed
+    # would be http://dig.isi.edu/ht/data/page/0434CB3BDFE3839D6CAC6DBE0EBED0278D3634D8/1433149274000/processed/00000/00001
+
+    SEPARATOR = '&amp;nbsp;'
+    BODY_SUBDOCUMENT = 0
+    SEPARATOR_SUBDOCUMENT = 1
+    TITLE_SUBDOCUMENT = 2
     c = crf_features.CrfFeatures(featureListFilename)
-    SEPARATOR = '&amp;nbsp;',
 
     def makeMatrix(c, uri, bodyTokens, titleTokens):
         b = c.computeFeatMatrix(bodyTokens, False, addLabels=False, addIndex=False)
@@ -272,7 +181,7 @@ def crfprocess(sc, input, output,
             if row == u"":
                 pass
             else:
-                label = uri + "/%05d/%05d" % (0, idx)
+                label = uri + "/%05d/%05d" % (BODY_SUBDOCUMENT, idx)
                 row.append(label)
                 idx += 1
         idx = 1
@@ -280,7 +189,7 @@ def crfprocess(sc, input, output,
             if row == u"":
                 pass
             else:
-                label = uri + "/%05d/%05d" % (1, idx)
+                label = uri + "/%05d/%05d" % (SEPARATOR_SUBDOCUMENT, idx)
                 row.append(label)
                 idx += 1
         idx = 1
@@ -288,46 +197,56 @@ def crfprocess(sc, input, output,
             if row == u"":
                 pass
             else:
-                label = uri + "/%05d/%05d" % (2, idx)
+                label = uri + "/%05d/%05d" % (TITLE_SUBDOCUMENT, idx)
                 row.append(label)
                 idx += 1
-        # might be b[0:-1] + s[0:-1] + t?
+        # Keep the empty string semaphor from the title (last
+        # component) for CRF++ purposes
         return b[0:-1] + s[0:-1] + t
 
+    # page feature matrix including body, separator, title
+    # (vector of vectors, includes separator rows)
     rdd_features = rdd_texts.map(lambda x: makeMatrix(c, x[0], x[1][0], x[1][1]))
     rdd_features.setName('rdd_features')
-    # rdd_features.persist()
+    rdd_features.saveAsTextFile('out_rdd_features')
 
-    # unicode/string representation of the feature matrix
+    #  unicode UTF-8 representation of the feature matrix
     rdd_vector = rdd_features.map(lambda x: vectorToUTF8(x))
     rdd_vector.setName('rdd_vector')
 
     # all strings concatenated together, then base64 encoded into one input for crf_test
     rdd_pipeinput = sc.parallelize([b64encode(rdd_vector.reduce(lambda a,b: a+b))])
     rdd_pipeinput.setName('rdd_pipeinput')
+    rdd_pipeinput.saveAsTextFile('out_rdd_pipeinput')
 
+    # base64 encoded result of running crf_test and filtering to
+    # include only word, wordUri, non-null label
     executable = SparkFiles.get(os.path.basename(crfExecutable))
     model = SparkFiles.get(os.path.basename(crfModelFilename))
-    
     cmd = "%s %s" % (executable, model)
-
-    # this result is base64 encoded
     rdd_crfoutput = rdd_pipeinput.pipe(cmd)
     rdd_crfoutput.setName('rdd_crfoutput')
 
+    # base64 decoded to regular serialized string
     rdd_base64decode = rdd_crfoutput.map(lambda x: b64decode(x))
+    rdd_base64decode.saveAsTextFile('out_rdd_base64decode')
+
+    rdd_base64decodeUnicode = rdd_base64decode.map(lambda x: x.decode('utf8'))
+    rdd_base64decodeUnicode.saveAsTextFile('out_rdd_base64decodeUnicode')
+
     ### There may be a need to utf8 decode this data ###
-    ### There are values like \xed\xa0\xbd which might be a broken emoji
+    ### There are values like \xed\xa0\xbd which might be a broken
+    ### emoji or check mark
     # 1. break into physical lines
     # 2. turn each line into its own spark row
     # 3. drop any inter-document empty string markers
     rdd_lines = rdd_base64decode.map(lambda x: x.split("\n")).flatMap(lambda l: l).filter(lambda x: len(x)>1)
+    rdd_lines.saveAsTextFile('out_rdd_lines')
 
     def processOneLine(l):
         return l.split("\t")
 
     rdd_triples = rdd_lines.map(lambda l: processOneLine(l))
-    rdd_triples.saveAsTextFile('out_rdd_triples')
 
     def organizeByOrigDoc(triple):
         try:
@@ -412,12 +331,15 @@ def crfprocess(sc, input, output,
 
     rdd_final = rdd_aligned.mapValues(lambda v: json.dumps(v))
 
-    if outputFormat == "sequence":
-        rdd_final.saveAsSequenceFile(output)
-    elif outputFormat == "text":
-        rdd_final.saveAsTextFile(output)
+    if rdd_final.count() > 0:
+        if outputFormat == "sequence":
+            rdd_final.saveAsSequenceFile(output)
+        elif outputFormat == "text":
+            rdd_final.saveAsTextFile(output)
+        else:
+            raise RuntimeError("Unrecognized output format: %s" % outputFormat)
     else:
-        raise RuntimeError("Unrecognized output format: %s" % outputFormat)
+        print "### NO DATA TO WRITE"
 
 def main(argv=None):
     '''this is called if run from command line'''
