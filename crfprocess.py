@@ -243,11 +243,18 @@ def crfprocess(sc, input, output,
     # a, b are now tuples
     # discard the first, concat only the second
     # prefixUri -> serialized representations of all documents with that prefix, in order, concatenated
-    rdd_partition04 = rdd_partition03.reduceByKey(lambda ta,tb: ta[1]+tb[1])
+    # rdd_partition04 = rdd_partition03.reduceByKey(lambda ta,tb: ta[1]+tb[1])
+    # aggregate:
+    # result type U is string
+    # input type V is tuple
+    # merge V into U is lambda v,u: u+v[1]
+    # merge U1 and U2 us lambda u1,u2: u1+u2
+    rdd_partition04 = rdd_partition03.aggregateByKey("", lambda u,v: u+v[1], lambda u1,u2: u1+u2)
     rdd_partition04.saveAsTextFile('out_rdd_partition04')
 
+    # rdd_partition05 = rdd_partition04.mapValues(lambda u: type(u))
     # rdd_partition05 = rdd_partition04.mapValues(lambda u: b64encode(u))
-    rdd_partition05 = rdd_partition04.mapValues(lambda u: type(u))
+    rdd_partition05 = rdd_partition04.map(lambda (k,v): b64encode(v))
     rdd_partition05.saveAsTextFile('out_rdd_partition05')    
     exit(0)
 
