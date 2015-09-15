@@ -191,6 +191,7 @@ def crfprocess(sc, input, output,
                 ]
     # keepUrls.extend(extraUrls[0:37])
     keepUrls.extend(extraUrls[0:3])
+    keepUrls = []
     # print keepUrls
     if keepUrls:
         rdd_crfl = rdd_crfl.filter(lambda (k,v): k in keepUrls)
@@ -312,7 +313,11 @@ def crfprocess(sc, input, output,
     rdd_partition05 = rdd_partition04.map(lambda (k,v): b64encode(v))
     rdd_partition05.saveAsTextFile('out_rdd_partition05')
 
-    keyCount = rdd_partition04.map(lambda (k,v): k).distinct().count()
+    keys = rdd_partition04.keys().distinct().sortBy(lambda x: x).collect()
+    keyCount = len(keys)
+    keyMap = dict(zip(keys, range(keyCount)))
+    rdd_keys = sc.parallelize(keyMap)
+
     print "There are %d keys" % keyCount
 
     # all strings concatenated together, then base64 encoded into one input for crf_test
@@ -321,10 +326,16 @@ def crfprocess(sc, input, output,
     rdd_pipeinput.setName('rdd_pipeinput')
     
     print "repartition to %d" % keyCount
-    rdd_pipeinput = rdd_pipeinput.repartition(keyCount)
-    print rdd_pipeinput.getNumPartitions()
 
+    def myPartitionFunc(k):
+        print "Partition for %r" % k
+        return keyMap[k]
+    
+    rdd_pipeinput = rdd_partition04.repartitionAndSortWithinPartitions(numPartitions=keyCount,
+                                                                       partitionFunc=myPartitionFunc)
+    print rdd_pipeinput.getNumPartitions()
     rdd_pipeinput.saveAsTextFile('out_rdd_pipeinput')
+    exit(0)
 
     # base64 encoded result of running crf_test and filtering to
     # include only word, wordUri, non-null label
