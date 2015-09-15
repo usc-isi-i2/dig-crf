@@ -55,8 +55,9 @@ from base64 import b64encode, b64decode
 
 def extract_body(main_json):
     try:
-        return main_json["hasBodyPart"]["text"]
-    except:
+        text = main_json["hasBodyPart"]["text"]
+        return text
+    except
         pass
 
 def extract_title(main_json):
@@ -119,7 +120,7 @@ def vectorToUTF8(v, debug=False):
     return result.encode('utf-8')
 
 def crfprocess(sc, input, output, 
-               limit=None, location='hdfs', outputFormat="text", numPartitions=None):
+               limit=None, location='hdfs', outputFormat="text", numPartitions=None, hexDigits=3):
 
     configDir = os.path.join(os.path.dirname(__file__), "data/config")
     def configPath(n):
@@ -192,15 +193,18 @@ def crfprocess(sc, input, output,
     # keepUrls.extend(extraUrls[0:37])
     keepUrls.extend(extraUrls[0:3])
     keepUrls = []
+    # this one has odd unicode issues
+    keepUrls = ["http://dig.isi.edu/ht/data/page/442EA3A8B9FF69D65BC8B0D205C8C85204A7C799/1433150174000/processed"]
     # print keepUrls
     if keepUrls:
         rdd_crfl = rdd_crfl.filter(lambda (k,v): k in keepUrls)
-    rdd_crfl.saveAsTextFile('out_rdd_crfl')
+    # rdd_crfl.saveAsTextFile('out_rdd_crfl')
     print "%d input pages" % rdd_crfl.count()
     
     # pageUri -> dict from json
     rdd_json = rdd_crfl.mapValues(lambda x: json.loads(x))
     rdd_json.setName('rdd_json')
+    # rdd_json.saveAsTextFile('out_rdd_json')
 
     # pageUri -> (body tokens, title tokens)
     rdd_texts = rdd_json.mapValues(lambda x: (textTokens(extract_body(x)), textTokens(extract_title(x))))
@@ -266,34 +270,34 @@ def crfprocess(sc, input, output,
     # pageUri -> (python) vector of vectors
     rdd_features = rdd_texts.map(lambda (k,v): (k, makeMatrix(c, k, v[0], v[1])))
     rdd_features.setName('rdd_features')
-    rdd_features.saveAsTextFile('out_rdd_features')
+    # rdd_features.saveAsTextFile('out_rdd_features')
 
     # unicode UTF-8 representation of the feature matrix
     # pageUri -> unicode UTF-8 representation of the feature matrix
     rdd_vector = rdd_features.mapValues(lambda x: vectorToUTF8(x))
     rdd_vector.setName('rdd_vector')
-    rdd_vector.saveAsTextFile('out_rdd_vector')
+    # rdd_vector.saveAsTextFile('out_rdd_vector')
 
     # NEW
     # rdd_partition01 = rdd_vector.sortByKey()
 
-    def generatePrefixKey(uri, hexDigits=3):
+    def generatePrefixKey(uri, hexDigits=hexDigits):
         """http://dig.isi.edu/ht/data/page/0040378735A6B350D3B2F639FF4EE72AE4956171/1433150471000/processed"""
         words = uri.split('/')
-        # first 6 fields + prefix of 7th field
+        # first 6 fields + prefix of 7th field using hexDigits
         # [u'http:', u'', u'dig.isi.edu', u'ht', u'data', u'page', u'004']
         return "/".join(words[0:6] + [words[6][0:hexDigits]])
-      
+
     # e.g. http://dig.isi.edu/ht/data/page/004 -> serialized representation of one document
-    rdd_partition02 = rdd_vector.map(lambda (k,v): (generatePrefixKey(k), v) )
+    # rdd_partition02 = rdd_vector.map(lambda (k,v): (generatePrefixKey(k), v) )
     # e.g. http://dig.isi.edu/ht/data/page/004 -> (<full word uri>, serialized representation of one document)
     rdd_partition02 = rdd_vector.map(lambda (k,v): (generatePrefixKey(k), (k, v) ))
-    rdd_partition02.saveAsTextFile('out_rdd_partition02')
+    # rdd_partition02.saveAsTextFile('out_rdd_partition02')
 
     # performing a full sort now will put group contiguous prefixes; within which order by word index
     # SORTED e.g. http://dig.isi.edu/ht/data/page/004 -> (<full word uri>, serialized representation of one document)
     rdd_partition03 = rdd_partition02.sortBy(lambda x: x)
-    rdd_partition03.saveAsTextFile('out_rdd_partition03')
+    # rdd_partition03.saveAsTextFile('out_rdd_partition03')
 
     # rdd_partition04 = rdd_partition02.reduceByKey(lambda a,b: a+b)
     # a, b are now tuples
@@ -306,12 +310,12 @@ def crfprocess(sc, input, output,
     # merge V into U is lambda v,u: u+v[1]
     # merge U1 and U2 us lambda u1,u2: u1+u2
     rdd_partition04 = rdd_partition03.aggregateByKey("", lambda u,v: u+v[1], lambda u1,u2: u1+u2)
-    rdd_partition04.saveAsTextFile('out_rdd_partition04')
+    # rdd_partition04.saveAsTextFile('out_rdd_partition04')
 
     # rdd_partition05 = rdd_partition04.mapValues(lambda u: type(u))
     # rdd_partition05 = rdd_partition04.mapValues(lambda u: b64encode(u))
-    rdd_partition05 = rdd_partition04.map(lambda (k,v): b64encode(v))
-    rdd_partition05.saveAsTextFile('out_rdd_partition05')
+    # rdd_partition05 = rdd_partition04.map(lambda (k,v): b64encode(v))
+    # rdd_partition05.saveAsTextFile('out_rdd_partition05')
 
     keys = rdd_partition04.keys().distinct().sortBy(lambda x: x).collect()
     keyCount = len(keys)
@@ -320,22 +324,24 @@ def crfprocess(sc, input, output,
 
     print "There are %d keys" % keyCount
 
-    # all strings concatenated together, then base64 encoded into one input for crf_test
-    # rdd_pipeinput = sc.parallelize([b64encode(rdd_vector.reduce(lambda a,b: a+b))])
-    rdd_pipeinput = rdd_partition05
-    rdd_pipeinput.setName('rdd_pipeinput')
-    
     print "repartition to %d" % keyCount
 
     def myPartitionFunc(k):
-        print "Partition for %r" % k
+        # print "Partition for %r" % k
         return keyMap[k]
     
-    rdd_pipeinput = rdd_partition04.repartitionAndSortWithinPartitions(numPartitions=keyCount,
-                                                                       partitionFunc=myPartitionFunc)
-    print rdd_pipeinput.getNumPartitions()
+    rdd_partition06 = rdd_partition04.repartitionAndSortWithinPartitions(numPartitions=keyCount,
+                                                                         partitionFunc=myPartitionFunc)
+    print rdd_partition06.getNumPartitions()
+    # rdd_partition06.saveAsTextFile('out_rdd_partition06')
+
+    # all strings concatenated together, then base64 encoded into one input for crf_test
+    # rdd_pipeinput = sc.parallelize([b64encode(rdd_vector.reduce(lambda a,b: a+b))])
+    # strip off the k, b64encode the v
+    rdd_partition07 = rdd_partition06.map(lambda (k,v): b64encode(v))
+    rdd_pipeinput = rdd_partition07
+    rdd_pipeinput.setName('rdd_pipeinput')
     rdd_pipeinput.saveAsTextFile('out_rdd_pipeinput')
-    exit(0)
 
     # base64 encoded result of running crf_test and filtering to
     # include only word, wordUri, non-null label
@@ -344,8 +350,7 @@ def crfprocess(sc, input, output,
     cmd = "%s %s" % (executable, model)
     rdd_crfoutput = rdd_pipeinput.pipe(cmd)
     rdd_crfoutput.setName('rdd_crfoutput')
-    rdd_crfoutput.saveAsTextFile('out_rdd_crfoutput')
-    exit(0)
+    # rdd_crfoutput.saveAsTextFile('out_rdd_crfoutput')
 
     # base64 decoded to regular serialized string
     #### MIGHT INTRODUCE EXTRA NEWLINES WHEN INPUT IS EMPTY(?)
@@ -356,8 +361,6 @@ def crfprocess(sc, input, output,
     #rdd_base64decodeUnicode.saveAsTextFile('out_rdd_base64decodeUnicode')
 
     ### There may be a need to utf8 decode this data ###
-    ### There are values like \xed\xa0\xbd which might be a broken
-    ### emoji or check mark
     # 1. break into physical lines
     # 2. turn each line into its own spark row
     # 3. drop any inter-document empty string markers
@@ -468,6 +471,7 @@ def main(argv=None):
     parser.add_argument('-i','--input', required=True)
     parser.add_argument('-o','--output', required=True)
     parser.add_argument('-p','--numPartitions', required=False, default=None, type=int)
+    parser.add_argument('-d','--hexDigits', required=False, default=3, type=int)
     parser.add_argument('-l','--limit', required=False, default=None, type=int)
     parser.add_argument('-v','--verbose', required=False, help='verbose', action='store_true')
     args=parser.parse_args()
@@ -496,8 +500,13 @@ def main(argv=None):
                limit=args.limit, 
                location=location,
                outputFormat="sequence",
-               numPartitions=args.numPartitions)
+               numPartitions=args.numPartitions,
+               hexDigits=args.hexDigits)
 
 # call main() if this is run as standalone
 if __name__ == "__main__":
     sys.exit(main())
+
+# STATS
+# With hexDigits=3 (4096 partition buckets), used 1:55 on 4.2 Mb input
+# With hexDigits=2 (256 partition buckets), used 1:18
