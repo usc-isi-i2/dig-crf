@@ -141,8 +141,62 @@ def crfprocess(sc, input, output,
         rdd_crfl = sc.parallelize(rdd_crfl.take(limit))
     if numPartitions:
         rdd_crfl = rdd_crfl.repartition(numPartitions)
-    rdd_crfl.saveAsTextFile('out_rdd_crfl')
 
+    extraUrls = ['http://dig.isi.edu/ht/data/page/0040378735A6B350D3B2F639FF4EE72AE4956171/1433150471000/processed',
+                 'http://dig.isi.edu/ht/data/page/0049B75090747D2C4DCB61802DF0734FEE9C8B83/1433149330000/processed',
+                 'http://dig.isi.edu/ht/data/page/00825019215AF69CAF79C6D363E824B2434EFC56/1433151190000/processed',
+                 'http://dig.isi.edu/ht/data/page/00973747A0EBB56310766C2F92AB4B541C29216D/1433150471000/processed',
+                 'http://dig.isi.edu/ht/data/page/00AC34D8256E5382857287225CC0EED9ACB6D626/1433151011000/processed',
+                 'http://dig.isi.edu/ht/data/page/00BBA909AF6BE8B6D34E06D4FA1AB5FDC1E8A369/1433149749000/processed',
+                 'http://dig.isi.edu/ht/data/page/00D5038C466F0E3DD35476FA9000D8E542E0F3A7/1433149210000/processed',
+                 'http://dig.isi.edu/ht/data/page/011AE8C92F55995225B04BFE9F49DE55B63A7535/1433151914000/processed',
+                 'http://dig.isi.edu/ht/data/page/0130497AAB35FB352769802FCFF38F4B35CDADD7/1433151731000/processed',
+                 'http://dig.isi.edu/ht/data/page/0136BAA641B5C9218022E8F4BA64CC8E6C4AD936/1433150650000/processed',
+                 'http://dig.isi.edu/ht/data/page/019C49526649EFFD17D846BF483AD80AC976ACA9/1433150836000/processed',
+                 'http://dig.isi.edu/ht/data/page/01C6C9F7A6F11E82F0072AD5146569C985DDC2C7/1433152630000/processed',
+                 'http://dig.isi.edu/ht/data/page/01EC0B37FC43F7ED0852C7DFD9E9F26CCA2B50A4/1433151551000/processed',
+                 'http://dig.isi.edu/ht/data/page/01F8BD3AFC358683833438EA8A799B86D443B8AC/1433150949000/processed',
+                 'http://dig.isi.edu/ht/data/page/020920C28559E3762CD10ABDFFACC96DAF73498F/1433152453000/processed',
+                 'http://dig.isi.edu/ht/data/page/0251BCB1E15FFEF314EA038C45DBB8EC70EA312B/1433150533000/processed',
+                 'http://dig.isi.edu/ht/data/page/02980AED176056E108CB780BF8A3E91AC255C3D2/1433151195000/processed',
+                 'http://dig.isi.edu/ht/data/page/029AC5CD904994E92A2F8C575A260E7171EE8EA5/1433150470000/processed',
+                 'http://dig.isi.edu/ht/data/page/02A5E15A77974FF781F65D4D2B0E63BAD6411EE1/1433151678000/processed',
+                 'http://dig.isi.edu/ht/data/page/02EC2BDF097A3A92A82ED53921425E281DAE94BE/1433151913000/processed',
+                 'http://dig.isi.edu/ht/data/page/02F7576D833CD8A4F348A81068E504440BBBAD5B/1433151789000/processed',
+                 'http://dig.isi.edu/ht/data/page/02F7BA08731EB0B2D31EC0CED2CD74934B65504D/1433150050000/processed',
+                 # 'http://dig.isi.edu/ht/data/page/032B6FAE3A382B52B2B2F0EC7209FC2BDCBEA76D/1433150470000/processed',
+                 'http://dig.isi.edu/ht/data/page/034755278BE92A4A9143884D65BFA8D28914FE75/1433152510000/processed',
+                 'http://dig.isi.edu/ht/data/page/0349852C753B08608FC8AD55CF37717D795013CC/1433149450000/processed',
+                 'http://dig.isi.edu/ht/data/page/0373600584CD458D37032C11551AFF9DAB5AF57C/1433152512000/processed',
+                 'http://dig.isi.edu/ht/data/page/03C7576CE8F6E9E833147F68BFE943580B92C971/1433149749000/processed',
+                 'http://dig.isi.edu/ht/data/page/04068BF0B7C159D30E7AD2CB852DC78C795566B4/1433151370000/processed',
+                 'http://dig.isi.edu/ht/data/page/040C117CC97E1A938221F5BF740BAB8B492924A6/1433149932000/processed',
+                 'http://dig.isi.edu/ht/data/page/042DB9654B09A27DAE364B1268BC2AE87A55EE11/1433152751000/processed',
+                 'http://dig.isi.edu/ht/data/page/0434CB3BDFE3839D6CAC6DBE0EBED0278D3634D8/1433149274000/processed',
+                 'http://dig.isi.edu/ht/data/page/0494BCEC507C5D690B956820CDE73A109B9592A3/1433151130000/processed',
+                 'http://dig.isi.edu/ht/data/page/025AB9A386008C3547A502CEA06850CE719EBA48/1433150233000/processed',
+                 'http://dig.isi.edu/ht/data/page/0274CD41F6B4785D6B37238AA9977DD82134ED2C/1433151493000/processed',
+                 'http://dig.isi.edu/ht/data/page/027E0B61F593F53862A4F4AE72228CFE7113BDC6/1433150230000/processed',
+                 'http://dig.isi.edu/ht/data/page/029671BA207576490534B88AF0404AEC6A144B8D/1433150591000/processed',
+                 'http://dig.isi.edu/ht/data/page/0497CC0202C603A25DF1979879333F40730B1FA4/1433151970000/processed',
+                 'http://dig.isi.edu/ht/data/page/04A478ED6F06826CED34D1273005E6D7E50A49F2/1433152454000/processed',
+                 # 'http://dig.isi.edu/ht/data/page/04B4CD61A7E87236B6246DB6CE05B30859661E36/1433151375000/processed'
+                 ]
+    keepUrls = [# contains utf-8/unicode
+                'http://dig.isi.edu/ht/data/page/04B4CD61A7E87236B6246DB6CE05B30859661E36/1433151375000/processed',
+                # generates output
+                'http://dig.isi.edu/ht/data/page/032B6FAE3A382B52B2B2F0EC7209FC2BDCBEA76D/1433150470000/processed',
+                # adding this one seems necessary to cause error
+                # 'http://dig.isi.edu/ht/data/page/00825019215AF69CAF79C6D363E824B2434EFC56/1433151190000/processed'
+                ]
+    # keepUrls.extend(extraUrls[0:37])
+    keepUrls.extend(extraUrls[0:3])
+    # print keepUrls
+    if keepUrls:
+        rdd_crfl = rdd_crfl.filter(lambda (k,v): k in keepUrls)
+    rdd_crfl.saveAsTextFile('out_rdd_crfl')
+    print "%d input pages" % rdd_crfl.count()
+    
     # pageUri -> dict from json
     rdd_json = rdd_crfl.mapValues(lambda x: json.loads(x))
     rdd_json.setName('rdd_json')
@@ -150,6 +204,7 @@ def crfprocess(sc, input, output,
     # pageUri -> (body tokens, title tokens)
     rdd_texts = rdd_json.mapValues(lambda x: (textTokens(extract_body(x)), textTokens(extract_title(x))))
     rdd_texts.setName('rdd_texts')
+    rdd_texts.saveAsTextFile('out_rdd_texts')
 
     # We use the following encoding for values for CRF++'s so-called
     # labels to reduce the data size and complexity of referring to
@@ -255,12 +310,20 @@ def crfprocess(sc, input, output,
     # rdd_partition05 = rdd_partition04.mapValues(lambda u: type(u))
     # rdd_partition05 = rdd_partition04.mapValues(lambda u: b64encode(u))
     rdd_partition05 = rdd_partition04.map(lambda (k,v): b64encode(v))
-    rdd_partition05.saveAsTextFile('out_rdd_partition05')    
-    exit(0)
+    rdd_partition05.saveAsTextFile('out_rdd_partition05')
+
+    keyCount = rdd_partition04.map(lambda (k,v): k).distinct().count()
+    print "There are %d keys" % keyCount
 
     # all strings concatenated together, then base64 encoded into one input for crf_test
-    rdd_pipeinput = sc.parallelize([b64encode(rdd_vector.reduce(lambda a,b: a+b))])
+    # rdd_pipeinput = sc.parallelize([b64encode(rdd_vector.reduce(lambda a,b: a+b))])
+    rdd_pipeinput = rdd_partition05
     rdd_pipeinput.setName('rdd_pipeinput')
+    
+    print "repartition to %d" % keyCount
+    rdd_pipeinput = rdd_pipeinput.repartition(keyCount)
+    print rdd_pipeinput.getNumPartitions()
+
     rdd_pipeinput.saveAsTextFile('out_rdd_pipeinput')
 
     # base64 encoded result of running crf_test and filtering to
@@ -270,13 +333,16 @@ def crfprocess(sc, input, output,
     cmd = "%s %s" % (executable, model)
     rdd_crfoutput = rdd_pipeinput.pipe(cmd)
     rdd_crfoutput.setName('rdd_crfoutput')
+    rdd_crfoutput.saveAsTextFile('out_rdd_crfoutput')
+    exit(0)
 
     # base64 decoded to regular serialized string
+    #### MIGHT INTRODUCE EXTRA NEWLINES WHEN INPUT IS EMPTY(?)
     rdd_base64decode = rdd_crfoutput.map(lambda x: b64decode(x))
     rdd_base64decode.saveAsTextFile('out_rdd_base64decode')
 
-    rdd_base64decodeUnicode = rdd_base64decode.map(lambda x: x.decode('utf8'))
-    rdd_base64decodeUnicode.saveAsTextFile('out_rdd_base64decodeUnicode')
+    #rdd_base64decodeUnicode = rdd_base64decode.map(lambda x: x.decode('utf8'))
+    #rdd_base64decodeUnicode.saveAsTextFile('out_rdd_base64decodeUnicode')
 
     ### There may be a need to utf8 decode this data ###
     ### There are values like \xed\xa0\xbd which might be a broken
