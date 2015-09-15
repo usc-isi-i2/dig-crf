@@ -238,7 +238,6 @@ def crfprocess(sc, input, output,
     rdd_partition03 = rdd_partition02.sortBy(lambda x: x)
     # rdd_partition03.saveAsTextFile('out_rdd_partition03')
 
-    # rdd_partition04 = rdd_partition03.reduceByKey(lambda ta,tb: ta[1]+tb[1])
     # aggregate scheme:
     # result type U is string
     # input type V is tuple
@@ -283,14 +282,14 @@ def crfprocess(sc, input, output,
     # base64 decoded to regular serialized string
     #### MIGHT INTRODUCE EXTRA NEWLINES WHEN INPUT IS EMPTY(?)
     rdd_base64decode = rdd_crfoutput.map(lambda x: b64decode(x))
-    rdd_base64decode.saveAsTextFile('out_rdd_base64decode')
+    # rdd_base64decode.saveAsTextFile('out_rdd_base64decode')
 
     ### There may be a need to utf8 decode this data ###
     # 1. break into physical lines
     # 2. turn each line into its own spark row
     # 3. drop any inter-document empty string markers
     rdd_lines = rdd_base64decode.map(lambda x: x.split("\n")).flatMap(lambda l: l).filter(lambda x: len(x)>1)
-    rdd_lines.saveAsTextFile('out_rdd_lines')
+    # rdd_lines.saveAsTextFile('out_rdd_lines')
 
     def processOneLine(l):
         return l.split("\t")
