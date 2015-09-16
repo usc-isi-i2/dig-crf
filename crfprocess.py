@@ -230,13 +230,13 @@ def crfprocess(sc, input, output,
         return "/".join(words[0:6] + [words[6][0:hexDigits]])
 
     # prefixUri -> (<full word uri>, serialized representation of one document)
-    rdd_partition02 = rdd_vector.map(lambda (k,v): (generatePrefixKey(k), (k, v) ))
-    # rdd_partition02.saveAsTextFile('out_rdd_partition02')
+    rdd_prefixed_unsorted = rdd_vector.map(lambda (k,v): (generatePrefixKey(k), (k, v) ))
+    # rdd_prefixed_unsorted.saveAsTextFile('out_rdd_prefixed_unsorted')
 
     # performing a full sort now will put group contiguous prefixes; within which order by word index
     # SORTED e.g. prefixUri -> (<full word uri>, serialized representation of one document)
-    rdd_partition03 = rdd_partition02.sortBy(lambda x: x)
-    # rdd_partition03.saveAsTextFile('out_rdd_partition03')
+    rdd_prefixed_sorted = rdd_prefixed_unsorted.sortBy(lambda x: x)
+    # rdd_prefixed_sorted.saveAsTextFile('out_rdd_prefixed_sorted')
 
     # aggregate scheme:
     # result type U is string
@@ -244,29 +244,28 @@ def crfprocess(sc, input, output,
     # merge V into U is lambda v,u: u+v[1]
     # merge U1 and U2 us lambda u1,u2: u1+u2
     # prefixUri -> serialized representations of all documents with that prefix, in order, concatenated
-    rdd_partition04 = rdd_partition03.aggregateByKey("", lambda u,v: u+v[1], lambda u1,u2: u1+u2)
-    # rdd_partition04.saveAsTextFile('out_rdd_partition04')
+    rdd_concatenated = rdd_prefixed_sorted.aggregateByKey("", lambda u,v: u+v[1], lambda u1,u2: u1+u2)
+    # rdd_concatenated.saveAsTextFile('out_rdd_concatenated')
 
     # Note: keys are stored here in master, not an RDD
-    keys = rdd_partition04.keys().distinct().sortBy(lambda x: x).collect()
-    keyCount = len(keys)
-    keyMap = dict(zip(keys, range(keyCount)))
+    prefixKeys = rdd_concatenated.keys().distinct().sortBy(lambda x: x).collect()
+    prefixKeyCount = len(prefixKeys)
+    prefixKeyMap = dict(zip(prefixKeys, range(prefixKeyCount)))
 
-    print "Repartitioning to %d prefix keys (of maximum %d) based on prefix size %d" % (keyCount, 16**hexDigits, hexDigits)
-    def myPartitionFunc(k):
+    print "Repartitioning to %d prefix keys (of maximum %d) based on prefix size %d" % (prefixKeyCount, 16**hexDigits, hexDigits)
+    def partitionPerPrefix(k):
         # print "Partition for %r" % k
-        return keyMap[k]
+        return prefixKeyMap[k]
     
-    rdd_partition06 = rdd_partition04.repartitionAndSortWithinPartitions(numPartitions=keyCount,
-                                                                         partitionFunc=myPartitionFunc)
-    print rdd_partition06.getNumPartitions()
-    # rdd_partition06.saveAsTextFile('out_rdd_partition06')
+    rdd_prefixedToPayload = rdd_concatenated.repartitionAndSortWithinPartitions(numPartitions=prefixKeyCount,
+                                                                          partitionFunc=partitionPerPrefix)
+    print rdd_prefixedToPayload.getNumPartitions()
+    # rdd_prefixedToPayload.saveAsTextFile('out_rdd_prefixedToPayload')
 
     # all strings concatenated together, then base64 encoded into one input for crf_test
     # rdd_pipeinput = sc.parallelize([b64encode(rdd_vector.reduce(lambda a,b: a+b))])
     # strip off the k, b64encode the v
-    rdd_partition07 = rdd_partition06.map(lambda (k,v): b64encode(v))
-    rdd_pipeinput = rdd_partition07
+    rdd_pipeinput = rdd_prefixedToPayload.map(lambda (k,v): b64encode(v))
     rdd_pipeinput.setName('rdd_pipeinput')
     # rdd_pipeinput.saveAsTextFile('out_rdd_pipeinput')
 
@@ -275,13 +274,13 @@ def crfprocess(sc, input, output,
     executable = SparkFiles.get(os.path.basename(crfExecutable))
     model = SparkFiles.get(os.path.basename(crfModelFilename))
     cmd = "%s %s" % (executable, model)
-    rdd_crfoutput = rdd_pipeinput.pipe(cmd)
-    rdd_crfoutput.setName('rdd_crfoutput')
-    # rdd_crfoutput.saveAsTextFile('out_rdd_crfoutput')
+    rdd_pipeoutput = rdd_pipeinput.pipe(cmd)
+    rdd_pipeoutput.setName('rdd_pipeoutput')
+    # rdd_pipeoutput.saveAsTextFile('out_rdd_pipeoutput')
 
     # base64 decoded to regular serialized string
     #### MIGHT INTRODUCE EXTRA NEWLINES WHEN INPUT IS EMPTY(?)
-    rdd_base64decode = rdd_crfoutput.map(lambda x: b64decode(x))
+    rdd_base64decode = rdd_pipeoutput.map(lambda x: b64decode(x))
     # rdd_base64decode.saveAsTextFile('out_rdd_base64decode')
 
     ### There may be a need to utf8 decode this data ###
