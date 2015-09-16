@@ -134,10 +134,12 @@ def crfprocess(sc, input, output,
         rdd_crfl = sc.parallelize(rdd_crfl.take(limit))
     if numPartitions:
         rdd_crfl = rdd_crfl.repartition(numPartitions)
-    keepUrls = []
-    keepUrls = ['http://dig.isi.edu/ht/data/page/442EA3A8B9FF69D65BC8B0D205C8C85204A7C799/1433150174000/processed']
-    if keepUrls:
-        rdd_crfl = rdd_crfl.filter(lambda (k,v): k in keepUrls)
+    # For debugging
+    # If set, only those URIs so listed are used, everything else is rejected
+    keepUris = []
+    # keepUris = ['http://dig.isi.edu/ht/data/page/442EA3A8B9FF69D65BC8B0D205C8C85204A7C799/1433150174000/processed']
+    if keepUris:
+        rdd_crfl = rdd_crfl.filter(lambda (k,v): k in keepUris)
     # rdd_crfl.saveAsTextFile('out_rdd_crfl')
     print "### Processing %d input pages, initially into %s partitions" % (rdd_crfl.count(), rdd_crfl.getNumPartitions())
     
@@ -273,13 +275,7 @@ def crfprocess(sc, input, output,
     model = SparkFiles.get(os.path.basename(crfModelFilename))
     cmd = "%s %s" % (executable, model)
     pipeRetries = 3
-    while pipeRetries:
-        try:
-            rdd_pipeoutput = rdd_pipeinput.pipe(cmd, checkCode=True)
-            break
-        except Exception as e:
-            print >> sys.stderr, "Exception %r encountered" % e
-            pipeRetries += -1
+    rdd_pipeoutput = rdd_pipeinput.pipe(cmd)
     rdd_pipeoutput.setName('rdd_pipeoutput')
     # rdd_pipeoutput.saveAsTextFile('out_rdd_pipeoutput')
 
