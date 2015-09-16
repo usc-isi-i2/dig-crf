@@ -16,14 +16,6 @@ from htmltoken import tokenize
 import crf_features
 from base64 import b64encode, b64decode
 
-# configDir = os.path.join(os.path.dirname(__file__), "data/config")
-# def configPath(n):
-#     return os.path.join(configDir, n)
-# smHairColor = HybridJaccard(ref_path=configPath("hairColor_reference_wiki.txt"),
-#                            config_path=configPath("hairColor_config.txt"))
-# print smHairColor.findBestMatch("redhead")
-# exit(0)
-
 """We could build this (v1) ES JSON directly or provide enough info for Karma to do it:
 
          {
@@ -142,8 +134,12 @@ def crfprocess(sc, input, output,
         rdd_crfl = sc.parallelize(rdd_crfl.take(limit))
     if numPartitions:
         rdd_crfl = rdd_crfl.repartition(numPartitions)
+    keepUrls = []
+    keepUrls = ['http://dig.isi.edu/ht/data/page/442EA3A8B9FF69D65BC8B0D205C8C85204A7C799/1433150174000/processed']
+    if keepUrls:
+        rdd_crfl = rdd_crfl.filter(lambda (k,v): k in keepUrls)
     # rdd_crfl.saveAsTextFile('out_rdd_crfl')
-    print "Processing %d input pages, initially into %s partitions" % (rdd_crfl.count(), rdd_crfl.getNumPartitions())
+    print "### Processing %d input pages, initially into %s partitions" % (rdd_crfl.count(), rdd_crfl.getNumPartitions())
     
     # pageUri -> dict from json
     rdd_json = rdd_crfl.mapValues(lambda x: json.loads(x))
@@ -231,11 +227,13 @@ def crfprocess(sc, input, output,
 
     # prefixUri -> (<full word uri>, serialized representation of one document)
     rdd_prefixed_unsorted = rdd_vector.map(lambda (k,v): (generatePrefixKey(k), (k, v) ))
+    rdd_prefixed_unsorted.setName('rdd_prefixed_unsorted')
     # rdd_prefixed_unsorted.saveAsTextFile('out_rdd_prefixed_unsorted')
 
     # performing a full sort now will put group contiguous prefixes; within which order by word index
     # SORTED e.g. prefixUri -> (<full word uri>, serialized representation of one document)
     rdd_prefixed_sorted = rdd_prefixed_unsorted.sortBy(lambda x: x)
+    rdd_prefixed_sorted.setName('rdd_prefixed_sorted')
     # rdd_prefixed_sorted.saveAsTextFile('out_rdd_prefixed_sorted')
 
     # aggregate scheme:
@@ -245,21 +243,21 @@ def crfprocess(sc, input, output,
     # merge U1 and U2 us lambda u1,u2: u1+u2
     # prefixUri -> serialized representations of all documents with that prefix, in order, concatenated
     rdd_concatenated = rdd_prefixed_sorted.aggregateByKey("", lambda u,v: u+v[1], lambda u1,u2: u1+u2)
+    rdd_concatenated.setName('rdd_concatenated')
     # rdd_concatenated.saveAsTextFile('out_rdd_concatenated')
 
-    # Note: keys are stored here in master, not an RDD
+    # Note: keys are stored here in master, not an RDD.  Is this scalable?
     prefixKeys = rdd_concatenated.keys().distinct().sortBy(lambda x: x).collect()
     prefixKeyCount = len(prefixKeys)
     prefixKeyMap = dict(zip(prefixKeys, range(prefixKeyCount)))
 
-    print "Repartitioning to %d prefix keys (of maximum %d) based on prefix size %d" % (prefixKeyCount, 16**hexDigits, hexDigits)
+    print "### Repartitioning to %d prefix keys (of maximum %d) based on prefix size %d" % (prefixKeyCount, 16**hexDigits, hexDigits)
     def partitionPerPrefix(k):
-        # print "Partition for %r" % k
         return prefixKeyMap[k]
     
     rdd_prefixedToPayload = rdd_concatenated.repartitionAndSortWithinPartitions(numPartitions=prefixKeyCount,
-                                                                          partitionFunc=partitionPerPrefix)
-    print rdd_prefixedToPayload.getNumPartitions()
+                                                                                partitionFunc=partitionPerPrefix)
+    rdd_prefixedToPayload.setName('rdd_prefixedToPayload')
     # rdd_prefixedToPayload.saveAsTextFile('out_rdd_prefixedToPayload')
 
     # all strings concatenated together, then base64 encoded into one input for crf_test
@@ -274,13 +272,21 @@ def crfprocess(sc, input, output,
     executable = SparkFiles.get(os.path.basename(crfExecutable))
     model = SparkFiles.get(os.path.basename(crfModelFilename))
     cmd = "%s %s" % (executable, model)
-    rdd_pipeoutput = rdd_pipeinput.pipe(cmd)
+    pipeRetries = 3
+    while pipeRetries:
+        try:
+            rdd_pipeoutput = rdd_pipeinput.pipe(cmd, checkCode=True)
+            break
+        except Exception as e:
+            print >> sys.stderr, "Exception %r encountered" % e
+            pipeRetries += -1
     rdd_pipeoutput.setName('rdd_pipeoutput')
     # rdd_pipeoutput.saveAsTextFile('out_rdd_pipeoutput')
 
     # base64 decoded to regular serialized string
     #### MIGHT INTRODUCE EXTRA NEWLINES WHEN INPUT IS EMPTY(?)
     rdd_base64decode = rdd_pipeoutput.map(lambda x: b64decode(x))
+    rdd_base64decode.setName('rdd_base64decode')
     # rdd_base64decode.saveAsTextFile('out_rdd_base64decode')
 
     ### There may be a need to utf8 decode this data ###
@@ -288,11 +294,14 @@ def crfprocess(sc, input, output,
     # 2. turn each line into its own spark row
     # 3. drop any inter-document empty string markers
     rdd_lines = rdd_base64decode.map(lambda x: x.split("\n")).flatMap(lambda l: l).filter(lambda x: len(x)>1)
+    rdd_lines.setName('rdd_lines')
     # rdd_lines.saveAsTextFile('out_rdd_lines')
 
     def processOneLine(l):
         return l.split("\t")
     rdd_triples = rdd_lines.map(lambda l: processOneLine(l))
+    rdd_triples.setName('rdd_triples')
+    # rdd_triples.saveAsTextFile('out_rdd_triples')
 
     def organizeByOrigDoc(triple):
         try:
@@ -304,15 +313,19 @@ def crfprocess(sc, input, output,
             return ()
 
     rdd_reorg = rdd_triples.map(lambda l: organizeByOrigDoc(l))
+    rdd_reorg.setName('rdd_reorg')
     # rdd_reorg.saveAsTextFile('out_rdd_reorg')
 
     rdd_sorted = rdd_reorg.sortByKey()
+    rdd_sorted.setName('rdd_sorted')
     # rdd_sorted.saveAsTextFile('out_rdd_sorted')
 
     # each (parentUri, docId) has a sequence of (wordId, word, label)
     # we want to consider them in order (by wordId)
 
     rdd_grouped = rdd_sorted.groupByKey()
+    rdd_grouped.setName('rdd_grouped')
+    # rdd_grouped.saveAsTextFile('out_rdd_grouped')
 
     def harvest(seq):
         allSpans = []
@@ -349,11 +362,13 @@ def crfprocess(sc, input, output,
             
     # ( (parentUri, docId), [ (words1, category1), (words2, category2), ... ]
     rdd_harvest = rdd_grouped.mapValues(lambda s: harvest(s))
+    rdd_harvest.setName('rdd_harvest')
     # rdd_harvest.saveAsTextFile('out_rdd_harvest')
 
     # parentUri -> (words, category)
     # we use .distinct() because (e.g.) both title and body might have the same feature
     rdd_flat = rdd_harvest.map(lambda r: (r[0][0], r[1])).flatMapValues(lambda x: x).distinct()
+    rdd_flat.setName('rdd_flat')
     # rdd_flat.saveAsTextFile('out_rdd_flat')
 
     smEyeColor = HybridJaccard(ref_path=configPath("eyeColor_reference_wiki.txt"),
@@ -370,9 +385,12 @@ def crfprocess(sc, input, output,
                 "featureValue": hybridJaccards[category](words)}
 
     rdd_aligned = rdd_flat.mapValues(lambda v: jaccard(v))
+    rdd_aligned.setName('rdd_aligned')
     # rdd_aligned.saveAsTextFile('out_rdd_aligned')
 
     rdd_final = rdd_aligned.mapValues(lambda v: json.dumps(v))
+    rdd_final.setName('rdd_final')
+    # rdd_final.saveAsTextFile('out_rdd_final')
 
     if rdd_final.count() > 0:
         if outputFormat == "sequence":
