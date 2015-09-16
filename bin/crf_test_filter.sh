@@ -37,16 +37,24 @@ CRFTEST=crf_test
 
 # base64 -D -d ${INPUT} | $CRFTEST -m ${MODEL} | $GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' | $GGREP -Pva '\tO$' | cut -f 1,25,26 | base64 -d
 
-# base64 -D ${INPUT} | $CRFTEST -m ${MODEL} | $GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' | $GGREP -Pva '\tO$' | cut -f 1,25,26 | base64
+# base64 -D ${INPUT} | $CRFTEST -m ${MODEL} | $GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' | $GGREP -Pva '\tO$' | cut -f 1,25,26 | python -m base64 -d
 
-R=${RANDOM}-$$
+# alternative for base64 could be python -m base64
 
-base64 -D -i ${INPUT} -o /tmp/$R.un64
-$CRFTEST -m ${MODEL} /tmp/$R.un64 > /tmp/$R.crf
-$GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' /tmp/$R.crf > /tmp/$R.lines
-$GGREP -Pva '\tO$' /tmp/$R.lines > /tmp/$R.keep
-cut -f 1,25,26 /tmp/$R.keep > /tmp/$R.cut
-base64 /tmp/$R.cut -o - > /tmp/$R.b64
-sleep 0.1
-cat /tmp/$R.b64
-rm /tmp/$R*
+# base64 -D ${INPUT} | $CRFTEST -m ${MODEL} | $GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' | $GGREP -Pva '\tO$' | cut -f 1,25,26 | python -c 'import sys,base64; print base64.standard_b64encode(sys.stdin.read()).strip()'
+
+# base64 -D ${INPUT} | $CRFTEST -m ${MODEL} | $GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' | $GGREP -Pva '\tO$' | cut -f 1,25,26 | python -c 'import sys,base64; sys.stdout.write(base64.standard_b64encode(sys.stdin.read()))'
+
+cat ${INPUT} | python -c 'import sys,base64; sys.stdout.write(base64.standard_b64decode(sys.stdin.read()))' | $CRFTEST -m ${MODEL} | $GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' | $GGREP -Pva '\tO$' | cut -f 1,25,26 | python -c 'import sys,base64; sys.stdout.write(base64.standard_b64encode(sys.stdin.read()))'
+
+# R=${RANDOM}-$$
+
+# base64 -D -i ${INPUT} -o /tmp/$R.un64
+# $CRFTEST -m ${MODEL} /tmp/$R.un64 > /tmp/$R.crf
+# $GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' /tmp/$R.crf > /tmp/$R.lines
+# $GGREP -Pva '\tO$' /tmp/$R.lines > /tmp/$R.keep
+# cut -f 1,25,26 /tmp/$R.keep > /tmp/$R.cut
+# base64 /tmp/$R.cut -o - > /tmp/$R.b64
+# sleep 0.1
+# cat /tmp/$R.b64
+# rm /tmp/$R*
