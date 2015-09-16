@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# exit on any error
+set -e
+
 # Find appropriate Gnu grep which fully supports -P
 
 ARCH=`uname -s`
@@ -32,5 +35,18 @@ CRFTEST=crf_test
 # finally, retain only columns 1 (input word), 25 (uri), 26 (label)
 # probably this depends on the number of features, and thus should be columns 1, -2, -1 instead
 
-base64 -D ${INPUT} | $CRFTEST -m ${MODEL} | $GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' | $GGREP -Pva '\tO$' | cut -f 1,25,26 | base64
+# base64 -D -d ${INPUT} | $CRFTEST -m ${MODEL} | $GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' | $GGREP -Pva '\tO$' | cut -f 1,25,26 | base64 -d
 
+# base64 -D ${INPUT} | $CRFTEST -m ${MODEL} | $GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' | $GGREP -Pva '\tO$' | cut -f 1,25,26 | base64
+
+R=${RANDOM}-$$
+
+base64 -D -i ${INPUT} -o /tmp/$R.un64
+$CRFTEST -m ${MODEL} /tmp/$R.un64 > /tmp/$R.crf
+$GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' /tmp/$R.crf > /tmp/$R.lines
+$GGREP -Pva '\tO$' /tmp/$R.lines > /tmp/$R.keep
+cut -f 1,25,26 /tmp/$R.keep > /tmp/$R.cut
+base64 /tmp/$R.cut -o - > /tmp/$R.b64
+sleep 0.1
+cat /tmp/$R.b64
+rm /tmp/$R*
