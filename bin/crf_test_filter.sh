@@ -35,26 +35,17 @@ CRFTEST=crf_test
 # finally, retain only columns 1 (input word), 25 (uri), 26 (label)
 # probably this depends on the number of features, and thus should be columns 1, -2, -1 instead
 
-# base64 -D -d ${INPUT} | $CRFTEST -m ${MODEL} | $GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' | $GGREP -Pva '\tO$' | cut -f 1,25,26 | base64 -d
-
-# base64 -D ${INPUT} | $CRFTEST -m ${MODEL} | $GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' | $GGREP -Pva '\tO$' | cut -f 1,25,26 | python -m base64 -d
-
-# alternative for base64 could be python -m base64
-
-# base64 -D ${INPUT} | $CRFTEST -m ${MODEL} | $GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' | $GGREP -Pva '\tO$' | cut -f 1,25,26 | python -c 'import sys,base64; print base64.standard_b64encode(sys.stdin.read()).strip()'
-
-# base64 -D ${INPUT} | $CRFTEST -m ${MODEL} | $GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' | $GGREP -Pva '\tO$' | cut -f 1,25,26 | python -c 'import sys,base64; sys.stdout.write(base64.standard_b64encode(sys.stdin.read()))'
+# alternatives for encoding/decoding base64
+# (1) use unix base64/base64 -D executables
+# -- seems to stall in pipeline about 0.5% of the time: so we reimplemented
+# -- attempted to write to intermediate files, didn't seem to work reliably
+# (2) python -m base64
+# -- mostly works
+# -- by default, prints output in 76-column lines
+# -- I don't know the syntax for decoding
+# (3) python -c
+# (4) perl (untested)
+# (5) openssl (untested)
+# (6) python using base64 as an encoding: payload.encode('base64') (untested)
 
 cat ${INPUT} | python -c 'import sys,base64; sys.stdout.write(base64.standard_b64decode(sys.stdin.read()))' | $CRFTEST -m ${MODEL} | $GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' | $GGREP -Pva '\tO$' | cut -f 1,25,26 | python -c 'import sys,base64; sys.stdout.write(base64.standard_b64encode(sys.stdin.read()))'
-
-# R=${RANDOM}-$$
-
-# base64 -D -i ${INPUT} -o /tmp/$R.un64
-# $CRFTEST -m ${MODEL} /tmp/$R.un64 > /tmp/$R.crf
-# $GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' /tmp/$R.crf > /tmp/$R.lines
-# $GGREP -Pva '\tO$' /tmp/$R.lines > /tmp/$R.keep
-# cut -f 1,25,26 /tmp/$R.keep > /tmp/$R.cut
-# base64 /tmp/$R.cut -o - > /tmp/$R.b64
-# sleep 0.1
-# cat /tmp/$R.b64
-# rm /tmp/$R*
