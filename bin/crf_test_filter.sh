@@ -48,4 +48,4 @@ CRFTEST=crf_test
 # (5) openssl (untested)
 # (6) python using base64 as an encoding: payload.encode('base64') (untested)
 
-cat ${INPUT} | python -c 'import sys,base64; sys.stdout.write(base64.standard_b64decode(sys.stdin.read()))' | $CRFTEST -m ${MODEL} | $GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' | $GGREP -Pva '\tO$' | cut -f 1,25,26 | python -c 'import sys,base64; sys.stdout.write(base64.standard_b64encode(sys.stdin.read()))'
+cat ${INPUT} | python -c 'import sys,base64; sys.stdout.write(base64.standard_b64decode(sys.stdin.read()))' | $CRFTEST -m ${MODEL} | $GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' | $GGREP -Pva '\tO$' | awk 'BEGIN {FS="\t"; OFS="\t"} {print $1,$(NF-1),$(NF)}' | python -c 'import sys,base64; sys.stdout.write(base64.standard_b64encode(sys.stdin.read()))'
