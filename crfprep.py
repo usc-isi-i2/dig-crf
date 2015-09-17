@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 try:
-    from pyspark import SparkContext
+    from pyspark import SparkContext, SparkFiles
 except:
     print "### NO PYSPARK"
 import sys
@@ -164,6 +164,9 @@ def crfprep(sc, inputFilename, outputDirectory,
             limit=LIMIT, location='hdfs', outputFormat="text", partitions=None):
     crfConfigDir = os.path.join(os.path.dirname(__file__), "data/config")
     featureListFilename = os.path.join(crfConfigDir, "features.hair-eye")
+    crfConfigDir = os.path.join(os.path.dirname(__file__), "data/config")
+    crfExecutable = "/usr/local/bin/crf_test_filter.sh"
+    crfModelFilename = os.path.join(crfConfigDir, "dig-hair-eye-train.model")
 
     rdd_sequence_file_input = sc.sequenceFile(inputFilename)
     rdd_sequence_file_input.setName('rdd_sequence_file_input')
@@ -230,9 +233,17 @@ def crfprep(sc, inputFilename, outputDirectory,
 
     rdd_pipeinput = rdd_features.mapValues(lambda x: vectorToUTF8(x)).values()
     rdd_pipeinput.setName('rdd_pipeinput')
+
+    if location == 'hdfs':
+        cmd = "%s %s" % (os.path.basename(crfExecutable), os.path.basename(crfModelFilename))
+    elif location == 'local':
+        cmd = "%s %s" % (SparkFiles.get(os.path.basename(crfExecutable)), SparkFiles.get(os.path.basename(crfModelFilename)))
+    print "###CMD %s" % cmd
+    rdd_crfoutput = rdd_pipeinput.pipe(cmd)
+    rdd_crfoutput.setName('rdd_crfoutput')
     # rdd_features.persist()
     
-    rdd_final = rdd_pipeinput
+    rdd_final = rdd_crfoutput
     if outputFormat == "sequence":
         rdd_final.saveAsSequenceFile(outputDirectory)
     elif outputFormat == "text":
