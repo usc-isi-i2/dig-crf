@@ -15,6 +15,7 @@ import cgi
 from htmltoken import tokenize
 import crf_features
 from base64 import b64encode, b64decode
+from random import randint
 
 """We could build this (v1) ES JSON directly or provide enough info for Karma to do it:
 
@@ -112,7 +113,7 @@ def vectorToUTF8(v, debug=False):
     return result.encode('utf-8')
 
 def crfprocess(sc, input, output, 
-               limit=None, location='hdfs', outputFormat="text", numPartitions=None, hexDigits=3):
+               limit=None, debug=False, location='hdfs', outputFormat="text", numPartitions=None, hexDigits=3):
 
     configDir = os.path.join(os.path.dirname(__file__), "data/config")
     def configPath(n):
@@ -120,6 +121,13 @@ def crfprocess(sc, input, output,
     binDir = os.path.join(os.path.dirname(__file__), "bin")
     def binPath(n):
         return os.path.join(binDir, n)
+
+    if debug:
+        debugOutput = output + '_debug'
+    def debugDump(rdd):
+        if debug:
+            outdir = os.path.join(debugOutput, rdd.name() or "anonymous-%d" % randint(10000,99999))
+            rdd.saveAsTextFile(outdir)
 
     featureListFilename = configPath("features.hair-eye")
     crfExecutable = binPath("crf_test_filter.sh")
@@ -140,18 +148,18 @@ def crfprocess(sc, input, output,
     # keepUris = ['http://dig.isi.edu/ht/data/page/442EA3A8B9FF69D65BC8B0D205C8C85204A7C799/1433150174000/processed']
     if keepUris:
         rdd_crfl = rdd_crfl.filter(lambda (k,v): k in keepUris)
-    # rdd_crfl.saveAsTextFile('out_rdd_crfl')
+    debugDump(rdd_crfl)
     print "### Processing %d input pages, initially into %s partitions" % (rdd_crfl.count(), rdd_crfl.getNumPartitions())
     
     # pageUri -> dict from json
     rdd_json = rdd_crfl.mapValues(lambda x: json.loads(x))
     rdd_json.setName('rdd_json')
-    # rdd_json.saveAsTextFile('out_rdd_json')
+    debugDump(rdd_json)
 
     # pageUri -> (body tokens, title tokens)
     rdd_texts = rdd_json.mapValues(lambda x: (textTokens(extract_body(x)), textTokens(extract_title(x))))
     rdd_texts.setName('rdd_texts')
-    # rdd_texts.saveAsTextFile('out_rdd_texts')
+    debugDump(rdd_texts)
 
     # We use the following encoding for values for CRF++'s so-called
     # labels to reduce the data size and complexity of referring to
@@ -212,13 +220,13 @@ def crfprocess(sc, input, output,
     # pageUri -> (python) vector of vectors
     rdd_features = rdd_texts.map(lambda (k,v): (k, makeMatrix(c, k, v[0], v[1])))
     rdd_features.setName('rdd_features')
-    # rdd_features.saveAsTextFile('out_rdd_features')
+    debugDump(rdd_features)
 
     # unicode UTF-8 representation of the feature matrix
     # pageUri -> unicode UTF-8 representation of the feature matrix
     rdd_vector = rdd_features.mapValues(lambda x: vectorToUTF8(x))
     rdd_vector.setName('rdd_vector')
-    # rdd_vector.saveAsTextFile('out_rdd_vector')
+    debugDump(rdd_vector)
 
     def generatePrefixKey(uri, hexDigits=hexDigits):
         """http://dig.isi.edu/ht/data/page/0040378735A6B350D3B2F639FF4EE72AE4956171/1433150471000/processed"""
@@ -230,13 +238,13 @@ def crfprocess(sc, input, output,
     # prefixUri -> (<full word uri>, serialized representation of one document)
     rdd_prefixed_unsorted = rdd_vector.map(lambda (k,v): (generatePrefixKey(k), (k, v) ))
     rdd_prefixed_unsorted.setName('rdd_prefixed_unsorted')
-    # rdd_prefixed_unsorted.saveAsTextFile('out_rdd_prefixed_unsorted')
+    debugDump(rdd_prefixed_unsorted)
 
     # performing a full sort now will put group contiguous prefixes; within which order by word index
     # SORTED e.g. prefixUri -> (<full word uri>, serialized representation of one document)
     rdd_prefixed_sorted = rdd_prefixed_unsorted.sortBy(lambda x: x)
     rdd_prefixed_sorted.setName('rdd_prefixed_sorted')
-    # rdd_prefixed_sorted.saveAsTextFile('out_rdd_prefixed_sorted')
+    debugDump(rdd_prefixed_sorted)
 
     # aggregate scheme:
     # result type U is string
@@ -246,7 +254,7 @@ def crfprocess(sc, input, output,
     # prefixUri -> serialized representations of all documents with that prefix, in order, concatenated
     rdd_concatenated = rdd_prefixed_sorted.aggregateByKey("", lambda u,v: u+v[1], lambda u1,u2: u1+u2)
     rdd_concatenated.setName('rdd_concatenated')
-    # rdd_concatenated.saveAsTextFile('out_rdd_concatenated')
+    debugDump(rdd_concatenated)
 
     # Note: keys are stored here in master, not an RDD.  Is this scalable?
     prefixKeys = rdd_concatenated.keys().distinct().sortBy(lambda x: x).collect()
@@ -260,30 +268,29 @@ def crfprocess(sc, input, output,
     rdd_prefixedToPayload = rdd_concatenated.repartitionAndSortWithinPartitions(numPartitions=prefixKeyCount,
                                                                                 partitionFunc=partitionPerPrefix)
     rdd_prefixedToPayload.setName('rdd_prefixedToPayload')
-    # rdd_prefixedToPayload.saveAsTextFile('out_rdd_prefixedToPayload')
+    debugDump(rdd_prefixedToPayload)
 
     # all strings concatenated together, then base64 encoded into one input for crf_test
     # rdd_pipeinput = sc.parallelize([b64encode(rdd_vector.reduce(lambda a,b: a+b))])
     # strip off the k, b64encode the v
     rdd_pipeinput = rdd_prefixedToPayload.map(lambda (k,v): b64encode(v))
     rdd_pipeinput.setName('rdd_pipeinput')
-    # rdd_pipeinput.saveAsTextFile('out_rdd_pipeinput')
+    debugDump(rdd_pipeinput)
 
     # base64 encoded result of running crf_test and filtering to
     # include only word, wordUri, non-null label
     executable = SparkFiles.get(os.path.basename(crfExecutable))
     model = SparkFiles.get(os.path.basename(crfModelFilename))
     cmd = "%s %s" % (executable, model)
-    pipeRetries = 3
     rdd_pipeoutput = rdd_pipeinput.pipe(cmd)
     rdd_pipeoutput.setName('rdd_pipeoutput')
-    # rdd_pipeoutput.saveAsTextFile('out_rdd_pipeoutput')
+    debugDump(rdd_pipeoutput)
 
     # base64 decoded to regular serialized string
     #### MIGHT INTRODUCE EXTRA NEWLINES WHEN INPUT IS EMPTY(?)
     rdd_base64decode = rdd_pipeoutput.map(lambda x: b64decode(x))
     rdd_base64decode.setName('rdd_base64decode')
-    # rdd_base64decode.saveAsTextFile('out_rdd_base64decode')
+    debugDump(rdd_base64decode)
 
     ### There may be a need to utf8 decode this data ###
     # 1. break into physical lines
@@ -291,13 +298,13 @@ def crfprocess(sc, input, output,
     # 3. drop any inter-document empty string markers
     rdd_lines = rdd_base64decode.map(lambda x: x.split("\n")).flatMap(lambda l: l).filter(lambda x: len(x)>1)
     rdd_lines.setName('rdd_lines')
-    # rdd_lines.saveAsTextFile('out_rdd_lines')
+    debugDump(rdd_lines)
 
     def processOneLine(l):
         return l.split("\t")
     rdd_triples = rdd_lines.map(lambda l: processOneLine(l))
     rdd_triples.setName('rdd_triples')
-    # rdd_triples.saveAsTextFile('out_rdd_triples')
+    debugDump(rdd_triples)
 
     def organizeByOrigDoc(triple):
         try:
@@ -310,18 +317,18 @@ def crfprocess(sc, input, output,
 
     rdd_reorg = rdd_triples.map(lambda l: organizeByOrigDoc(l))
     rdd_reorg.setName('rdd_reorg')
-    # rdd_reorg.saveAsTextFile('out_rdd_reorg')
+    debugDump(rdd_reorg)
 
     rdd_sorted = rdd_reorg.sortByKey()
     rdd_sorted.setName('rdd_sorted')
-    # rdd_sorted.saveAsTextFile('out_rdd_sorted')
+    debugDump(rdd_sorted)
 
     # each (parentUri, docId) has a sequence of (wordId, word, label)
     # we want to consider them in order (by wordId)
 
     rdd_grouped = rdd_sorted.groupByKey()
     rdd_grouped.setName('rdd_grouped')
-    # rdd_grouped.saveAsTextFile('out_rdd_grouped')
+    debugDump(rdd_grouped)
 
     def harvest(seq):
         allSpans = []
@@ -359,13 +366,13 @@ def crfprocess(sc, input, output,
     # ( (parentUri, docId), [ (words1, category1), (words2, category2), ... ]
     rdd_harvest = rdd_grouped.mapValues(lambda s: harvest(s))
     rdd_harvest.setName('rdd_harvest')
-    # rdd_harvest.saveAsTextFile('out_rdd_harvest')
+    debugDump(rdd_harvest)
 
     # parentUri -> (words, category)
     # we use .distinct() because (e.g.) both title and body might have the same feature
     rdd_flat = rdd_harvest.map(lambda r: (r[0][0], r[1])).flatMapValues(lambda x: x).distinct()
     rdd_flat.setName('rdd_flat')
-    # rdd_flat.saveAsTextFile('out_rdd_flat')
+    debugDump(rdd_flat)
 
     smEyeColor = HybridJaccard(ref_path=configPath("eyeColor_reference_wiki.txt"),
                                config_path=configPath("eyeColor_config.txt"))
@@ -378,15 +385,18 @@ def crfprocess(sc, input, output,
     def jaccard(tpl):
         (words, category) = tpl
         return {"featureName": featureNames[category], 
-                "featureValue": hybridJaccards[category](words)}
+                "featureValue": hybridJaccards[category](words),
+                # intended to support parametrization/provenance
+                "featureDefinitionFile": os.path.basename(featureListFilename),
+                "featureCrfModelFile": os.path.basename(crfModelFilename)}
 
     rdd_aligned = rdd_flat.mapValues(lambda v: jaccard(v))
     rdd_aligned.setName('rdd_aligned')
-    # rdd_aligned.saveAsTextFile('out_rdd_aligned')
+    debugDump(rdd_aligned)
 
     rdd_final = rdd_aligned.mapValues(lambda v: json.dumps(v))
     rdd_final.setName('rdd_final')
-    # rdd_final.saveAsTextFile('out_rdd_final')
+    debugDump(rdd_final)
 
     if rdd_final.count() > 0:
         if outputFormat == "sequence":
@@ -407,6 +417,7 @@ def main(argv=None):
     parser.add_argument('-d','--hexDigits', required=False, default=3, type=int)
     parser.add_argument('-l','--limit', required=False, default=None, type=int)
     parser.add_argument('-v','--verbose', required=False, help='verbose', action='store_true')
+    parser.add_argument('-z','--debug', required=False, help='debug', action='store_true')
     args=parser.parse_args()
 
     location = "hdfs"
@@ -430,7 +441,8 @@ def main(argv=None):
 
     sc = SparkContext(appName="crfprocess")
     crfprocess(sc, args.input, args.output, 
-               limit=args.limit, 
+               debug=args.debug,
+               limit=args.limit,
                location=location,
                outputFormat="sequence",
                numPartitions=args.numPartitions,
@@ -440,6 +452,8 @@ def main(argv=None):
 if __name__ == "__main__":
     sys.exit(main())
 
-# STATS
-# With hexDigits=3 (4096 partition buckets), used 1:55 on 4.2 Mb input
-# With hexDigits=2 (256 partition buckets), used 1:18
+# STATS with 4.2Mb input
+# With hexDigits=1 (16 partition buckets), 1m33.653s
+# With hexDigits=2 (256 partition buckets), 1m51.499s
+# With hexDigits=3 (4096 partition buckets), 3m42.185s
+
