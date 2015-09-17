@@ -112,12 +112,15 @@ def vectorToUTF8(v, debug=False):
     # here is the only place where we convert to UTF8
     return result.encode('utf-8')
 
+configDir = os.path.join(os.path.dirname(__file__), "data/config")
+def configPath(n):
+    return os.path.join(configDir, n)
+
 def crfprocess(sc, input, output, 
+               featureListFilename=configPath('features.hair-eye'),
+               modelFilename=configPath('dig-hair-eye-train.model'),
                limit=None, debug=False, location='hdfs', outputFormat="text", numPartitions=None, hexDigits=3):
 
-    configDir = os.path.join(os.path.dirname(__file__), "data/config")
-    def configPath(n):
-        return os.path.join(configDir, n)
     binDir = os.path.join(os.path.dirname(__file__), "bin")
     def binPath(n):
         return os.path.join(binDir, n)
@@ -129,7 +132,7 @@ def crfprocess(sc, input, output,
             outdir = os.path.join(debugOutput, rdd.name() or "anonymous-%d" % randint(10000,99999))
             rdd.saveAsTextFile(outdir)
 
-    featureListFilename = configPath("features.hair-eye")
+    crfFeatureListFilename = configPath("features.hair-eye")
     crfExecutable = binPath("crf_test_filter.sh")
     crfModelFilename = configPath("dig-hair-eye-train.model")
     sc.addFile(crfExecutable)
@@ -180,7 +183,7 @@ def crfprocess(sc, input, output,
     BODY_SUBDOCUMENT = 0
     SEPARATOR_SUBDOCUMENT = 1
     TITLE_SUBDOCUMENT = 2
-    c = crf_features.CrfFeatures(featureListFilename)
+    c = crf_features.CrfFeatures(crfFeatureListFilename)
 
     def makeMatrix(c, uri, bodyTokens, titleTokens):
         b = c.computeFeatMatrix(bodyTokens, False, addLabels=False, addIndex=False)
@@ -387,7 +390,7 @@ def crfprocess(sc, input, output,
         return {"featureName": featureNames[category], 
                 "featureValue": hybridJaccards[category](words),
                 # intended to support parametrization/provenance
-                "featureDefinitionFile": os.path.basename(featureListFilename),
+                "featureDefinitionFile": os.path.basename(crfFeatureListFilename),
                 "featureCrfModelFile": os.path.basename(crfModelFilename)}
 
     rdd_aligned = rdd_flat.mapValues(lambda v: jaccard(v))
@@ -408,11 +411,17 @@ def crfprocess(sc, input, output,
     else:
         print "### NO DATA TO WRITE"
 
+configDir = os.path.join(os.path.dirname(__file__), "data/config")
+def configPath(n):
+    return os.path.join(configDir, n)
+
 def main(argv=None):
     '''this is called if run from command line'''
     parser = argparse.ArgumentParser()
     parser.add_argument('-i','--input', required=True)
     parser.add_argument('-o','--output', required=True)
+    parser.add_argument('-f','--featureListFilename', default=configPath('features.hair-eye'))
+    parser.add_argument('-m','--modelFilename', default=configPath('dig-hair-eye-train.model'))
     parser.add_argument('-p','--numPartitions', required=False, default=None, type=int)
     parser.add_argument('-d','--hexDigits', required=False, default=3, type=int)
     parser.add_argument('-l','--limit', required=False, default=None, type=int)
@@ -441,6 +450,8 @@ def main(argv=None):
 
     sc = SparkContext(appName="crfprocess")
     crfprocess(sc, args.input, args.output, 
+               featureListFilename=args.featureListFilename,
+               modelFilename=args.modelFilename,
                debug=args.debug,
                limit=args.limit,
                location=location,
@@ -452,8 +463,7 @@ def main(argv=None):
 if __name__ == "__main__":
     sys.exit(main())
 
-# STATS with 4.2Mb input
+# STATS with 4.2Mb input, featureFile=features.hair-eye, model=dig-hair-eye-train.model, featureCount=
 # With hexDigits=1 (16 partition buckets), 1m33.653s
 # With hexDigits=2 (256 partition buckets), 1m51.499s
 # With hexDigits=3 (4096 partition buckets), 3m42.185s
-
