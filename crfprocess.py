@@ -16,6 +16,8 @@ from htmltoken import tokenize
 import crf_features
 from base64 import b64encode, b64decode
 from random import randint
+from collections import defaultdict
+import pprint
 
 """We could build this (v1) ES JSON directly or provide enough info for Karma to do it:
 
@@ -119,6 +121,7 @@ def configPath(n):
 def crfprocess(sc, input, output, 
                featureListFilename=configPath('features.hair-eye'),
                modelFilename=configPath('dig-hair-eye-train.model'),
+               jaccardSpecs=[],
                limit=None, debug=False, location='hdfs', outputFormat="text", numPartitions=None, hexDigits=3):
 
     binDir = os.path.join(os.path.dirname(__file__), "bin")
@@ -377,22 +380,31 @@ def crfprocess(sc, input, output,
     rdd_flat.setName('rdd_flat')
     debugDump(rdd_flat)
 
-    smEyeColor = HybridJaccard(ref_path=configPath("eyeColor_reference_wiki.txt"),
-                               config_path=configPath("eyeColor_config.txt"))
-    smHairColor = HybridJaccard(ref_path=configPath("hairColor_reference_wiki.txt"),
-                                config_path=configPath("hairColor_config.txt"))
-    hybridJaccards = {"eyeColor": smEyeColor.findBestMatch, 
-                      "hairType": smHairColor.findBestMatch}
-    featureNames = {"eyeColor": "person_eyecolor",
-                    "hairType": "person_haircolor"}
-    def jaccard(tpl):
-        (words, category) = tpl
-        return {"featureName": featureNames[category], 
-                "featureValue": hybridJaccards[category](words),
-                # intended to support parametrization/provenance
-                "featureDefinitionFile": os.path.basename(crfFeatureListFilename),
-                "featureCrfModelFile": os.path.basename(crfModelFilename)}
+    ## We map from CRF output (category) to (potentially multiple) HJ handle(s)
 
+    hjHandlers = defaultdict(list)
+    for (category,digFeature,config,reference) in jaccardSpecs:
+        # add one handler
+        hjHandlers[category].append({"category": category,
+                                     "featureName": digFeature,
+                                     "hybridJaccardInterpreter": HybridJaccard(config_path=config, ref_path=reference).findBestMatch})
+
+    def jaccard(tpl):
+        results = []
+        (words, category) = tpl
+        for handler in hjHandlers[category]:
+            results.append({"featureName": handler["featureName"],
+                            "featureValue": handler["hybridJaccardInterpreter"](words),
+                            # for debugging
+                            "crfCategory": category,
+                            "crfWordSpan": words,
+                            # intended to support parametrization/provenance
+                            "featureDefinitionFile": os.path.basename(crfFeatureListFilename),
+                            "featureCrfModelFile": os.path.basename(crfModelFilename)})
+        return results
+
+    # potentially there could be more than one interpretation, e.g. hairColor + hairType
+    # is this a problem
     rdd_aligned = rdd_flat.mapValues(lambda v: jaccard(v))
     rdd_aligned.setName('rdd_aligned')
     debugDump(rdd_aligned)
@@ -415,6 +427,21 @@ configDir = os.path.join(os.path.dirname(__file__), "data/config")
 def configPath(n):
     return os.path.join(configDir, n)
 
+def defaultJaccardSpec():
+    l = [["eyeColor", "person_eyecolor", configPath("eyeColor_config.txt"), configPath("eyeColor_reference_wiki.txt")],
+         ["hairType", "person_haircolor", configPath("hairColor_config.txt"), configPath("hairColor_reference_wiki.txt")]]
+    return [",".join(x) for x in l]
+
+def jaccardSpec(s):
+    "pair of existing files separated by comma"
+    try:
+        (category,digFeature,cfg,ref) = s.split(',')
+        if category and digFeature and os.path.exists(cfg) and os.path.exists(ref):
+            return s
+    except:
+        pass
+    raise argparse.ArgumentError("Unrecognized jaccard spec <category,digFeature,configFile,referenceFile> %r" % s)
+
 def main(argv=None):
     '''this is called if run from command line'''
     parser = argparse.ArgumentParser()
@@ -422,12 +449,18 @@ def main(argv=None):
     parser.add_argument('-o','--output', required=True)
     parser.add_argument('-f','--featureListFilename', default=configPath('features.hair-eye'))
     parser.add_argument('-m','--modelFilename', default=configPath('dig-hair-eye-train.model'))
+    parser.add_argument('-j','--jaccardSpec', action='append', default=[], type=jaccardSpec,
+                        help='each value should be <category,featureName,config.json,reference.txt>')
     parser.add_argument('-p','--numPartitions', required=False, default=None, type=int)
     parser.add_argument('-d','--hexDigits', required=False, default=3, type=int)
     parser.add_argument('-l','--limit', required=False, default=None, type=int)
     parser.add_argument('-v','--verbose', required=False, help='verbose', action='store_true')
     parser.add_argument('-z','--debug', required=False, help='debug', action='store_true')
     args=parser.parse_args()
+
+    if args.jaccardSpec == []:
+        args.jaccardSpec = defaultJaccardSpec()
+    pprint.pprint(args.jaccardSpec)
 
     location = "hdfs"
     try:
@@ -452,6 +485,7 @@ def main(argv=None):
     crfprocess(sc, args.input, args.output, 
                featureListFilename=args.featureListFilename,
                modelFilename=args.modelFilename,
+               jaccardSpecs=[j.split(',') for j in args.jaccardSpec],
                debug=args.debug,
                limit=args.limit,
                location=location,
