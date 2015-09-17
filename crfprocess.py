@@ -114,7 +114,7 @@ def vectorToUTF8(v, debug=False):
     # here is the only place where we convert to UTF8
     return result.encode('utf-8')
 
-configDir = os.path.join(os.path.dirname(__file__), "data/config")
+configDir = os.getcwd() # os.path.join(os.path.dirname(__file__), "data/config")
 def configPath(n):
     return os.path.join(configDir, n)
 
@@ -124,7 +124,7 @@ def crfprocess(sc, input, output,
                jaccardSpecs=[],
                limit=None, debug=False, location='hdfs', outputFormat="text", numPartitions=None, hexDigits=3):
 
-    binDir = os.path.join(os.path.dirname(__file__), "bin")
+    binDir = os.getcwd() # os.path.join(os.path.dirname(__file__), "bin")
     def binPath(n):
         return os.path.join(binDir, n)
 
@@ -423,10 +423,6 @@ def crfprocess(sc, input, output,
     else:
         print "### NO DATA TO WRITE"
 
-configDir = os.path.join(os.path.dirname(__file__), "data/config")
-def configPath(n):
-    return os.path.join(configDir, n)
-
 def defaultJaccardSpec():
     l = [["eyeColor", "person_eyecolor", configPath("eyeColor_config.txt"), configPath("eyeColor_reference_wiki.txt")],
          ["hairType", "person_haircolor", configPath("hairColor_config.txt"), configPath("hairColor_reference_wiki.txt")]]
@@ -444,6 +440,7 @@ def jaccardSpec(s):
 
 def main(argv=None):
     '''this is called if run from command line'''
+    pprint.pprint(os.listdir(os.getcwd()))
     parser = argparse.ArgumentParser()
     parser.add_argument('-i','--input', required=True)
     parser.add_argument('-o','--output', required=True)
