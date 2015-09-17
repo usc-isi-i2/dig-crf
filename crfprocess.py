@@ -135,9 +135,9 @@ def crfprocess(sc, input, output,
             outdir = os.path.join(debugOutput, rdd.name() or "anonymous-%d" % randint(10000,99999))
             rdd.saveAsTextFile(outdir)
 
-    crfFeatureListFilename = configPath("features.hair-eye")
+    crfFeatureListFilename = featureListFilename
+    crfModelFilename = modelFilename
     crfExecutable = binPath("crf_test_filter.sh")
-    crfModelFilename = configPath("dig-hair-eye-train.model")
     sc.addFile(crfExecutable)
     sc.addFile(crfModelFilename)
 
