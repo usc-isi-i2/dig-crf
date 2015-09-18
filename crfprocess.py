@@ -18,6 +18,7 @@ from base64 import b64encode, b64decode
 from random import randint
 from collections import defaultdict
 import pprint
+from itertools import izip_longest
 
 """We could build this (v1) ES JSON directly or provide enough info for Karma to do it:
 
@@ -47,6 +48,14 @@ import pprint
                      "featureValue": "brown"
                   },
 """
+
+### from util.py
+
+def iterChunks(iterable, n, fillvalue=None):
+    args = [iter(iterable)] * n
+    return izip_longest(*args, fillvalue=fillvalue)
+
+### 
 
 def extract_body(main_json):
     try:
@@ -142,10 +151,9 @@ def crfprocess(sc, input, output,
                featureListFilename=configPath('features.hair-eye'),
                modelFilename=configPath('dig-hair-eye-train.model'),
                jaccardSpecs=[],
-               limit=None, debug=False, location='hdfs', outputFormat="text", numPartitions=None, hexDigits=3):
+               limit=None, debug=False, location='hdfs', outputFormat="text", numPartitions=None, chunksPerPartition=5, hexDigits=3):
 
-    if debug:
-        debugOutput = output + '_debug'
+    debugOutput = output + '_debug'
     def debugDump(rdd):
         if debug:
             outdir = os.path.join(debugOutput, rdd.name() or "anonymous-%d" % randint(10000,99999))
@@ -182,7 +190,6 @@ def crfprocess(sc, input, output,
     rdd_json = rdd_crfl.mapValues(lambda x: json.loads(x))
     rdd_json.setName('rdd_json')
     debugDump(rdd_json)
-    exit(0)
 
     # pageUri -> (body tokens, title tokens)
     rdd_texts = rdd_json.mapValues(lambda x: (textTokens(extract_body(x)), textTokens(extract_title(x))))
@@ -272,17 +279,63 @@ def crfprocess(sc, input, output,
     # SORTED e.g. prefixUri -> (<full word uri>, serialized representation of one document)
     rdd_prefixed_sorted = rdd_prefixed_unsorted.sortBy(lambda x: x)
     rdd_prefixed_sorted.setName('rdd_prefixed_sorted')
+    try:
+        print "At prefixed_sorted, there are %d keys" % rdd_prefixed_sorted.keys().distinct().count()
+    except Exception as e:
+        print e
+        pass
+    try:
+        print "At prefixed_sorted, there are %d distinct values" % rdd_prefixed_sorted.values().distinct().count()
+    except Exception as e:
+        print e
+        pass
     debugDump(rdd_prefixed_sorted)
+
+    rdd_work = rdd_prefixed_sorted.groupByKey().flatMapValues(lambda x: [y for y in iterChunks(x, chunksPerPartition)]).mapValues(lambda t: filter(lambda z:z, t))
+    rdd_work.setName('rdd_work')
+    debugDump(rdd_work)
+    try:
+        print "At work, there are %d keys" % rdd_work.keys().distinct().count()
+    except Exception as e:
+        print e
+        pass
+    try:
+        print "At work, there are %d distinct values" % rdd_work.values().map(lambda x: tuple(x)).distinct().count()
+    except Exception as e:
+        print e
+        pass
+    # print rdd_work.take(1)
+    print rdd_work.collect()
 
     # aggregate scheme:
     # result type U is string
     # input type V is tuple
     # merge V into U is lambda v,u: u+v[1]
-    # merge U1 and U2 us lambda u1,u2: u1+u2
+    # merge U1 and U2 is lambda u1,u2: u1+u2
     # prefixUri -> serialized representations of all documents with that prefix, in order, concatenated
-    rdd_concatenated = rdd_prefixed_sorted.aggregateByKey("", lambda u,v: u+v[1], lambda u1,u2: u1+u2)
+    def merge1(u,v):
+        # print "merge1 %s %s" % (type(u), type(v))
+        result = u+v[1]
+        # print "result %s" % type(result)
+        return result
+    def merge2(u1,u2):
+        # print "merge2"
+        return u1+u2
+
+    # rdd_concatenated = rdd_prefixed_sorted.aggregateByKey("", lambda u,v: u+v[1], lambda u1,u2: u1+u2)
+    rdd_concatenated = rdd_prefixed_sorted.aggregateByKey("", lambda u,v: merge1(u,v), lambda u1,u2: merge2(u1,u2))
     rdd_concatenated.setName('rdd_concatenated')
     debugDump(rdd_concatenated)
+
+    # rdd_work is prefixUri -> ( (pageUri, serial1), (pageUri, serial2), ... (pageUri, serialN) ) # N defaults to 5
+    # concatenated2:
+    # prefixUri -> serial1 + serial2 + ... + serialN
+    rdd_concatenated2 = rdd_work.mapValues(lambda l: "".join([t[1] for t in l]))
+    rdd_concatenated2.setName('rdd_concatenated2')
+    debugDump(rdd_concatenated2)
+
+    rdd_concatenated = rdd_concatenated2
+
 
     # Note: keys are stored here in master, not an RDD.  Is this scalable?
     prefixKeys = rdd_concatenated.keys().distinct().sortBy(lambda x: x).collect()
@@ -296,6 +349,7 @@ def crfprocess(sc, input, output,
     rdd_prefixedToPayload = rdd_concatenated.repartitionAndSortWithinPartitions(numPartitions=prefixKeyCount,
                                                                                 partitionFunc=partitionPerPrefix)
     rdd_prefixedToPayload.setName('rdd_prefixedToPayload')
+    print >> sys.stderr, "Pipe payload lines %r" % rdd_prefixedToPayload.map(lambda x: len(x)).collect()
     debugDump(rdd_prefixedToPayload)
 
     # all strings concatenated together, then base64 encoded into one input for crf_test
@@ -313,6 +367,7 @@ def crfprocess(sc, input, output,
     model = SparkFiles.get(os.path.basename(crfModelFilename)) if location=="local" else os.path.basename(crfModelFilename)
     cmd = "%s %s" % (executable, model)
     print >> sys.stderr, "Pipe cmd is %r" % cmd
+
     rdd_pipeoutput = rdd_pipeinput.pipe(cmd)
     rdd_pipeoutput.setName('rdd_pipeoutput')
     debugDump(rdd_pipeoutput)
@@ -465,7 +520,7 @@ def jaccardSpec(s):
 
 def main(argv=None):
     '''this is called if run from command line'''
-    pprint.pprint(sorted(os.listdir(os.getcwd())))
+    # pprint.pprint(sorted(os.listdir(os.getcwd())))
     parser = argparse.ArgumentParser()
     parser.add_argument('-i','--input', required=True)
     parser.add_argument('-o','--output', required=True)
