@@ -155,8 +155,10 @@ def crfprocess(sc, input, output,
     if keepUris:
         rdd_crfl = rdd_crfl.filter(lambda (k,v): k in keepUris)
     debugDump(rdd_crfl)
+    # On cluster when numPartitions is not set, next line fails on large enough data (>=100,000 documents)
+    # Unsure why but I increased partitions based on http://stackoverflow.com/questions/24836401/apache-spark-job-aborted-due-to-stage-failure-tid-x-failed-for-unknown-reason
     print "### Processing %d input pages, initially into %s partitions" % (rdd_crfl.count(), rdd_crfl.getNumPartitions())
-    exit(0)
+
     
     # pageUri -> dict from json
     rdd_json = rdd_crfl.mapValues(lambda x: json.loads(x))
