@@ -144,6 +144,8 @@ def crfprocess(sc, input, output,
     # pageUri -> content
     rdd_crfl = sc.sequenceFile(input)
     rdd_crfl.setName('rdd_crfl')
+    if limit==0:
+        limit = None
     if limit:
         rdd_crfl = sc.parallelize(rdd_crfl.take(limit))
     if numPartitions:
