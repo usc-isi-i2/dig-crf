@@ -305,7 +305,7 @@ def crfprocess(sc, input, output,
         print e
         pass
     # print rdd_work.take(1)
-    print rdd_work.collect()
+    # print rdd_work.collect()
 
     # aggregate scheme:
     # result type U is string
