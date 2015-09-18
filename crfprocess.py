@@ -114,19 +114,35 @@ def vectorToUTF8(v, debug=False):
     # here is the only place where we convert to UTF8
     return result.encode('utf-8')
 
-configDir = os.getcwd() # os.path.join(os.path.dirname(__file__), "data/config")
+# Sniff for execution environment
+
+location = "hdfs"
+try:
+    if "avatar" in platform.node():
+        location = "local"
+except:
+    pass
+try:
+    if "avatar" in socket.gethostname():
+        location = "local"
+except:
+    pass
+print "### location %s" % location
+
+
+configDir = os.getcwd() if location=="hdfs" else os.path.join(os.path.dirname(__file__), "data/config")
 def configPath(n):
     return os.path.join(configDir, n)
+
+binDir = os.getcwd() if location=="hdfs" else os.path.join(os.path.dirname(__file__), "bin")
+def binPath(n):
+    return os.path.join(binDir, n)
 
 def crfprocess(sc, input, output, 
                featureListFilename=configPath('features.hair-eye'),
                modelFilename=configPath('dig-hair-eye-train.model'),
                jaccardSpecs=[],
                limit=None, debug=False, location='hdfs', outputFormat="text", numPartitions=None, hexDigits=3):
-
-    binDir = os.getcwd() # os.path.join(os.path.dirname(__file__), "bin")
-    def binPath(n):
-        return os.path.join(binDir, n)
 
     if debug:
         debugOutput = output + '_debug'
@@ -470,19 +486,6 @@ def main(argv=None):
     if args.jaccardSpec == []:
         args.jaccardSpec = defaultJaccardSpec()
     pprint.pprint(args.jaccardSpec)
-
-    location = "hdfs"
-    try:
-        if "avatar" in platform.node():
-            location = "local"
-    except:
-        pass
-    try:
-        if "avatar" in socket.gethostname():
-            location = "local"
-    except:
-        pass
-    print "### location %s" % location
 
     if not args.numPartitions:
         if location == "local":
