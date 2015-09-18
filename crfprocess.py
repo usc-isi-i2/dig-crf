@@ -149,6 +149,7 @@ def crfprocess(sc, input, output,
     def debugDump(rdd):
         if debug:
             outdir = os.path.join(debugOutput, rdd.name() or "anonymous-%d" % randint(10000,99999))
+            print "write to outdir %r" % outdir
             rdd.saveAsTextFile(outdir)
 
     crfFeatureListFilename = featureListFilename
@@ -177,11 +178,11 @@ def crfprocess(sc, input, output,
     # Unsure why but I increased partitions based on http://stackoverflow.com/questions/24836401/apache-spark-job-aborted-due-to-stage-failure-tid-x-failed-for-unknown-reason
     print "### Processing %d input pages, initially into %s partitions" % (rdd_crfl.count(), rdd_crfl.getNumPartitions())
 
-    
     # pageUri -> dict from json
     rdd_json = rdd_crfl.mapValues(lambda x: json.loads(x))
     rdd_json.setName('rdd_json')
     debugDump(rdd_json)
+    exit(0)
 
     # pageUri -> (body tokens, title tokens)
     rdd_texts = rdd_json.mapValues(lambda x: (textTokens(extract_body(x)), textTokens(extract_title(x))))
@@ -307,13 +308,9 @@ def crfprocess(sc, input, output,
     # base64 encoded result of running crf_test and filtering to
     # include only word, wordUri, non-null label
     # local
-    executable = SparkFiles.get(os.path.basename(crfExecutable))
-    # hdfs
-    executable = os.path.basename(crfExecutable)
+    executable = SparkFiles.get(os.path.basename(crfExecutable)) if location=="local" else os.path.basename(crfExecutable)
     # local
-    model = SparkFiles.get(os.path.basename(crfModelFilename))
-    # hdfs
-    model = os.path.basename(crfModelFilename)
+    model = SparkFiles.get(os.path.basename(crfModelFilename)) if location=="local" else os.path.basename(crfModelFilename)
     cmd = "%s %s" % (executable, model)
     print >> sys.stderr, "Pipe cmd is %r" % cmd
     rdd_pipeoutput = rdd_pipeinput.pipe(cmd)
@@ -468,7 +465,7 @@ def jaccardSpec(s):
 
 def main(argv=None):
     '''this is called if run from command line'''
-    pprint.pprint(os.listdir(os.getcwd()))
+    pprint.pprint(sorted(os.listdir(os.getcwd())))
     parser = argparse.ArgumentParser()
     parser.add_argument('-i','--input', required=True)
     parser.add_argument('-o','--output', required=True)
@@ -485,7 +482,7 @@ def main(argv=None):
 
     if args.jaccardSpec == []:
         args.jaccardSpec = defaultJaccardSpec()
-    pprint.pprint(args.jaccardSpec)
+    # pprint.pprint(args.jaccardSpec)
 
     if not args.numPartitions:
         if location == "local":
