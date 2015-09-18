@@ -156,6 +156,7 @@ def crfprocess(sc, input, output,
         rdd_crfl = rdd_crfl.filter(lambda (k,v): k in keepUris)
     debugDump(rdd_crfl)
     print "### Processing %d input pages, initially into %s partitions" % (rdd_crfl.count(), rdd_crfl.getNumPartitions())
+    exit(0)
     
     # pageUri -> dict from json
     rdd_json = rdd_crfl.mapValues(lambda x: json.loads(x))
@@ -285,9 +286,16 @@ def crfprocess(sc, input, output,
 
     # base64 encoded result of running crf_test and filtering to
     # include only word, wordUri, non-null label
+    # local
     executable = SparkFiles.get(os.path.basename(crfExecutable))
+    # hdfs
+    executable = os.path.basename(crfExecutable)
+    # local
     model = SparkFiles.get(os.path.basename(crfModelFilename))
+    # hdfs
+    model = os.path.basename(crfModelFilename)
     cmd = "%s %s" % (executable, model)
+    print >> sys.stderr, "Pipe cmd is %r" % cmd
     rdd_pipeoutput = rdd_pipeinput.pipe(cmd)
     rdd_pipeoutput.setName('rdd_pipeoutput')
     debugDump(rdd_pipeoutput)
