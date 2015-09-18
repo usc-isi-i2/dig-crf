@@ -334,8 +334,11 @@ def crfprocess(sc, input, output,
     rdd_concatenated2.setName('rdd_concatenated2')
     debugDump(rdd_concatenated2)
 
-    rdd_concatenated = rdd_concatenated2
-
+    if False:
+        rdd_concatenated = rdd_concatenated2
+        print "## Using new concatenator"
+    else:
+        print "## Using old concatenator"
 
     # Note: keys are stored here in master, not an RDD.  Is this scalable?
     prefixKeys = rdd_concatenated.keys().distinct().sortBy(lambda x: x).collect()
@@ -349,7 +352,7 @@ def crfprocess(sc, input, output,
     rdd_prefixedToPayload = rdd_concatenated.repartitionAndSortWithinPartitions(numPartitions=prefixKeyCount,
                                                                                 partitionFunc=partitionPerPrefix)
     rdd_prefixedToPayload.setName('rdd_prefixedToPayload')
-    print >> sys.stderr, "Pipe payload lines %r" % rdd_prefixedToPayload.map(lambda x: len(x)).collect()
+    print "### Pipe payload lines %r" % rdd_prefixedToPayload.mapValues(lambda x: len(x)).collect()
     debugDump(rdd_prefixedToPayload)
 
     # all strings concatenated together, then base64 encoded into one input for crf_test
@@ -357,6 +360,7 @@ def crfprocess(sc, input, output,
     # strip off the k, b64encode the v
     rdd_pipeinput = rdd_prefixedToPayload.map(lambda (k,v): b64encode(v))
     rdd_pipeinput.setName('rdd_pipeinput')
+    print "At pipeinput, there are %d values" % rdd_pipeinput.values().count()
     debugDump(rdd_pipeinput)
 
     # base64 encoded result of running crf_test and filtering to
@@ -366,11 +370,14 @@ def crfprocess(sc, input, output,
     # local
     model = SparkFiles.get(os.path.basename(crfModelFilename)) if location=="local" else os.path.basename(crfModelFilename)
     cmd = "%s %s" % (executable, model)
+    cmd = "/bin/cat"
     print >> sys.stderr, "Pipe cmd is %r" % cmd
 
     rdd_pipeoutput = rdd_pipeinput.pipe(cmd)
     rdd_pipeoutput.setName('rdd_pipeoutput')
     debugDump(rdd_pipeoutput)
+
+    exit(0)
 
     # base64 decoded to regular serialized string
     #### MIGHT INTRODUCE EXTRA NEWLINES WHEN INPUT IS EMPTY(?)
