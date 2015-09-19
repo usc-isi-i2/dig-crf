@@ -151,7 +151,7 @@ def crfprocess(sc, input, output,
                featureListFilename=configPath('features.hair-eye'),
                modelFilename=configPath('dig-hair-eye-train.model'),
                jaccardSpecs=[],
-               limit=None, debug=False, location='hdfs', outputFormat="text", numPartitions=None, chunksPerPartition=5, hexDigits=3):
+               limit=None, debug=False, location='hdfs', outputFormat="text", numPartitions=None, chunksPerPartition=100, hexDigits=3):
 
     debugOutput = output + '_debug'
     def debugDump(rdd):
@@ -180,6 +180,8 @@ def crfprocess(sc, input, output,
     # If set, only those URIs so listed are used, everything else is rejected
     keepUris = []
     # keepUris = ['http://dig.isi.edu/ht/data/page/442EA3A8B9FF69D65BC8B0D205C8C85204A7C799/1433150174000/processed']
+    # this one has curly hair
+    keepUris = ['http://dig.isi.edu/ht/data/page/681A3E68456987B1EE11616280DC1DBBA5A6B754/1429606198000/processed']
     if keepUris:
         rdd_crfl = rdd_crfl.filter(lambda (k,v): k in keepUris)
     rdd_crfl.setName('rdd_crfl')
@@ -492,7 +494,7 @@ def crfprocess(sc, input, output,
 
     # potentially there could be more than one interpretation, e.g. hairColor + hairType
     # is this a problem
-    rdd_aligned = rdd_flat.mapValues(lambda v: jaccard(v))
+    rdd_aligned = rdd_flat.flatMapValues(lambda v: jaccard(v))
     rdd_aligned.setName('rdd_aligned')
     debugDump(rdd_aligned)
 
@@ -512,7 +514,8 @@ def crfprocess(sc, input, output,
 
 def defaultJaccardSpec():
     l = [["eyeColor", "person_eyecolor", configPath("eyeColor_config.txt"), configPath("eyeColor_reference_wiki.txt")],
-         ["hairType", "person_haircolor", configPath("hairColor_config.txt"), configPath("hairColor_reference_wiki.txt")]]
+         ["hairType", "person_haircolor", configPath("hairColor_config.txt"), configPath("hairColor_reference_wiki.txt")],
+         ["hairType", "person_hairtexture", configPath("hairTexture_config.txt"), configPath("hairTexture_reference_wiki.txt")]]
     return [",".join(x) for x in l]
 
 def jaccardSpec(s):
