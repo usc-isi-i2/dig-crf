@@ -180,8 +180,8 @@ def crfprocess(sc, input, output,
     # If set, only those URIs so listed are used, everything else is rejected
     keepUris = []
     # keepUris = ['http://dig.isi.edu/ht/data/page/442EA3A8B9FF69D65BC8B0D205C8C85204A7C799/1433150174000/processed']
-    # this one has curly hair
-    keepUris = ['http://dig.isi.edu/ht/data/page/681A3E68456987B1EE11616280DC1DBBA5A6B754/1429606198000/processed']
+    # for testing 'curly hair'
+    # keepUris = ['http://dig.isi.edu/ht/data/page/681A3E68456987B1EE11616280DC1DBBA5A6B754/1429606198000/processed']
     if keepUris:
         rdd_crfl = rdd_crfl.filter(lambda (k,v): k in keepUris)
     rdd_crfl.setName('rdd_crfl')
@@ -539,6 +539,7 @@ def main(argv=None):
     parser.add_argument('-j','--jaccardSpec', action='append', default=[], type=jaccardSpec,
                         help='each value should be <category,featureName,config.json,reference.txt>')
     parser.add_argument('-p','--numPartitions', required=False, default=None, type=int)
+    parser.add_argument('-c','--chunksPerPartition', required=False, default=100, type=int)
     parser.add_argument('-d','--hexDigits', required=False, default=3, type=int)
     parser.add_argument('-l','--limit', required=False, default=None, type=int)
     parser.add_argument('-v','--verbose', required=False, help='verbose', action='store_true')
@@ -565,6 +566,7 @@ def main(argv=None):
                location=location,
                outputFormat="sequence",
                numPartitions=args.numPartitions,
+               chunksPerPartition=args.chunksPerPartition,
                hexDigits=args.hexDigits)
 
 # call main() if this is run as standalone
