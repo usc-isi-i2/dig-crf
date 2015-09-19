@@ -163,12 +163,13 @@ def crfprocess(sc, input, output,
     crfFeatureListFilename = featureListFilename
     crfModelFilename = modelFilename
     crfExecutable = binPath("crf_test_filter.sh")
+    crfExecutable = binPath("crf_test_filter_lines.sh")
+    crfExecutable = "apply_crf_lines.py"
     sc.addFile(crfExecutable)
     sc.addFile(crfModelFilename)
 
     # pageUri -> content
     rdd_crfl = sc.sequenceFile(input)
-    rdd_crfl.setName('rdd_crfl')
     if limit==0:
         limit = None
     if limit:
@@ -181,6 +182,7 @@ def crfprocess(sc, input, output,
     # keepUris = ['http://dig.isi.edu/ht/data/page/442EA3A8B9FF69D65BC8B0D205C8C85204A7C799/1433150174000/processed']
     if keepUris:
         rdd_crfl = rdd_crfl.filter(lambda (k,v): k in keepUris)
+    rdd_crfl.setName('rdd_crfl')
     debugDump(rdd_crfl)
     # On cluster when numPartitions is not set, next line fails on large enough data (>=100,000 documents)
     # Unsure why but I increased partitions based on http://stackoverflow.com/questions/24836401/apache-spark-job-aborted-due-to-stage-failure-tid-x-failed-for-unknown-reason
@@ -334,7 +336,8 @@ def crfprocess(sc, input, output,
     rdd_concatenated2.setName('rdd_concatenated2')
     debugDump(rdd_concatenated2)
 
-    if False:
+    usingNew=True
+    if usingNew:
         rdd_concatenated = rdd_concatenated2
         print "## Using new concatenator"
     else:
@@ -370,14 +373,11 @@ def crfprocess(sc, input, output,
     # local
     model = SparkFiles.get(os.path.basename(crfModelFilename)) if location=="local" else os.path.basename(crfModelFilename)
     cmd = "%s %s" % (executable, model)
-    cmd = "/bin/cat"
     print >> sys.stderr, "Pipe cmd is %r" % cmd
 
     rdd_pipeoutput = rdd_pipeinput.pipe(cmd)
     rdd_pipeoutput.setName('rdd_pipeoutput')
     debugDump(rdd_pipeoutput)
-
-    exit(0)
 
     # base64 decoded to regular serialized string
     #### MIGHT INTRODUCE EXTRA NEWLINES WHEN INPUT IS EMPTY(?)
