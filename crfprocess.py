@@ -157,6 +157,7 @@ def crfprocess(sc, input, output,
 
     debugOutput = output + '_debug'
     def debugDump(rdd,keys=True,listElements=False):
+        keys=False
         if debug:
             startTime = time.time()
             outdir = os.path.join(debugOutput, rdd.name() or "anonymous-%d" % randint(10000,99999))
@@ -165,9 +166,16 @@ def crfprocess(sc, input, output,
 #                 keyCount = rdd.keys().count() if keys else None
 #             except:
 #                 pass
-            rowCount = rdd.count()
-            elementCount = rdd.mapValues(lambda x: len(x) if isinstance(x, (list, tuple)) else 0).values().sum() if listElements else None
-            
+            rowCount = None
+            try:
+                rowCount = rdd.count()
+            except:
+                pass
+            elementCount = None
+            try:
+                elementCount = rdd.mapValues(lambda x: len(x) if isinstance(x, (list, tuple)) else 0).values().sum() if listElements else None
+            except:
+                pass
             rdd.saveAsTextFile(outdir)
             endTime = time.time()
             elapsedTime = endTime - startTime
@@ -289,9 +297,10 @@ def crfprocess(sc, input, output,
     # put serialized vectors into lists of size chunksPerPartition, dropping any nulls
     # concatenate
 
+    # lists of size up to chunksPerPartition of UTF8(feature vectors)
     rdd_chunked = rdd_vector.values().glom().map(lambda l: [filter(lambda e: e, x) for x in iterChunks(l, chunksPerPartition)]).map(lambda l: ["".join(x) for x in l])
     rdd_chunked.setName('rdd_chunked')
-#     debugDump(rdd_chunked)
+    debugDump(rdd_chunked, keys=False)
 
 #     def generatePrefixKey(uri, hexDigits=hexDigits):
 #         """http://dig.isi.edu/ht/data/page/0040378735A6B350D3B2F639FF4EE72AE4956171/1433150471000/processed"""
@@ -394,24 +403,29 @@ def crfprocess(sc, input, output,
 #     print "At pipeinput, there are %d values" % rdd_pipeinput.values().count()
 #     debugDump(rdd_pipeinput)
 
-#     # base64 encoded result of running crf_test and filtering to
-#     # include only word, wordUri, non-null label
-#     # local
-#     executable = SparkFiles.get(os.path.basename(crfExecutable)) if location=="local" else os.path.basename(crfExecutable)
-#     # local
-#     model = SparkFiles.get(os.path.basename(crfModelFilename)) if location=="local" else os.path.basename(crfModelFilename)
-#     cmd = "%s %s" % (executable, model)
-#     print >> sys.stderr, "Pipe cmd is %r" % cmd
+    rdd_pipeinput = rdd_chunked.flatMap(lambda x: x).map(lambda r: b64encode(r))
+    rdd_pipeinput.setName('rdd_pipeinput')
+    debugDump(rdd_pipeinput, keys=False)
 
-#     rdd_pipeoutput = rdd_pipeinput.pipe(cmd)
-#     rdd_pipeoutput.setName('rdd_pipeoutput')
-#     debugDump(rdd_pipeoutput)
 
-#     # base64 decoded to regular serialized string
-#     #### MIGHT INTRODUCE EXTRA NEWLINES WHEN INPUT IS EMPTY(?)
-#     rdd_base64decode = rdd_pipeoutput.map(lambda x: b64decode(x))
-#     rdd_base64decode.setName('rdd_base64decode')
-#     debugDump(rdd_base64decode)
+    # base64 encoded result of running crf_test and filtering to
+    # include only word, wordUri, non-null label
+    # local
+    executable = SparkFiles.get(os.path.basename(crfExecutable)) if location=="local" else os.path.basename(crfExecutable)
+    # local
+    model = SparkFiles.get(os.path.basename(crfModelFilename)) if location=="local" else os.path.basename(crfModelFilename)
+    cmd = "%s %s" % (executable, model)
+    print >> sys.stderr, "Pipe cmd is %r" % cmd
+
+    rdd_pipeoutput = rdd_pipeinput.pipe(cmd)
+    rdd_pipeoutput.setName('rdd_pipeoutput')
+    debugDump(rdd_pipeoutput)
+
+    # base64 decoded to regular serialized string
+    #### MIGHT INTRODUCE EXTRA NEWLINES WHEN INPUT IS EMPTY(?)
+    rdd_base64decode = rdd_pipeoutput.map(lambda x: b64decode(x))
+    rdd_base64decode.setName('rdd_base64decode')
+    debugDump(rdd_base64decode)
 
 #     ### There may be a need to utf8 decode this data ###
 #     # 1. break into physical lines
@@ -427,105 +441,103 @@ def crfprocess(sc, input, output,
 #     rdd_triples.setName('rdd_triples')
 #     debugDump(rdd_triples)
 
-#     def organizeByOrigDoc(triple):
-#         try:
-#             (word, uri, label) = triple
-#             (parentUri, docId, wordId) = uri.rsplit('/', 2)
-#             return ( (parentUri, docId), (wordId, word, label) )
-#         except Exception as e:
-#             print >> sys.stderr, "Can't destructure %r: %s" % (triple, e)
-#             return ()
+    def reorg(tabsep):
+        (word, uri, label) = tabsep.split('\t')
+        return (uri, (word, label))
 
-#     rdd_reorg = rdd_triples.map(lambda l: organizeByOrigDoc(l))
-#     rdd_reorg.setName('rdd_reorg')
-#     debugDump(rdd_reorg)
+    rdd_tabular = rdd_base64decode.map(lambda b: b.split('\n')).flatMap(lambda x: x).filter(lambda x: x).map(lambda l: reorg(l))
+    rdd_tabular.setName('rdd_tabular')
+    debugDump(rdd_tabular)
 
-#     rdd_sorted = rdd_reorg.sortByKey()
-#     rdd_sorted.setName('rdd_sorted')
-#     debugDump(rdd_sorted)
+    def organizeByOrigDoc(uri, word, label):
+        (parentUri, docId, wordId) = uri.rsplit('/', 2)
+        return ( (parentUri, docId), (wordId, word, label) )
+
+    rdd_reorg = rdd_tabular.map(lambda (uri,tpl): organizeByOrigDoc(uri, tpl[0], tpl[1])).sortByKey()
+    rdd_reorg.setName('rdd_reorg')
+    debugDump(rdd_reorg)
 
 #     # each (parentUri, docId) has a sequence of (wordId, word, label)
 #     # we want to consider them in order (by wordId)
 
-#     rdd_grouped = rdd_sorted.groupByKey()
-#     rdd_grouped.setName('rdd_grouped')
-#     debugDump(rdd_grouped)
+    rdd_grouped = rdd_reorg.groupByKey()
+    rdd_grouped.setName('rdd_grouped')
+    debugDump(rdd_grouped)
 
-#     def harvest(seq):
-#         allSpans = []
-#         lastIndex = -2
-#         lastLabel = None
-#         currentSpan = []
-#         for (wordId, word, label) in seq:
-#             currentIndex = int(wordId)
-#             if lastIndex+1 == currentIndex and lastLabel == label:
-#                 # continuing current span
-#                 currentSpan.append( (currentIndex, word, label) )
-#             else:
-#                 # end current span
-#                 if currentSpan:
-#                     allSpans.append(currentSpan)
-#                 # begin new span
-#                 currentSpan = [ (currentIndex, word, label) ]
-#                 lastLabel = label
-#             lastIndex = currentIndex
+    def harvest(seq):
+        allSpans = []
+        lastIndex = -2
+        lastLabel = None
+        currentSpan = []
+        for (wordId, word, label) in seq:
+            currentIndex = int(wordId)
+            if lastIndex+1 == currentIndex and lastLabel == label:
+                # continuing current span
+                currentSpan.append( (currentIndex, word, label) )
+            else:
+                # end current span
+                if currentSpan:
+                    allSpans.append(currentSpan)
+                # begin new span
+                currentSpan = [ (currentIndex, word, label) ]
+                lastLabel = label
+            lastIndex = currentIndex
 
-#         # end current span
-#         if currentSpan:
-#             allSpans.append(currentSpan)
+        # end current span
+        if currentSpan:
+            allSpans.append(currentSpan)
         
-#         result = []
-#         for span in allSpans:
-#             words = []
-#             spanLabel = None
-#             for (wordIdx, word, label) in span:
-#                 spanLabel = label
-#                 words.append(word)
-#             result.append( (' '.join(words), spanLabel) )
-#         return result
+        result = []
+        for span in allSpans:
+            words = []
+            spanLabel = None
+            for (wordIdx, word, label) in span:
+                spanLabel = label
+                words.append(word)
+            result.append( (' '.join(words), spanLabel) )
+        return result
             
-#     # ( (parentUri, docId), [ (words1, category1), (words2, category2), ... ]
-#     rdd_harvest = rdd_grouped.mapValues(lambda s: harvest(s))
-#     rdd_harvest.setName('rdd_harvest')
-#     debugDump(rdd_harvest)
+    # ( (parentUri, docId), [ (words1, category1), (words2, category2), ... ]
+    rdd_harvest = rdd_grouped.mapValues(lambda s: harvest(s))
+    rdd_harvest.setName('rdd_harvest')
+    debugDump(rdd_harvest)
 
-#     # parentUri -> (words, category)
-#     # we use .distinct() because (e.g.) both title and body might have the same feature
-#     rdd_flat = rdd_harvest.map(lambda r: (r[0][0], r[1])).flatMapValues(lambda x: x).distinct()
-#     rdd_flat.setName('rdd_flat')
-#     debugDump(rdd_flat)
+    # parentUri -> (words, category)
+    # we use .distinct() because (e.g.) both title and body might have the same feature
+    rdd_flat = rdd_harvest.map(lambda r: (r[0][0], r[1])).flatMapValues(lambda x: x).distinct()
+    rdd_flat.setName('rdd_flat')
+    debugDump(rdd_flat)
 
-#     ## We map from CRF output (category) to (potentially multiple) HJ handle(s)
+    ## We map from CRF output (category) to (potentially multiple) HJ handle(s)
 
-#     hjHandlers = defaultdict(list)
-#     for (category,digFeature,config,reference) in jaccardSpecs:
-#         # add one handler
-#         hjHandlers[category].append({"category": category,
-#                                      "featureName": digFeature,
-#                                      "hybridJaccardInterpreter": HybridJaccard(config_path=config, ref_path=reference).findBestMatch})
+    hjHandlers = defaultdict(list)
+    for (category,digFeature,config,reference) in jaccardSpecs:
+        # add one handler
+        hjHandlers[category].append({"category": category,
+                                     "featureName": digFeature,
+                                     "hybridJaccardInterpreter": HybridJaccard(config_path=config, ref_path=reference).findBestMatch})
 
-#     def jaccard(tpl):
-#         results = []
-#         (words, category) = tpl
-#         for handler in hjHandlers[category]:
-#             results.append({"featureName": handler["featureName"],
-#                             "featureValue": handler["hybridJaccardInterpreter"](words),
-#                             # for debugging
-#                             "crfCategory": category,
-#                             "crfWordSpan": words,
-#                             # intended to support parametrization/provenance
-#                             "featureDefinitionFile": os.path.basename(crfFeatureListFilename),
-#                             "featureCrfModelFile": os.path.basename(crfModelFilename)})
-#         return results
+    def jaccard(tpl):
+        results = []
+        (words, category) = tpl
+        for handler in hjHandlers[category]:
+            results.append({"featureName": handler["featureName"],
+                            "featureValue": handler["hybridJaccardInterpreter"](words),
+                            # for debugging
+                            "crfCategory": category,
+                            "crfWordSpan": words,
+                            # intended to support parametrization/provenance
+                            "featureDefinitionFile": os.path.basename(crfFeatureListFilename),
+                            "featureCrfModelFile": os.path.basename(crfModelFilename)})
+        return results
 
-#     # potentially there could be more than one interpretation, e.g. hairColor + hairType
-#     # is this a problem
-#     rdd_aligned = rdd_flat.flatMapValues(lambda v: jaccard(v))
-#     rdd_aligned.setName('rdd_aligned')
-#     debugDump(rdd_aligned)
+    # potentially there could be more than one interpretation, e.g. hairColor + hairType
+    # is this a problem
+    rdd_aligned = rdd_flat.flatMapValues(lambda v: jaccard(v))
+    rdd_aligned.setName('rdd_aligned')
+    debugDump(rdd_aligned)
 
-#    rdd_final = rdd_aligned.mapValues(lambda v: json.dumps(v))
-    rdd_final = rdd_chunked
+    rdd_final = rdd_aligned.mapValues(lambda v: json.dumps(v))
     rdd_final.setName('rdd_final')
     debugDump(rdd_final)
 
