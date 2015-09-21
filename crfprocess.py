@@ -19,6 +19,8 @@ from random import randint
 from collections import defaultdict
 import pprint
 from itertools import izip_longest
+import time
+from datetime import timedelta
 
 """We could build this (v1) ES JSON directly or provide enough info for Karma to do it:
 
@@ -154,11 +156,19 @@ def crfprocess(sc, input, output,
                limit=None, debug=False, location='hdfs', outputFormat="text", numPartitions=None, chunksPerPartition=100, hexDigits=3):
 
     debugOutput = output + '_debug'
-    def debugDump(rdd):
+    def debugDump(rdd,keys=True,listElements=False):
         if debug:
+            startTime = time.time()
             outdir = os.path.join(debugOutput, rdd.name() or "anonymous-%d" % randint(10000,99999))
-            print "write to outdir %r" % outdir
+            keyCount = rdd.keys().count() if keys else None
+            rowCount = rdd.count()
+            elementCount = rdd.mapValues(lambda x: len(x) if isinstance(x, (list, tuple)) else 0).values().sum() if listElements else None
+            
             rdd.saveAsTextFile(outdir)
+            endTime = time.time()
+            elapsedTime = endTime - startTime
+            print "wrote [%s] to outdir %r: [%s, %s, %s]" % (str(timedelta(seconds=elapsedTime)), outdir, keyCount, rowCount, elementCount)
+
 
     crfFeatureListFilename = featureListFilename
     crfModelFilename = modelFilename
@@ -179,9 +189,12 @@ def crfprocess(sc, input, output,
     # For debugging
     # If set, only those URIs so listed are used, everything else is rejected
     keepUris = []
-    # keepUris = ['http://dig.isi.edu/ht/data/page/442EA3A8B9FF69D65BC8B0D205C8C85204A7C799/1433150174000/processed']
+    # contains both hair and eyes
+    # keepUris.append('http://dig.isi.edu/ht/data/page/2384EBCB1DD4FCA505DD05AB15F386547D05B295/1429603739000/processed')
+    # keepUris.append('http://dig.isi.edu/ht/data/page/18507EEC7DD0A94A3A00F46D8B976CDFDD258723/1429603859000/processed')
+    #keepUris.append('http://dig.isi.edu/ht/data/page/442EA3A8B9FF69D65BC8B0D205C8C85204A7C799/1433150174000/processed')
     # for testing 'curly hair'
-    # keepUris = ['http://dig.isi.edu/ht/data/page/681A3E68456987B1EE11616280DC1DBBA5A6B754/1429606198000/processed']
+    #keepUris.append('http://dig.isi.edu/ht/data/page/681A3E68456987B1EE11616280DC1DBBA5A6B754/1429606198000/processed')
     if keepUris:
         rdd_crfl = rdd_crfl.filter(lambda (k,v): k in keepUris)
     rdd_crfl.setName('rdd_crfl')
@@ -297,7 +310,7 @@ def crfprocess(sc, input, output,
 
     rdd_work = rdd_prefixed_sorted.groupByKey().flatMapValues(lambda x: [y for y in iterChunks(x, chunksPerPartition)]).mapValues(lambda t: filter(lambda z:z, t))
     rdd_work.setName('rdd_work')
-    debugDump(rdd_work)
+    debugDump(rdd_work, listElements=True)
     try:
         print "At work, there are %d keys" % rdd_work.keys().distinct().count()
     except Exception as e:
