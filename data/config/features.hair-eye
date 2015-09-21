@@ -1,0 +1,106 @@
+# DEFINITIONS OF WORD- AND PHRASE-LIST FEATURES
+
+
+
+OPTIONS: monocase
+
+# defwordlist protein-vocab                   data/bio-amr/proteins.vocab
+
+# defwordlist pubchem-compound-CID-MeSH.vocab data/bio-amr/pubchem-compound-CID-MeSH.vocab
+# defwordlist amino-acid-vocab                data/bio-amr/amino-acids.txt,data/bio-amr/amr-bio-training.gazetteers.amino-acid
+# defwordlist small-molecule-vocab            data/bio-amr/chicago.gazetteers.small-molecule
+# defwordlist protein-segment-vocab           data/bio-amr/chicago.gazetteers.protein-segment
+# defwordlist gene-vocab			    data/bio-amr/ulf-gene-gazetteer.txt
+
+
+# protein-vocab                +- 2
+
+# pubchem-compound-CID-MeSH.vocab 
+# amino-acid-vocab
+# small-molecule-vocab
+
+# protein-segment-vocab
+
+
+# This trigram gives an extra 0.002 to get 0.825
+# protein-vocab-2/protein-vocab-1/protein-vocab-0
+
+
+
+
+# NOTE: Taking out 'shape' gives a huge loss: 0.673 vs. 0.695
+#       But adding a shape bigram gives a huge loss: 0.669 vs 0.695
+shape +- 0
+
+
+# NOTE: Token trigram gives a big gain over token bigram: 0.695 vs. 0.682
+
+token-2/token-1/token-0
+
+cvd
+
+# LOSING FEATURES:
+
+# compressed-cvd
+# word-with-digit
+# has-X-or-Z
+# ends-with-digit
+# contains-slash
+
+
+# NOTE: Adding a cvd trigram gives loss: 0.676 vs. 0.695
+cvd-1/cvd-0
+
+
+
+cvd.prefix3 +- 1
+cvd.prefix4 +- 1
+cvd.suffix1 +- 1
+cvd.suffix2 +- 1
+cvd.suffix3 +- 1
+cvd.suffix4 +- 1
+
+# NOTE: Reducing 'token' window from 2 to 1 gives a big gain: 0.807 vs. 0.825
+token +- 1 
+
+# NOTE: Decreasing 'upper-token' window from 2 to 1 gives a gain: 0.706 vs. 0.698
+upper-token +- 1
+
+
+# NOTE: Adding an upper-token bigram gives a loss: 0.682 vs. 0.695
+
+
+prefix3 +- 1
+prefix4 +- 1
+
+suffix1 +- 1
+suffix2 +- 1
+suffix3 +- 1
+suffix4 +- 1
+
+# NOTE: Taking out 'initial-capitalized' gives a huge loss: 0.682 vs. 0.693. Keep it!
+initial-capitalized +- 2
+
+# NOTE: 'has-cap-letters-only' is an almost 2 point win over all 'all-capitalized':  0.689 vs. 0.671  !
+has-cap-letters-only +- 2
+
+# NOTE: Taking out 'all-non-letters' gives a loss: 0.688 vs. 0.695
+all-non-letters +- 2
+
+# NOTE: 'mixed-case' now gives a tiny gain - 0.783 => 0.785.  Keep it.
+mixed-case +- 1
+
+# NOTE: Taking out 'non-initial-period' gives a LOSS. Keep it.
+non-initial-period +- 1
+
+
+# NOTE: Taking out 'internal-hypen' gives a gain: 0.693 vs. 0.689.  
+
+# NOTE: Taking out 'non-alpha-chars' gives a HUGE LOSS: 0.671 vs. 0.693.   Keep it.
+non-alpha-chars +- 1
+
+B:
+
+
+
+
