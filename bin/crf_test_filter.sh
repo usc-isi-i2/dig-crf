@@ -8,7 +8,7 @@ set -e
 ARCH=`uname -s`
 case $ARCH in
 Linux)
-	GGREP=/usr/local/bin/grep
+	GGREP=grep
 	;;
 Darwin)
 	GGREP=/opt/local/bin/grep
@@ -24,8 +24,17 @@ INPUT=$2
 
 # might be ./crf_test when running on cluster
 # CRFTEST=/usr/local/bin/crf_test
-# CRFTEST=./crf_test
-CRFTEST=crf_test
+CRFTEST="./crf_test"
+# CRFTEST=crf_test
+
+#GGREP=`which /usr/local/bin/grep`
+
+#echo "GGREP is $GGREP"
+#echo "MODEL is $MODEL"
+
+
+#cat ${INPUT}
+#exit
 
 # input will be in base64
 # after running the CRF test, each non-null line will have one final tabsep field
@@ -49,3 +58,5 @@ CRFTEST=crf_test
 # (6) python using base64 as an encoding: payload.encode('base64') (untested)
 
 cat ${INPUT} | python -c 'import sys,base64; sys.stdout.write(base64.standard_b64decode(sys.stdin.read()))' | $CRFTEST -m ${MODEL} | $GGREP -Pa '/\d{5}/\d{5}\t[^\t]+$' | $GGREP -Pva '\tO$' | awk 'BEGIN {FS="\t"; OFS="\t"} {print $1,$(NF-1),$(NF)}' | python -c 'import sys,base64; sys.stdout.write(base64.standard_b64encode(sys.stdin.read()))'
+
+# cat ${INPUT} | python -c 'import sys,base64; sys.stdout.write(base64.standard_b64decode(sys.stdin.read()))' | $CRFTEST -m ${MODEL} | python -c 'import sys,base64; sys.stdout.write(base64.standard_b64encode(sys.stdin.read()))'
