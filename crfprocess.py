@@ -494,6 +494,7 @@ def main(argv=None):
     parser.add_argument('-l','--limit', required=False, default=None, type=int)
     parser.add_argument('-v','--verbose', required=False, help='verbose', action='store_true')
     parser.add_argument('-z','--debug', required=False, help='debug', type=int)
+    parser.add_argument('-n','--name', required=False, default="")
     args=parser.parse_args()
 
     if args.jaccardSpec == []:
@@ -506,7 +507,11 @@ def main(argv=None):
         elif location == "hdfs":
             args.numPartitions = 50
 
-    sc = SparkContext(appName="crfprocess")
+    sparkName = "crfprocess"
+    if args.name:
+        sparkName = sparkName + " " + str(args.name)
+
+    sc = SparkContext(appName=sparkName)
     crfprocess(sc, args.input, args.output, 
                featureListFilename=args.featureListFilename,
                modelFilename=args.modelFilename,
