@@ -152,6 +152,16 @@ def crfprocess(sc, input, output,
             elapsedTime = endTime - startTime
             print ### "wrote [%s] to outdir %r: [%s, %s, %s]" % (str(timedelta(seconds=elapsedTime)), outdir, keyCount, rowCount, elementCount)
 
+    def goodbye(rdd):
+        try:
+            k = rdd.count()
+        except:
+            k = None
+        print "Just finished %s with size %s" % (rdd.name(), k)
+        exit(0)
+
+    def showPartitioning(rdd):
+        print "At %s, there are %d partitions" % (rdd.name(), rdd.getNumPartitions())
 
     crfFeatureListFilename = featureListFilename
     crfModelFilename = modelFilename
@@ -162,13 +172,26 @@ def crfprocess(sc, input, output,
     sc.addFile(crfModelFilename)
 
     # layout: pageUri -> content
-    rdd_crfl = sc.sequenceFile(input)
+    rdd_crfl = sc.sequenceFile(input, minSplits=256)
+    rdd_crfl.setName('rdd_crfl_input')
+    showPartitioning(rdd_crfl)
     if limit==0:
         limit = None
+
+    samplePrefix = False
+    sampleSeed = 1234
     if limit:
-        rdd_crfl = sc.parallelize(rdd_crfl.take(limit))
-    if numPartitions:
-        rdd_crfl = rdd_crfl.repartition(numPartitions)
+        if samplePrefix:
+            # Because this collects back to master, can create "task too large" condition
+            rdd_crfl = sc.parallelize(rdd_crfl.take(limit))
+        else:
+            # Instead, generate approximately 'limit' rows
+            ratio = float(limit) / rdd_crfl.count()
+            rdd_crfl = rdd_crfl.sample(False, ratio, seed=sampleSeed)
+        
+# IGNORE -p for now, all partitioning is algorithmic
+#     if numPartitions:
+#         rdd_crfl = rdd_crfl.repartition(numPartitions)
 
     # For debugging, allow inclusion/exclusion of items with known behavior
     # If set, only those URIs so listed are used, everything else is rejected
@@ -185,30 +208,45 @@ def crfprocess(sc, input, output,
         rdd_crfl = rdd_crfl.filter(lambda (k,v): k in keepUris)
     rdd_crfl.setName('rdd_crfl')
     debugDump(rdd_crfl)
+    showPartitioning(rdd_crfl)
 
     # layout: pageUri -> dict (from json)
     rdd_json = rdd_crfl.mapValues(lambda x: json.loads(x))
     rdd_json.setName('rdd_json')
     debugDump(rdd_json)
 
-    partitionWidth = hexDigits
-    def partitionByUriSha1(k, width=partitionWidth):
-        """input e.g, http://dig.isi.edu/ht/data/page/001283889C1E211B50C81F7361457CC2C94E495F/1429603858000/processed, 3
-output 1"""
-        try:
-            return int(k.split('/')[6][0:width], 16)
-        except:
-            return 0
+#     rdd_json.repartition(256)
 
-    # layout: pageUri -> sorted dict (from json) (partitioned based on prefix of sha1 portion of pageUri)
-    rdd_partitioned = rdd_json.repartitionAndSortWithinPartitions(numPartitions=16**partitionWidth,
-                                                                  partitionFunc=lambda k: partitionByUriSha1(k))
+#     partitionWidth = hexDigits
+#     print "partioning per %s" % partitionWidth
+#     def partitionByUriSha1(k, width=partitionWidth):
+#         """input e.g, http://dig.isi.edu/ht/data/page/001283889C1E211B50C81F7361457CC2C94E495F/1429603858000/processed, 3
+# output 1"""
+#         try:
+#             # 37 seconds
+#             # return int(k.split('/')[6][0:width], 16)
+#             # 45 seconds
+#             # return int(k.split('/')[6], 16)
+#             # 40 seconds
+#             return hash(k)
+#         except:
+#             return 0
+
+#     # layout: pageUri -> sorted dict (from json) (partitioned based on prefix of sha1 portion of pageUri)
+# #     rdd_partitioned = rdd_json.repartitionAndSortWithinPartitions(numPartitions=16**partitionWidth,
+# #                                                                   partitionFunc=lambda k: partitionByUriSha1(k))
+#     rdd_partitioned = rdd_json.repartition(256)
+#     rdd_partitioned.setName('rdd_partitioned')
+#     debugDump(rdd_partitioned)
+#     showPartitioning(rdd_partitioned)
+
+#     rdd_json = rdd_partitioned
 
     # print "### Processing %d input pages, initially into %s partitions" % (rdd_partitioned.count(), rdd_partitioned.getNumPartitions())
     # layout: pageUri -> (body tokens, title tokens)
     rdd_texts = rdd_json.mapValues(lambda x: (textTokens(extract_body(x)), textTokens(extract_title(x))))
     rdd_texts.setName('rdd_texts')
-    rdd_texts.persist()
+    # rdd_texts.persist()
     debugDump(rdd_texts)
 
     # We use the following encoding for values for CRF++'s so-called
@@ -291,6 +329,7 @@ output 1"""
     rdd_pipeinput = rdd_chunked.flatMap(lambda x: x).map(lambda r: b64encode(r))
     rdd_pipeinput.setName('rdd_pipeinput')
     debugDump(rdd_pipeinput, keys=False)
+    showPartitioning(rdd_pipeinput)
 
     # base64 encoded result of running crf_test and filtering to
     # include only word, wordUri, non-null label
@@ -304,6 +343,7 @@ output 1"""
     rdd_pipeoutput = rdd_pipeinput.pipe(cmd)
     rdd_pipeoutput.setName('rdd_pipeoutput')
     debugDump(rdd_pipeoutput)
+    showPartitioning(rdd_pipeoutput)
 
     # base64 decoded to regular serialized string
     # beware newlines corresponding to empty CRr++ crf_test output 
@@ -347,6 +387,7 @@ output 1"""
                                        lambda s1,s2: combFunc(s1,s2))
     rdd_agg.setName('rdd_agg')
     debugDump(rdd_agg)
+    showPartitioning(rdd_agg)
 
     # (docUri, subDocId) -> sorted list of (wordId, word, label)
     rdd_grouped = rdd_agg.mapValues(lambda s: sorted(s))
@@ -425,20 +466,22 @@ output 1"""
     rdd_aligned.setName('rdd_aligned')
     debugDump(rdd_aligned)
 
+
+    rdd_aligned = rdd_pipeinput
     # docUri -> json
     rdd_final = rdd_aligned.mapValues(lambda v: json.dumps(v))
     rdd_final.setName('rdd_final')
     debugDump(rdd_final)
 
-    if rdd_final.count() > 0:
+    if rdd_final.isEmpty():
+        print "### NO DATA TO WRITE"
+    else:
         if outputFormat == "sequence":
             rdd_final.saveAsSequenceFile(output)
         elif outputFormat == "text":
             rdd_final.saveAsTextFile(output)
         else:
             raise RuntimeError("Unrecognized output format: %s" % outputFormat)
-    else:
-        print "### NO DATA TO WRITE"
 
 def defaultJaccardSpec():
     l = [["eyeColor", "person_eyecolor", configPath("eyeColor_config.txt"), configPath("eyeColor_reference_wiki.txt")],
@@ -480,7 +523,7 @@ def main(argv=None):
 
     if not args.numPartitions:
         if location == "local":
-            args.numPartitions = 2
+            args.numPartitions = 3
         elif location == "hdfs":
             args.numPartitions = 50
 
