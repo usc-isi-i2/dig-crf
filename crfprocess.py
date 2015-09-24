@@ -133,10 +133,16 @@ def crfprocess(sc, input, output,
                limit=None, sampleSeed=1234,
                debug=False, location='hdfs', outputFormat="text"):
 
+    show = True if location == "local" else False
     def showPartitioning(rdd):
-        partitionCount = rdd.getNumPartitions()
-        valueCount = rdd.countApprox(10000, confidence=0.50)
-        print "At %s, there are %d partitions with on average %s values" % (rdd.name(), partitionCount, int(valueCount/float(partitionCount)))
+        """Seems to be significantly more expensive on cluster than locally"""
+        if show:
+            partitionCount = rdd.getNumPartitions()
+            try:
+                valueCount = rdd.countApprox(1000, confidence=0.50)
+            except:
+                valueCount = -1
+            print "At %s, there are %d partitions with on average %s values" % (rdd.name(), partitionCount, int(valueCount/float(partitionCount)))
 
     debugOutput = output + '_debug'
     def debugDump(rdd,keys=True,listElements=False):
