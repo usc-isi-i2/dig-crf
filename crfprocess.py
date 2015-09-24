@@ -327,11 +327,8 @@ output 1"""
     def organizeByOrigDoc(uri, word, label):
         (parentUri, docId, wordId) = uri.rsplit('/', 2)
         return ( (parentUri, docId), (wordId, word, label) )
+
     # composite key (docUri, subdocId) -> (wordId, word, label)
-
-    ### POSSIBLY, DON'T NEED TO SORT BY KEY
-    ### ALL WE NEED IS TO SORT THE RESULTS FOR ANY KEY
-
     rdd_reorg = rdd_tabular.map(lambda (uri,tpl): organizeByOrigDoc(uri, tpl[0], tpl[1]))
     rdd_reorg.setName('rdd_reorg')
     debugDump(rdd_reorg)
@@ -344,24 +341,17 @@ output 1"""
         s1.update(s2)
         return s1
 
+    # composite key (docUri, subdocId) -> set of (wordId, word, label)
     rdd_agg = rdd_reorg.aggregateByKey(set(),
                                        lambda s,c: seqFunc(s,c),
                                        lambda s1,s2: combFunc(s1,s2))
     rdd_agg.setName('rdd_agg')
     debugDump(rdd_agg)
 
+    # (docUri, subDocId) -> sorted list of (wordId, word, label)
     rdd_grouped = rdd_agg.mapValues(lambda s: sorted(s))
     rdd_grouped.setName('rdd_grouped')
     debugDump(rdd_grouped)
-
-
-    # each (parentUri, docId) has a sequence of (wordId, word, label)
-    # we want to consider them in order (by wordId)
-    # (docUri, subdocId) -> [(wordId, word, label), (wordId, word, label), ... ]
-    # rdd_grouped = rdd_reorg.groupByKey().mapValues(lambda x: [y for y in x])
-#     rdd_grouped = rdd_reorg.groupByKey()
-#     rdd_grouped.setName('rdd_grouped')
-#     debugDump(rdd_grouped)
 
     def harvest(seq):
         allSpans = []
