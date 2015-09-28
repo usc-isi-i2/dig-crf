@@ -32,10 +32,44 @@ cp ../../../hybrid-jaccard/hybridJaccard.py .
 zip crfprocess.zip hybridJaccard.py
 rm hybridJaccard.py
 
-cp ../../bin/crf_test .
+cp ../../bin/crf_test.linux ./crf_test
+chmod a+x crf_test
 zip crfprocess.zip crf_test
 rm crf_test
 
 cp ../../bin/crf_test_filter.sh .
+chmod a+x crf_test_filter.sh
 zip crfprocess.zip crf_test_filter.sh
 rm crf_test_filter.sh
+
+cp ../../bin/apply_crf_lines.py .
+chmod a+x apply_crf_lines.py
+zip crfprocess.zip apply_crf_lines.py
+rm apply_crf_lines.py
+
+zip crfprocess.zip __init__.py
+
+
+cp ../config/eyeColor_config.txt .
+zip crfprocessfiles.zip eyeColor_config.txt
+rm eyeColor_config.txt
+
+cp ../config/eyeColor_reference_wiki.txt .
+zip crfprocessfiles.zip eyeColor_reference_wiki.txt
+rm eyeColor_reference_wiki.txt
+
+cp ../config/hairColor_config.txt .
+zip crfprocessfiles.zip hairColor_config.txt
+rm hairColor_config.txt
+
+cp ../config/hairColor_reference_wiki.txt .
+zip crfprocessfiles.zip hairColor_reference_wiki.txt
+rm hairColor_reference_wiki.txt
+
+cp ../config/features.hair-eye .
+zip crfprocessfiles.zip features.hair-eye
+rm features.hair-eye
+
+cp ../config/dig-hair-eye-train.model .
+zip crfprocessfiles.zip dig-hair-eye-train.model
+rm dig-hair-eye-train.model
