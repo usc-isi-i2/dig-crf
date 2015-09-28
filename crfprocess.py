@@ -17,7 +17,6 @@ import crf_features
 from base64 import b64encode, b64decode
 from random import randint
 from collections import defaultdict
-import pprint
 from itertools import izip_longest
 import time
 from datetime import timedelta
@@ -169,9 +168,9 @@ def crfprocess(sc, input, output,
             rdd.saveAsTextFile(outdir)
             endTime = time.time()
             elapsedTime = endTime - startTime
-            print ### "wrote [%s] to outdir %r: [%s, %s, %s]" % (str(timedelta(seconds=elapsedTime)), outdir, keyCount, rowCount, elementCount)
+            print "wrote [%s] to outdir %r: [%s, %s, %s]" % (str(timedelta(seconds=elapsedTime)), outdir, keyCount, rowCount, elementCount)
 
-    def goodbye(rdd):
+    def showSizeAndExit(rdd):
         try:
             k = rdd.count()
         except:
@@ -494,13 +493,17 @@ def main(argv=None):
     parser.add_argument('-m','--modelFilename', default=configPath('dig-hair-eye-train.model'))
     parser.add_argument('-j','--jaccardSpec', action='append', default=[], type=jaccardSpec,
                         help='each value should be <category,featureName,config.json,reference.txt>')
-    parser.add_argument('-p','--numPartitions', required=False, default=None, type=int)
-    parser.add_argument('-c','--chunksPerPartition', required=False, default=100, type=int)
-    parser.add_argument('-k','--coalesce', required=False, default=None, type=int)
+    parser.add_argument('-p','--numPartitions', required=False, default=None, type=int,
+                        help='minimum initial number of partitions')
+    parser.add_argument('-c','--chunksPerPartition', required=False, default=100, type=int,
+                        help='number of CRF input documents presented to crf_test at a time')
+    parser.add_argument('-k','--coalescePartitions', required=False, default=None, type=int,
+                        help='number of partitions to coalesce down to after crf')
+    parser.add_argument('-n','--name', required=False, default="", help='Added to name of spark job, for debugging')
+    parser.add_argument('-t','--type', required=False, type=int, default=1, help='1: istr58m format; 2: generic Karma format')
     parser.add_argument('-l','--limit', required=False, default=None, type=int)
     parser.add_argument('-v','--verbose', required=False, help='verbose', action='store_true')
     parser.add_argument('-z','--debug', required=False, help='debug', type=int)
-    parser.add_argument('-n','--name', required=False, default="")
     args=parser.parse_args()
 
     if args.jaccardSpec == []:
@@ -528,7 +531,7 @@ def main(argv=None):
                outputFormat="sequence",
                numPartitions=args.numPartitions,
                chunksPerPartition=args.chunksPerPartition,
-               coalesce=args.coalesce)
+               coalesce=args.coalescePartitions)
 
 # call main() if this is run as standalone
 if __name__ == "__main__":
