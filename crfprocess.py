@@ -141,6 +141,7 @@ def binPath(n):
     return os.path.join(binDir, n)
 
 def crfprocess(sc, input, output, 
+               uriClass='Offer',
                featureListFilename=configPath('features.hair-eye'),
                modelFilename=configPath('dig-hair-eye-train.model'),
                jaccardSpecs=[],
@@ -250,12 +251,19 @@ def crfprocess(sc, input, output,
     rdd_json.setName('rdd_json')
     debugDump(rdd_json)
 
+    # RETAIN ONLY THOSE MATCHING URI CLASS
+    if uriClass:
+        rdd_relevant = rdd_json.filter(lambda (k,j): j.get("a", None)==uriClass)
+    else:
+        rdd_relevant = rdd_json
+    rdd_relevant.setName('rdd_relevant')
+    debugDump(rdd_relevant)
+
     # print "### Processing %d input pages, initially into %s partitions" % (rdd_partitioned.count(), rdd_partitioned.getNumPartitions())
     # layout: pageUri -> (body tokens, title tokens)
     rdd_texts = rdd_json.mapValues(lambda x: (textTokens(extract_body(x, inputType=inputType)), 
                                               textTokens(extract_title(x, inputType=inputType))))
     rdd_texts.setName('rdd_texts')
-    # rdd_texts.persist()
     debugDump(rdd_texts)
 
     # We use the following encoding for values for CRF++'s so-called
@@ -521,6 +529,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('-i','--input', required=True)
     parser.add_argument('-o','--output', required=True)
+    parser.add_argument('-u','--uriClass', default='Offer')
     parser.add_argument('-f','--featureListFilename', default=configPath('features.hair-eye'))
     parser.add_argument('-m','--modelFilename', default=configPath('dig-hair-eye-train.model'))
     parser.add_argument('-j','--jaccardSpec', action='append', default=[], type=jaccardSpec,
@@ -555,6 +564,7 @@ def main(argv=None):
 
     sc = SparkContext(appName=sparkName)
     crfprocess(sc, args.input, args.output, 
+               uriClass=args.uriClass,
                featureListFilename=args.featureListFilename,
                modelFilename=args.modelFilename,
                jaccardSpecs=[j.split(',') for j in args.jaccardSpec],
