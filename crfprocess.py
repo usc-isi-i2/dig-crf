@@ -29,19 +29,40 @@ def iterChunks(iterable, n, fillvalue=None):
 
 ### end from util.py
 
-def extract_body(main_json):
-    try:
-        text = main_json["hasBodyPart"]["text"]
-        return text
-    except:
-        pass
+DIG_HT = 1
+DIG_GENERIC = 2
 
-def extract_title(main_json):
-    try:
-        return main_json["hasTitlePart"]["text"]
-    except:
-        pass
+def extract_body(main_json, inputType=DIG_HT):
+    if inputType == DIG_HT:
+        try:
+            text = main_json["hasBodyPart"]["text"]
+            return text
+        except:
+            pass
+    elif inputType == DIG_GENERIC:
+        try:
+            text = main_json["mainEntityOfPage"]["description"]
+            return text
+        except:
+            return None
+    else:
+        raise RuntimeError("Unrecognized input type: %s" % inputType)
 
+def extract_title(main_json, inputType=DIG_HT):
+    if inputType == DIG_HT:
+        try:
+            return main_json["hasTitlePart"]["text"]
+        except:
+            pass
+    elif inputType == DIG_GENERIC:
+        try:
+            text = main_json["title"]
+            return text
+        except:
+            pass
+    else:
+        raise RuntimeError("Unrecognized input type: %s" % inputType)
+    
 def textTokens(texts):
     # Turn None into empty text 
     texts = texts or ""
@@ -128,11 +149,13 @@ def crfprocess(sc, input, output,
                # number of documents to send to CRF in one call
                chunksPerPartition=100,
                # coalesce/down partition to this number after CRF
-               coalesce=None,
+               coalescePartitions=None,
+               # inputType
+               inputType=DIG_HT,
                limit=None, sampleSeed=1234,
-               debug=False, location='hdfs', outputFormat="text"):
+               debug=0, location='hdfs', outputFormat="text"):
 
-    show = True if location == "local" else False
+    show = True if debug>=1 else False
     def showPartitioning(rdd):
         """Seems to be significantly more expensive on cluster than locally"""
         if show:
@@ -147,7 +170,7 @@ def crfprocess(sc, input, output,
     def debugDump(rdd,keys=True,listElements=False):
         showPartitioning(rdd)
         keys=False
-        if debug:
+        if debug >= 2:
             startTime = time.time()
             outdir = os.path.join(debugOutput, rdd.name() or "anonymous-%d" % randint(10000,99999))
             keyCount = None
@@ -229,7 +252,8 @@ def crfprocess(sc, input, output,
 
     # print "### Processing %d input pages, initially into %s partitions" % (rdd_partitioned.count(), rdd_partitioned.getNumPartitions())
     # layout: pageUri -> (body tokens, title tokens)
-    rdd_texts = rdd_json.mapValues(lambda x: (textTokens(extract_body(x)), textTokens(extract_title(x))))
+    rdd_texts = rdd_json.mapValues(lambda x: (textTokens(extract_body(x, inputType=inputType)), 
+                                              textTokens(extract_title(x, inputType=inputType))))
     rdd_texts.setName('rdd_texts')
     # rdd_texts.persist()
     debugDump(rdd_texts)
@@ -325,8 +349,8 @@ def crfprocess(sc, input, output,
     print "### Pipe cmd is %r" % cmd
 
     rdd_pipeoutput = rdd_pipeinput.pipe(cmd)
-    if coalesce:
-        rdd_pipeoutput = rdd_pipeoutput.coalesce(max(2, coalesce))
+    if coalescePartitions:
+        rdd_pipeoutput = rdd_pipeoutput.coalesce(max(2, coalescePartitions))
     rdd_pipeoutput.setName('rdd_pipeoutput')
     debugDump(rdd_pipeoutput)
 
@@ -500,7 +524,8 @@ def main(argv=None):
     parser.add_argument('-k','--coalescePartitions', required=False, default=None, type=int,
                         help='number of partitions to coalesce down to after crf')
     parser.add_argument('-n','--name', required=False, default="", help='Added to name of spark job, for debugging')
-    parser.add_argument('-t','--type', required=False, type=int, default=1, help='1: istr58m format; 2: generic Karma format')
+    parser.add_argument('-t','--inputType', required=False, type=int, default=1, choices=(DIG_HT, DIG_GENERIC),
+                        help='1: istr58m/HT format; 2: generic Karma format')
     parser.add_argument('-l','--limit', required=False, default=None, type=int)
     parser.add_argument('-v','--verbose', required=False, help='verbose', action='store_true')
     parser.add_argument('-z','--debug', required=False, help='debug', type=int)
@@ -525,19 +550,15 @@ def main(argv=None):
                featureListFilename=args.featureListFilename,
                modelFilename=args.modelFilename,
                jaccardSpecs=[j.split(',') for j in args.jaccardSpec],
-               debug=True if args.debug > 0 else False,
+               debug=args.debug,
                limit=args.limit,
                location=location,
                outputFormat="sequence",
                numPartitions=args.numPartitions,
                chunksPerPartition=args.chunksPerPartition,
-               coalesce=args.coalescePartitions)
+               coalescePartitions=args.coalescePartitions,
+               inputType=args.inputType)
 
 # call main() if this is run as standalone
 if __name__ == "__main__":
     sys.exit(main())
-
-# STATS with 4.2Mb input, featureFile=features.hair-eye, model=dig-hair-eye-train.model, featureCount=
-# With hexDigits=1 (16 partition buckets), 1m33.653s
-# With hexDigits=2 (256 partition buckets), 1m51.499s
-# With hexDigits=3 (4096 partition buckets), 3m42.185s
