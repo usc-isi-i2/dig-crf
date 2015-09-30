@@ -470,10 +470,18 @@ def crfprocess(sc, input, output,
 
     # there could be more than one interpretation, e.g. hairColor + hairType for a given CRF category
     # use flatMapValues to iterate over all
-    rdd_aligned = rdd_flat.flatMapValues(lambda v: jaccard(v))
+    rdd_jaccard = rdd_flat.flatMapValues(lambda v: jaccard(v))
+    rdd_jaccard.setName('rdd_jaccard')
+    debugDump(rdd_jaccard)
+
+    def extendDict(d, key, value):
+        d[key] = value
+        return d
+
+    # add in the URI for karma modeling purposes
+    rdd_aligned = rdd_jaccard.map(lambda (uri,v): (uri, extendDict(v, "uri", uri)))
     rdd_aligned.setName('rdd_aligned')
     debugDump(rdd_aligned)
-
 
     # rdd_aligned = rdd_pipeinput
     # docUri -> json
