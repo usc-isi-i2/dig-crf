@@ -21,6 +21,14 @@ from itertools import izip_longest
 import time
 from datetime import timedelta
 
+### from trollchar.py
+
+def asList(x):
+    if isinstance(x, list):
+        return x
+    else:
+        return [x]
+
 ### from util.py
 
 def iterChunks(iterable, n, fillvalue=None):
@@ -145,6 +153,7 @@ def crfprocess(sc, input, output,
                featureListFilename=configPath('features.hair-eye'),
                modelFilename=configPath('dig-hair-eye-train.model'),
                jaccardSpecs=[],
+               svebor=False,
                # minimum initial number of partitions
                numPartitions=None, 
                # number of documents to send to CRF in one call
@@ -259,10 +268,24 @@ def crfprocess(sc, input, output,
     rdd_relevant.setName('rdd_relevant')
     debugDump(rdd_relevant)
 
+    def byIdentifier(k,v):
+        result = []
+        for i in asList(v.get("identifier", "missing")):
+            result.append( (k + "-" + str(i), v) )
+        return result
+
+    # Add identifier to URI
+    if svebor:
+        rdd_altered = rdd_relevant.flatMap(lambda (uri, j): byIdentifier(uri, j))
+    else:
+        rdd_altered = rdd_relevant
+    rdd_altered.setName('rdd_altered')
+    debugDump(rdd_altered)
+
     # print "### Processing %d input pages, initially into %s partitions" % (rdd_partitioned.count(), rdd_partitioned.getNumPartitions())
     # layout: pageUri -> (body tokens, title tokens)
-    rdd_texts = rdd_json.mapValues(lambda x: (textTokens(extract_body(x, inputType=inputType)), 
-                                              textTokens(extract_title(x, inputType=inputType))))
+    rdd_texts = rdd_altered.mapValues(lambda x: (textTokens(extract_body(x, inputType=inputType)), 
+                                                 textTokens(extract_title(x, inputType=inputType))))
     rdd_texts.setName('rdd_texts')
     debugDump(rdd_texts)
 
@@ -493,7 +516,14 @@ def crfprocess(sc, input, output,
 
     # rdd_aligned = rdd_pipeinput
     # docUri -> json
-    rdd_final = rdd_aligned.mapValues(lambda v: json.dumps(v))
+
+    def recoverIdentifier(k):
+        return k.rsplit('-',1)[-1]
+
+    if svebor:
+        rdd_final = rdd_aligned.map(lambda (k,v): (recoverIdentifier(k), v.get("featureValue"))).filter(lambda (k,v): v!='NONE')
+    else:
+        rdd_final = rdd_aligned.mapValues(lambda v: json.dumps(v))
     rdd_final.setName('rdd_final')
     debugDump(rdd_final)
 
@@ -504,6 +534,9 @@ def crfprocess(sc, input, output,
             rdd_final.saveAsSequenceFile(output)
         elif outputFormat == "text":
             rdd_final.saveAsTextFile(output)
+        elif outputFormat == "tsv":
+            rdd_tsv = rdd_final.map(lambda (k,v): k + "\t" + v)
+            rdd_tsv.saveAsTextFile(output)
         else:
             raise RuntimeError("Unrecognized output format: %s" % outputFormat)
 
@@ -513,8 +546,12 @@ def defaultJaccardSpec():
          ["hairType", "person_hairtexture", configPath("hairTexture_config.txt"), configPath("hairTexture_reference_wiki.txt")]]
     return [",".join(x) for x in l]
 
+def sveborJaccardSpec():
+    l = [["hairType", "person_haircolor", configPath("hairColor_config.txt"), configPath("hairColor_reference_wiki.txt")]]
+    return [",".join(x) for x in l]
+
 def jaccardSpec(s):
-    "pair of existing files separated by comma"
+    "4-tuple of string,string,existing file,existing file separated by comma"
     try:
         (category,digFeature,cfg,ref) = s.split(',')
         if category and digFeature and os.path.exists(cfg) and os.path.exists(ref):
@@ -546,9 +583,17 @@ def main(argv=None):
     parser.add_argument('-l','--limit', required=False, default=None, type=int)
     parser.add_argument('-v','--verbose', required=False, help='verbose', action='store_true')
     parser.add_argument('-z','--debug', required=False, help='debug', type=int)
+    parser.add_argument('-s','--svebor', default=False, action='store_true')
     args=parser.parse_args()
 
-    if args.jaccardSpec == []:
+    # might become an option
+    outputFormat = 'sequence'
+
+    # default HJ recognizers to any known special situation 
+    if args.svebor:
+        args.jaccardSpec = sveborJaccardSpec()
+        outputFormat = 'tsv'
+    elif args.jaccardSpec == []:
         args.jaccardSpec = defaultJaccardSpec()
     # pprint.pprint(args.jaccardSpec)
 
@@ -568,10 +613,11 @@ def main(argv=None):
                featureListFilename=args.featureListFilename,
                modelFilename=args.modelFilename,
                jaccardSpecs=[j.split(',') for j in args.jaccardSpec],
+               svebor=args.svebor,
                debug=args.debug,
                limit=args.limit,
                location=location,
-               outputFormat="sequence",
+               outputFormat=outputFormat,
                numPartitions=args.numPartitions,
                chunksPerPartition=args.chunksPerPartition,
                coalescePartitions=args.coalescePartitions,
