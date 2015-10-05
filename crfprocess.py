@@ -521,7 +521,8 @@ def crfprocess(sc, input, output,
         return k.rsplit('-',1)[-1]
 
     if svebor:
-        rdd_final = rdd_aligned.map(lambda (k,v): (recoverIdentifier(k), v.get("featureValue"))).filter(lambda (k,v): v!='NONE')
+        rdd_final = rdd_aligned.map(lambda (k,v): (recoverIdentifier(k), (v.get("featureName"),
+                                                                          v.get("featureValue")))).filter(lambda (k,p): p[1]!='NONE')
     else:
         rdd_final = rdd_aligned.mapValues(lambda v: json.dumps(v))
     rdd_final.setName('rdd_final')
@@ -535,7 +536,7 @@ def crfprocess(sc, input, output,
         elif outputFormat == "text":
             rdd_final.saveAsTextFile(output)
         elif outputFormat == "tsv":
-            rdd_tsv = rdd_final.map(lambda (k,v): k + "\t" + v)
+            rdd_tsv = rdd_final.map(lambda (k,p): k + "\t" + p[0] + "\t" + p[1])
             rdd_tsv.saveAsTextFile(output)
         else:
             raise RuntimeError("Unrecognized output format: %s" % outputFormat)
