@@ -1,0 +1,4 @@
+short
+medium
+shoulder-length: shoulder
+long
