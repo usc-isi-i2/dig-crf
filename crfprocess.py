@@ -37,40 +37,53 @@ def iterChunks(iterable, n, fillvalue=None):
 
 ### end from util.py
 
-DIG_HT = 1
-DIG_GENERIC = 2
+DIG_BODYPART = 1
+DIG_OFFER = 2
+DIG_WEBPAGE = 3
 
-def extract_body(main_json, inputType=DIG_HT):
-    if inputType == DIG_HT:
+def extract_body(main_json, inputType=DIG_WEBPAGE):
+    if inputType == DIG_BODYPART:
         try:
             text = main_json["hasBodyPart"]["text"]
             return text
         except:
             pass
-    elif inputType == DIG_GENERIC:
+    elif inputType == DIG_OFFER:
         try:
             text = main_json["mainEntityOfPage"]["description"]
+            return text
+        except:
+            return None
+    elif inputType == DIG_WEBPAGE:
+        try:
+            text = main_json["description"]
             return text
         except:
             return None
     else:
         raise RuntimeError("Unrecognized input type: %s" % inputType)
 
-def extract_title(main_json, inputType=DIG_HT):
-    if inputType == DIG_HT:
+def extract_title(main_json, inputType=DIG_BODYPART):
+    if inputType == DIG_BODYPART:
         try:
             return main_json["hasTitlePart"]["text"]
         except:
             pass
-    elif inputType == DIG_GENERIC:
+    elif inputType == DIG_OFFER:
         try:
-            text = main_json["title"]
-            return text
+            title = main_json["title"]
+            return title
+        except:
+            pass
+    elif inputType == DIG_WEBPAGE:
+        try:
+            title = main_json["name"]
+            return title
         except:
             pass
     else:
         raise RuntimeError("Unrecognized input type: %s" % inputType)
-    
+
 def textTokens(texts):
     # Turn None into empty text 
     texts = texts or ""
@@ -161,7 +174,7 @@ def crfprocess(sc, input, output,
                # coalesce/down partition to this number after CRF
                coalescePartitions=None,
                # inputType
-               inputType=DIG_HT,
+               inputType=DIG_WEBPAGE,
                limit=None, sampleSeed=1234,
                debug=0, location='hdfs', outputFormat="text"):
 
@@ -581,8 +594,8 @@ def main(argv=None):
     parser.add_argument('-k','--coalescePartitions', required=False, default=None, type=int,
                         help='number of partitions to coalesce down to after crf')
     parser.add_argument('-n','--name', required=False, default="", help='Added to name of spark job, for debugging')
-    parser.add_argument('-t','--inputType', required=False, type=int, default=1, choices=(DIG_HT, DIG_GENERIC),
-                        help='1: istr58m/HT format; 2: generic Karma format')
+    parser.add_argument('-t','--inputType', required=False, type=int, default=1, choices=(DIG_BODYPART, DIG_OFFER, DIG_WEBPAGE),
+                        help='1: istr58m/HT format; 2: multiroot Karma format; 3: Karma Webpage name/description')
     parser.add_argument('-l','--limit', required=False, default=None, type=int)
     parser.add_argument('-v','--verbose', required=False, help='verbose', action='store_true')
     parser.add_argument('-z','--debug', required=False, help='debug', type=int)
