@@ -162,7 +162,10 @@ def binPath(n):
     return os.path.join(binDir, n)
 
 def crfprocess(sc, input, output, 
-               uriClass='Offer',
+               # specify uriClass=None to mean default it from inputType
+               # specify uriClass=False to mean there is no uriClass filtering
+               # specify uriClass=class name (e.g., 'Offer') to fully specify it
+               uriClass=None,
                featureListFilename=configPath('features.hair-eye'),
                modelFilename=configPath('dig-hair-eye-train.model'),
                jaccardSpecs=[],
@@ -188,6 +191,8 @@ def crfprocess(sc, input, output,
             except:
                 valueCount = -1
             print "At %s, there are %d partitions with on average %s values" % (rdd.name(), partitionCount, int(valueCount/float(partitionCount)))
+            if valueCount == 0:
+                showSizeAndExit(rdd)
 
     debugOutput = output + '_debug'
     def debugDump(rdd,keys=True,listElements=False):
@@ -274,7 +279,15 @@ def crfprocess(sc, input, output,
     debugDump(rdd_json)
 
     # RETAIN ONLY THOSE MATCHING URI CLASS
+    if uriClass==None:
+        if inputType==DIG_WEBPAGE:
+            uriClass='WebPage'
+        elif inputType==DIG_OFFER:
+            uriClass='Offer'
+        else:
+            raise('Unknown inputType')
     if uriClass:
+        print("Filtering on uriClass={}".format(uriClass))
         rdd_relevant = rdd_json.filter(lambda (k,j): j.get("a", None)==uriClass)
     else:
         rdd_relevant = rdd_json
@@ -582,7 +595,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('-i','--input', required=True)
     parser.add_argument('-o','--output', required=True)
-    parser.add_argument('-u','--uriClass', default='Offer')
+    parser.add_argument('-u','--uriClass', default=None)
     parser.add_argument('-f','--featureListFilename', default=configPath('features.hair-eye'))
     parser.add_argument('-m','--modelFilename', default=configPath('dig-hair-eye-train.model'))
     parser.add_argument('-j','--jaccardSpec', action='append', default=[], type=jaccardSpec,
