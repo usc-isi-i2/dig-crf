@@ -507,16 +507,22 @@ def crfprocess(sc, input, output,
     hjHandlers = defaultdict(list)
     for (category,digFeature,config,reference) in jaccardSpecs:
         # add one handler
-        hjHandlers[category].append({"category": category,
-                                     "featureName": digFeature,
-                                     "hybridJaccardInterpreter": HybridJaccard(config_path=config, ref_path=reference).findBestMatch})
+        if config and reference:
+            hjHandlers[category].append({"category": category,
+                                         "featureName": digFeature,
+                                         "hybridJaccardInterpreter": HybridJaccard(config_path=config, ref_path=reference).findBestMatch})
+        else:
+            hjHandlers[category].append({"category": category,
+                                         "featureName": digFeature,
+                                         "hybridJaccardInterpreter": None})
 
     def jaccard(tpl):
         results = []
         (words, category) = tpl
         for handler in hjHandlers[category]:
+            interpreter = handler["hybridJaccardInterpreter"]
             results.append({"featureName": handler["featureName"],
-                            "featureValue": handler["hybridJaccardInterpreter"](words),
+                            "featureValue": interpreter(words) if interpreter else words,
                             # for debugging
                             "crfCategory": category,
                             "crfWordSpan": words,
@@ -580,10 +586,16 @@ def sveborJaccardSpec():
     return [",".join(x) for x in l]
 
 def jaccardSpec(s):
-    "4-tuple of string,string,existing file,existing file separated by comma"
+    """4-tuple of 
+string,string,existing file,existing file
+or 
+string,string,empty string,empty string
+separated by comma"""
     try:
         (category,digFeature,cfg,ref) = s.split(',')
         if category and digFeature and os.path.exists(cfg) and os.path.exists(ref):
+            return s
+        if category and digFeature and cfg=='' and ref=='':
             return s
     except:
         pass
