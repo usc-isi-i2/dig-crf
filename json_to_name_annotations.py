@@ -1,6 +1,8 @@
+import sys
 import json
 import codecs
 from argparse import ArgumentParser
+from itertools import count, izip
 
 scriptArgs = ArgumentParser()
 scriptArgs.add_argument("--inputs",nargs='+',help="File containing a JSON list of JSON annotation objects")
@@ -76,6 +78,8 @@ def processJSONForms (inputFile,outputFile,outstream):
             # outstream.write("%s\t%s\n" % (sentTokens[i].encode("utf-8"),labels[i]))
             # outstream.write("%s\t%s\n" % (sentTokens[i],labels[i]))
             token = fixToken(sentTokens[i])
+            if token != sentTokens[i]:
+                print >> sys.stderr, ("Making edit in form {}".format(form))
             tmp = token
             tmp += unicode("\t")
             tmp += unicode(labels[i])
@@ -104,12 +108,17 @@ def fixToken (token):
                 newToken += char
         if (newToken == ""):
             newToken = "__BAD__"
+        # print >> sys.stderr, ("Substitute [{}] for [{}]".format(newToken, token)).encode('utf-8')
+        print >> sys.stderr, "Substitute old {} new {}".format(json.dumps(token), json.dumps(newToken))
+        print >> sys.stderr, "Removed {}".format(["#"+str(i) for i,c in izip(count(len(token)), token)])
         return newToken
     else:
         return token
 
 def shouldRemoveChar (char):
     # return (char.isspace() or char == u"\u009c")
+    if char.isspace():
+        print >> sys.stderr, "Must remove char [%r]" % char
     return char.isspace()
 
 def filterTokens (tokens,labels):
