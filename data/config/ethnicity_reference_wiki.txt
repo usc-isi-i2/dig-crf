@@ -1,0 +1,117 @@
+african
+american
+arabian: arabic, arabia
+argentine: argentinian
+armenian: armenia
+asian indian: east indian
+asian: asiana
+australian: australia
+austrian: austria
+bahamian: bahamas
+barbadian: bajan
+belarusian: belarus
+belgian: belgium
+belizean: belezian, belizian, belizan
+blacanese
+black: african-american, AA, afro-american, ebony, ebonie
+blasian: blazian
+bolivian: bolivia
+brazilian: brazil
+british: britian
+bulgarian: bulgaria
+cajun
+cambodian: cambodia
+canadian: canada
+cantonese
+caribbean: west indian
+caucasian: white
+chaldean
+cherokee
+chinese: china
+columbian: colombian, colombiana
+costa rican: costarican, costa
+creole
+cuban: cubana
+czechoslovakian
+danish: denmark
+dominican
+ecuadorian: ecuadorean
+egyptian: egypt
+eritrean: eritrea
+ethiopian: ethopian
+eurasian
+european: europe
+fijian: fiji
+filipina: philipina, filipino, philippines
+french canadian
+french: france
+german: germany
+greek: grecian, greece
+guamanian: chamorro
+guatemalan: guatemala
+guyanese: guyana
+haitian: haiti
+hawaiian: hawaii
+hispanic: latina, latin, latin american, latino, chicano, chicana, mami, mammie
+honduran: honduras
+hong kong: hongkong
+hungarian: hungary
+indian: india
+irish: ireland
+israeli: israel
+italian: italy
+jamaican: jamaica
+japanese: japan
+korean: korea
+laotian: laos
+lebanese: lebanon
+malaysian: malaysia
+mayan
+mediterranean
+mexican: mexicana
+micronesian
+mixed: mix
+moroccan: morocco
+mulatto
+native american: native
+nicaraguan: nicaragua
+nigerian: nigeria
+norwegian: norway
+nubian: newbian
+oriental: orient
+pakistan: pakistan
+palestinian: palestine
+panamanian: panama
+persian: iranian, iran
+peruvian: peru
+polynesian
+portuguese: portugal
+puerto rican: puertorican, rica, rican, boricua, boriquén, borinquén, borinqueño
+punjabi
+romanian: rumanian, romania, rumania
+russian: russia
+salvadorean: salvadorian
+samoan: samoa
+scandinavian: scandinavia
+sicilian: sicily
+singaporean: singapore
+slovakian
+somali: somalian
+south american
+southern
+spanish: español, españa, spain
+swedish: sweden
+syrian: syria
+tahitian: tahiti
+taiwanese: taiwan
+thai: thailand
+trinidadian: trinidad, trini
+ukrainian: ukraine
+venezuelan: venezuela: venezuelana
+vietnamese: viet namese, vietnam
+yugoslavian: yugoslavia
+christian
+jewish
+caramel
+chocolate
+redbone
