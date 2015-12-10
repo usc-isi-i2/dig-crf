@@ -12,9 +12,9 @@ barbadian: bajan
 belarusian: belarus
 belgian: belgium
 belizean: belezian, belizian, belizan
-blacanese
+biracial
 black: african-american, AA, afro-american, ebony, ebonie
-blasian: blazian
+blasian: blazian, blacanese
 bolivian: bolivia
 brazilian: brazil
 british: britian
@@ -68,6 +68,7 @@ lebanese: lebanon
 malaysian: malaysia
 mayan
 mediterranean
+mestizo: mezcla
 mexican: mexicana
 micronesian
 mixed: mix
