@@ -49,6 +49,7 @@ rm apply_crf_lines.py
 
 zip crfprocess.zip __init__.py
 
+# eye color
 
 cp ../config/eyeColor_config.txt .
 zip crfprocessfiles.zip eyeColor_config.txt
@@ -58,6 +59,8 @@ cp ../config/eyeColor_reference_wiki.txt .
 zip crfprocessfiles.zip eyeColor_reference_wiki.txt
 rm eyeColor_reference_wiki.txt
 
+# hair color
+
 cp ../config/hairColor_config.txt .
 zip crfprocessfiles.zip hairColor_config.txt
 rm hairColor_config.txt
@@ -65,6 +68,26 @@ rm hairColor_config.txt
 cp ../config/hairColor_reference_wiki.txt .
 zip crfprocessfiles.zip hairColor_reference_wiki.txt
 rm hairColor_reference_wiki.txt
+
+# hair texture
+
+cp ../config/hairTexture_config.txt .
+zip crfprocessfiles.zip hairTexture_config.txt
+rm hairTexture_config.txt
+
+cp ../config/hairTexture_reference_wiki.txt .
+zip crfprocessfiles.zip hairTexture_reference_wiki.txt
+rm hairTexture_reference_wiki.txt
+
+# hair length
+
+cp ../config/hairLength_config.txt .
+zip crfprocessfiles.zip hairLength_config.txt
+rm hairLength_config.txt
+
+cp ../config/hairLength_reference_wiki.txt .
+zip crfprocessfiles.zip hairLength_reference_wiki.txt
+rm hairLength_reference_wiki.txt
 
 cp ../config/features.hair-eye .
 zip crfprocessfiles.zip features.hair-eye
