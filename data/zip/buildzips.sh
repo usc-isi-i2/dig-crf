@@ -89,6 +89,8 @@ cp ../config/hairLength_reference_wiki.txt .
 zip crfprocessfiles.zip hairLength_reference_wiki.txt
 rm hairLength_reference_wiki.txt
 
+# models/features for the above
+
 cp ../config/features.hair-eye .
 zip crfprocessfiles.zip features.hair-eye
 rm features.hair-eye
@@ -96,3 +98,33 @@ rm features.hair-eye
 cp ../config/dig-hair-eye-train.model .
 zip crfprocessfiles.zip dig-hair-eye-train.model
 rm dig-hair-eye-train.model
+
+# working name
+
+cp ../config/workingname_config.txt .
+zip crfprocessfiles.zip workingname_config.txt
+rm workingname_config.txt
+
+cp ../config/workingname_reference_wiki.txt .
+zip crfprocessfiles.zip workingname_reference_wiki.txt
+rm workingname_reference_wiki.txt
+
+# ethnicity
+
+cp ../config/ethnicity_config.txt .
+zip crfprocessfiles.zip ethnicity_config.txt
+rm ethnicity_config.txt
+
+cp ../config/ethnicity_reference_wiki.txt .
+zip crfprocessfiles.zip ethnicity_reference_wiki.txt
+rm ethnicity_reference_wiki.txt
+
+# models/features for the above
+
+cp ../config/features.name-ethnic .
+zip crfprocessfiles.zip features.name-ethnic
+rm features.name-ethnic
+
+cp ../config/dig-name-ethnic-train.model .
+zip crfprocessfiles.zip dig-name-ethnic-train.model
+rm dig-name-ethnic-train.model
