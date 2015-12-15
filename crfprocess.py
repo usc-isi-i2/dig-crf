@@ -169,7 +169,7 @@ def crfprocess(sc, input, output,
                featureListFilename=configPath('features.hair-eye'),
                modelFilename=configPath('dig-hair-eye-train.model'),
                jaccardSpecs=[],
-               svebor=False,
+               imageTrainingOutput=False,
                # minimum initial number of partitions
                numPartitions=None, 
                # number of documents to send to CRF in one call
@@ -178,8 +178,11 @@ def crfprocess(sc, input, output,
                coalescePartitions=None,
                # inputType
                inputType=DIG_WEBPAGE,
-               limit=None, sampleSeed=1234,
-               debug=0, location='hdfs', outputFormat="text"):
+               outputFormat="text",
+               limit=None, 
+               sampleSeed=1234,
+               debug=0, 
+               location='hdfs'):
 
     show = True if debug>=1 else False
     def showPartitioning(rdd):
@@ -287,21 +290,40 @@ def crfprocess(sc, input, output,
         else:
             raise('Unknown inputType')
     if uriClass:
-        print("Filtering on uriClass={}".format(uriClass))
+        # print("Filtering on uriClass={}".format(uriClass))
         rdd_relevant = rdd_json.filter(lambda (k,j): j.get("a", None)==uriClass)
     else:
         rdd_relevant = rdd_json
     rdd_relevant.setName('rdd_relevant')
     debugDump(rdd_relevant)
 
+    def getIdentifiers(v):
+        if inputType == DIG_OFFER:
+            # We are looking for a toplevel attribute 'identifier'
+            identifiers = v.get("identifier", None)
+        elif inputType == DIG_WEBPAGE:
+            # We are looking for the name field of the top level 'identifier' whose
+            # "hasType" is "http://dig.isi.edu/thesaurus/identifier/ad-id"
+            identifiers = []
+            for idObj in v.get("identifier", []):
+                if idObj.get("hasType") == "http://dig.isi.edu/thesaurus/identifier/ad-id":
+                    name = idObj.get("name", None)
+                    if name:
+                        identifiers.extend(name)
+        if identifiers:
+            return asList(identifiers)
+        else:
+            return None
+
     def byIdentifier(k,v):
         result = []
-        for i in asList(v.get("identifier", "missing")):
+        identifiers = getIdentifiers(v) or ["missing"]
+        for i in identifiers:
             result.append( (k + "-" + str(i), v) )
         return result
 
     # Add identifier to URI
-    if svebor:
+    if imageTrainingOutput:
         rdd_altered = rdd_relevant.flatMap(lambda (uri, j): byIdentifier(uri, j))
     else:
         rdd_altered = rdd_relevant
@@ -552,7 +574,7 @@ def crfprocess(sc, input, output,
     def recoverIdentifier(k):
         return k.rsplit('-',1)[-1]
 
-    if svebor:
+    if imageTrainingOutput:
         rdd_final = rdd_aligned.map(lambda (k,v): (recoverIdentifier(k), (v.get("featureName"),
                                                                           v.get("featureValue")))).filter(lambda (k,p): p[1]!='NONE')
     else:
@@ -578,11 +600,16 @@ def defaultJaccardSpec():
          ["hairType", "person_haircolor", configPath("hairColor_config.txt"), configPath("hairColor_reference_wiki.txt")]]
     return [",".join(x) for x in l]
 
-def sveborJaccardSpec():
+def imageTrainingOutputJaccardSpecOld():
     l = [["eyeColor", "person_eyecolor", configPath("eyeColor_config.txt"), configPath("eyeColor_reference_wiki.txt")],
          ["hairType", "person_haircolor", configPath("hairColor_config.txt"), configPath("hairColor_reference_wiki.txt")],
          ["hairType", "person_hairtexture", configPath("hairTexture_config.txt"), configPath("hairTexture_reference_wiki.txt")],
          ["hairType", "person_hairlength", configPath("hairLength_config.txt"), configPath("hairLength_reference_wiki.txt")]]
+    return [",".join(x) for x in l]
+
+def imageTrainingOutputJaccardSpec():
+    l = [["B_ethnic", "person_ethnicGroup", configPath("ethnicity_config.txt"), configPath("ethnicity_reference_wiki.txt")],
+         ["I_ethnic", "person_ethnicGroup", configPath("ethnicity_config.txt"), configPath("ethnicity_reference_wiki.txt")]]
     return [",".join(x) for x in l]
 
 def jaccardSpec(s):
@@ -603,7 +630,6 @@ separated by comma"""
 
 def main(argv=None):
     '''this is called if run from command line'''
-    # pprint.pprint(sorted(os.listdir(os.getcwd())))
     parser = argparse.ArgumentParser()
     parser.add_argument('-i','--input', required=True)
     parser.add_argument('-o','--output', required=True)
@@ -619,24 +645,26 @@ def main(argv=None):
     parser.add_argument('-k','--coalescePartitions', required=False, default=None, type=int,
                         help='number of partitions to coalesce down to after crf')
     parser.add_argument('-n','--name', required=False, default="", help='Added to name of spark job, for debugging')
-    parser.add_argument('-t','--inputType', required=False, type=int, default=1, choices=(DIG_BODYPART, DIG_OFFER, DIG_WEBPAGE),
+    parser.add_argument('-t','--inputType', required=False, type=int, default=DIG_WEBPAGE, choices=(DIG_BODYPART, DIG_OFFER, DIG_WEBPAGE),
                         help='1: istr58m/HT format; 2: multiroot Karma format; 3: Karma Webpage name/description')
     parser.add_argument('-l','--limit', required=False, default=None, type=int)
     parser.add_argument('-v','--verbose', required=False, help='verbose', action='store_true')
     parser.add_argument('-z','--debug', required=False, help='debug', type=int)
-    parser.add_argument('-s','--svebor', default=False, action='store_true')
+    parser.add_argument('-s','--imageTrainingOutput', default=0, help='0=typical output, 1=Generate tab separated ethnic data with identifier',
+                        type=int, choices=(0,1))
+    parser.add_argument('-y','--outputFormat', default='sequence', choices=('sequence', 'text', 'tsv'))
     args=parser.parse_args()
 
     # might become an option
-    outputFormat = 'sequence'
+    outputFormat = args.outputFormat
 
     # default HJ recognizers to any known special situation 
-    if args.svebor:
-        args.jaccardSpec = sveborJaccardSpec()
+    if args.imageTrainingOutput:
         outputFormat = 'tsv'
+        if args.jaccardSpec == []:
+            args.jaccardSpec = imageTrainingOutputJaccardSpec()
     elif args.jaccardSpec == []:
         args.jaccardSpec = defaultJaccardSpec()
-    # pprint.pprint(args.jaccardSpec)
 
     if not args.numPartitions:
         if location == "local":
@@ -654,7 +682,7 @@ def main(argv=None):
                featureListFilename=args.featureListFilename,
                modelFilename=args.modelFilename,
                jaccardSpecs=[j.split(',') for j in args.jaccardSpec],
-               svebor=args.svebor,
+               imageTrainingOutput=args.imageTrainingOutput,
                debug=args.debug,
                limit=args.limit,
                location=location,
