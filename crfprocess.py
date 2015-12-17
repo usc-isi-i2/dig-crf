@@ -21,13 +21,7 @@ from itertools import izip_longest
 import time
 from datetime import timedelta
 
-### from trollchar.py
-
-def asList(x):
-    if isinstance(x, list):
-        return x
-    else:
-        return [x]
+from digSparkUtil.listUtil import as_list
 
 ### from util.py
 
@@ -311,7 +305,7 @@ def crfprocess(sc, input, output,
                     if name:
                         identifiers.extend(name)
         if identifiers:
-            return asList(identifiers)
+            return as_list(identifiers)
         else:
             return None
 
