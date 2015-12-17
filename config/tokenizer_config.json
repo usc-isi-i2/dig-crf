@@ -1,0 +1,18 @@
+{
+  "fieldConfig": {
+    "0": {
+      "path": ".owner[].makesOffer[].mainEntityOfPage.description",
+      "allow_blank":false
+    }
+  },
+  "defaultConfig": {
+
+    "analyzer": {
+      "tokenizers": [
+        "whitespace"
+      ]
+    }
+  },
+  "settings": {
+      }
+}
