@@ -17,19 +17,10 @@ import crf_features
 from base64 import b64encode, b64decode
 from random import randint
 from collections import defaultdict
-from itertools import izip_longest
 import time
 from datetime import timedelta
 
-from digSparkUtil.listUtil import as_list
-
-### from util.py
-
-def iterChunks(iterable, n, fillvalue=None):
-    args = [iter(iterable)] * n
-    return izip_longest(*args, fillvalue=fillvalue)
-
-### end from util.py
+from digSparkUtil.listUtil import as_list, iter_chunks
 
 DIG_BODYPART = 1
 DIG_OFFER = 2
@@ -147,11 +138,11 @@ except:
 print "### location %s" % location
 
 
-configDir = os.getcwd() if location=="hdfs" else os.path.join(os.path.dirname(__file__), "data/config")
+configDir = os.getcwd() if location == "hdfs" else os.path.join(os.path.dirname(__file__), "data/config")
 def configPath(n):
     return os.path.join(configDir, n)
 
-binDir = os.getcwd() if location=="hdfs" else os.path.join(os.path.dirname(__file__), "bin")
+binDir = os.getcwd() if location == "hdfs" else os.path.join(os.path.dirname(__file__), "bin")
 def binPath(n):
     return os.path.join(binDir, n)
 
@@ -233,6 +224,19 @@ def crfprocess(sc, input, output,
     crfExecutable = "apply_crf_lines.py"
     sc.addFile(crfExecutable)
     sc.addFile(crfModelFilename)
+
+    # BEGIN COMPOSABLE
+
+    fUtil = FileUtil(sc)
+
+    ## CONFIG LOAD
+    input_kwargs = {"file_format": "sequence"
+                    "data_type": "json"}
+    parse_kwargs = {"separator": '\t'}
+    load_kwargs = merge_dicts(input_kwargs, parse_kwargs)
+    
+    ## LOAD
+    rdd_input = fUtil.load_file(args.input_file, **load_kwargs)
 
     # LOADING DATA
     if numPartitions:
@@ -404,7 +408,7 @@ def crfprocess(sc, input, output,
     # Drop keys put serialized vectors into lists of size chunksPerPartition, dropping any nulls, then concatenate
 
     # layout: lists of size up to chunksPerPartition of UTF8(feature vectors)
-    rdd_chunked = rdd_vector.values().glom().map(lambda l: [filter(lambda e: e, x) for x in iterChunks(l, chunksPerPartition)]).map(lambda l: ["".join(x) for x in l])
+    rdd_chunked = rdd_vector.values().glom().map(lambda l: [filter(lambda e: e, x) for x in iter_chunks(l, chunksPerPartition)]).map(lambda l: ["".join(x) for x in l])
     rdd_chunked.setName('rdd_chunked')
     debugDump(rdd_chunked, keys=False)
 
