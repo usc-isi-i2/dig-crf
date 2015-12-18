@@ -16,7 +16,7 @@ import crf_features
 from digSparkUtil.dictUtil import as_dict
 from digSparkUtil.fileUtil import FileUtil
 from digSparkUtil.listUtil import iter_chunks
-from digTokenizer import Tokenizer
+from digTokenizer.tokenizer import Tokenizer
 
 # Sniff for execution environment
 # this should be made obsolete
