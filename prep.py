@@ -13,9 +13,7 @@ from base64 import b64encode
 
 import crf_features
 
-from digSparkUtil.dictUtil import as_dict
-from digSparkUtil.fileUtil import FileUtil
-from digSparkUtil.listUtil import iter_chunks
+from digSparkUtil import as_dict, FileUtil, iter_chunks, logging
 from digTokenizer.tokenizer import Tokenizer
 
 # Sniff for execution environment
@@ -123,12 +121,9 @@ might need these for config
 
 class Prep(object):
     def __init__(self, config, **options):
-        self.verbose = options.get('verbose', False)
         self.options = as_dict(options)
         self.config = FileUtil.get_json_config(config)
-        if self.verbose:
-            print("Prep {} config with {} using options {}".format(self, self.config, self.options),
-                  file=sys.stderr)
+        logging.info("Prep {} config with {} using options {}".format(self, self.config, self.options))
 
     @staticmethod
     def vectorToUTF8(v, debug=False):
