@@ -8,10 +8,9 @@ import sys
 import argparse
 from prep import Prep
 from digTokenizer.tokenizer import Tokenizer
-from digSparkUtil.fileUtil import FileUtil
-from digSparkUtil.dictUtil import as_dict, dict_minus
+from digSparkUtil import FileUtil, as_dict, dict_minus
 
-def testPrep(sc, input, output, config,
+def testPrep(sc, input_dir, output_dir, config,
                   limit=None, 
                   sampleSeed=1234,
                   debug=0, 
@@ -26,8 +25,8 @@ def testPrep(sc, input, output, config,
     futil = FileUtil(sc)
 
     # LOAD DATA
-    print(input, input_file_format, input_data_type)
-    rdd_ingest = futil.load_file(input, file_format=input_file_format, data_type=input_data_type)
+    print(input_dir, input_file_format, input_data_type)
+    rdd_ingest = futil.load_file(input_dir, file_format=input_file_format, data_type=input_data_type)
     rdd_ingest.setName('rdd_ingest_input')
 
     # LIMIT/SAMPLE (OPTIONAL)
@@ -54,16 +53,16 @@ def testPrep(sc, input, output, config,
 
     # SAVE DATA
     out_options = {}
-    futil.save_file(rdd_prep, output, file_format=output_file_format, data_type=output_data_type, **out_options)
+    futil.save_file(rdd_prep, output_dir, file_format=output_file_format, data_type=output_data_type, **out_options)
 
 def main(argv=None):
     '''this is called if run from command line'''
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i','--input', required=True)
+    parser.add_argument('-i','--input_dir', required=True)
     parser.add_argument('--input_file_format', default='sequence', choices=('text', 'sequence'))
     parser.add_argument('--input_data_type', default='json', choices=('json', 'csv'))
 
-    parser.add_argument('-o','--output', required=True)
+    parser.add_argument('-o','--output_dir', required=True)
     parser.add_argument('--output_file_format', default='sequence', choices=('text', 'sequence'))
     parser.add_argument('--output_data_type', default='json', choices=('json', 'csv'))
 
@@ -81,8 +80,8 @@ def main(argv=None):
     sc = SparkContext(appName=sparkName)
 
     # remove positional args, everything else passed verbatim
-    kwargs = dict_minus(as_dict(args), "input", "output", "config")
-    testPrep(sc, args.input, args.output, args.config, **kwargs)
+    kwargs = dict_minus(as_dict(args), "input_dir", "output_dir", "config")
+    testPrep(sc, args.input_dir, args.output_dir, args.config, **kwargs)
 
 # call main() if this is run as standalone
 if __name__ == "__main__":
