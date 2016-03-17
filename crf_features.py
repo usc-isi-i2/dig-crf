@@ -4,7 +4,6 @@ from sys import stdin,stdout,stderr
 import inspect
 from argparse import ArgumentParser
 import codecs
-from util import echo
 
 # Constant that is used to denote null aka missing aka empty feature value
 
