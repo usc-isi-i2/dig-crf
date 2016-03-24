@@ -1,0 +1,79 @@
+[
+    {
+        "text": "B A U I F U Candy Hello gentlemen I ' m new in townI am here to offer you a Remarkable service that ONLY I can provide . Real and Independent is what you hear everytime you call a girl . . I can say the same thing also , but I ' d rather prove it . Hair",
+        "allTokens": [
+            "B",
+            "A",
+            "U",
+            "I",
+            "F",
+            "U",
+            "Candy",
+            "Hello",
+            "gentlemen",
+            "I",
+            "'",
+            "m",
+            "new",
+            "in",
+            "townI",
+            "am",
+            "here",
+            "to",
+            "offer",
+            "you",
+            "a",
+            "Remarkable",
+            "service",
+            "that",
+            "ONLY",
+            "I",
+            "can",
+            "provide",
+            ".",
+            "Real",
+            "and",
+            "Independent",
+            "is",
+            "what",
+            "you",
+            "hear",
+            "everytime",
+            "you",
+            "call",
+            "a",
+            "girl",
+            ".",
+            ".",
+            "I",
+            "can",
+            "say",
+            "the",
+            "same",
+            "thing",
+            "also",
+            ",",
+            "but",
+            "I",
+            "'",
+            "d",
+            "rather",
+            "prove",
+            "it",
+            ".",
+            "Hair"
+        ],
+        "annotationSet": {
+            "hairType": [
+                {
+                    "start": 59,
+                    "annotatedTokens": [
+                        "Hair"
+                    ],
+                    "workerId": "A2TEWO3WJ5YKGG"
+                }
+            ]
+        },
+        "uri": "http://dig.isi.edu/sentence/F46DAA8D3DB6005EFE0D18F6F9E4407ECD4BADB3"
+    }
+]

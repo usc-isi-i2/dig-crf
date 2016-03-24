@@ -1,0 +1,91 @@
+[
+    {
+        "text": "110 lbs , strawberry blond hair , blue eyes , 34B - 22 - 34 petite . <br/> \" Can you read OUR POKER FACES ? \" WE certainly can READ yours once we arrive at your door ! ! ! ! ! <br/> Call now 215 - 881 - 7717 . Outcalls / 24 / 7 Available all HOLIDAYS",
+        "allTokens": [
+            "110",
+            "lbs",
+            ",",
+            "strawberry",
+            "blond",
+            "hair",
+            ",",
+            "blue",
+            "eyes",
+            ",",
+            "34B",
+            "-",
+            "22",
+            "-",
+            "34",
+            "petite",
+            ".",
+            "&lt;br/&gt;",
+            "\"",
+            "Can",
+            "you",
+            "read",
+            "OUR",
+            "POKER",
+            "FACES",
+            "?",
+            "\"",
+            "WE",
+            "certainly",
+            "can",
+            "READ",
+            "yours",
+            "once",
+            "we",
+            "arrive",
+            "at",
+            "your",
+            "door",
+            "!",
+            "!",
+            "!",
+            "!",
+            "!",
+            "&lt;br/&gt;",
+            "Call",
+            "now",
+            "215",
+            "-",
+            "881",
+            "-",
+            "7717",
+            ".",
+            "Outcalls",
+            "/",
+            "24",
+            "/",
+            "7",
+            "Available",
+            "all",
+            "HOLIDAYS"
+        ],
+        "annotationSet": {
+            "eyeColor": [
+                {
+                    "start": 7,
+                    "annotatedTokens": [
+                        "blue",
+                        "eyes"
+                    ],
+                    "workerId": "A30E8O88VM06HY"
+                }
+            ],
+            "hairType": [
+                {
+                    "start": 3,
+                    "annotatedTokens": [
+                        "strawberry",
+                        "blond",
+                        "hair"
+                    ],
+                    "workerId": "A8WY2LR30K9OL"
+                }
+            ]
+        },
+        "uri": "http://dig.isi.edu/sentence/253D8FF7A55A226FDBBC53939DBB90D763E77691"
+    }
+]

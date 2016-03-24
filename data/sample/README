@@ -1,0 +1,51 @@
+							Craig Milo Rogers
+							24-Mar-2016
+
+	This folder contains sample JSON data for use in testing the interface
+to CRF++.  It contains data that has been scraped from Web sites, tokenized,
+and annotated for hair and eye color.  A single record may contain multiple
+English sentences.  These files do not contain "features" as produced by
+crf_features.
+
+	The text in these files may include Unicode codes, encoded using
+UTF-8.  HTML entities (e.g., "<u>", "<br>") may appear in the text fields of
+these examples, and are converted to HTML escapes for when tokenized (e.g.,
+"&lt;br&gt;" and "&lt;u&gt;".
+
+Structure
+=========
+
+[	The outermost container is a sequence, representing a sequence of
+	individual data sources
+
+  {	The next container is a map from properties to values:
+
+     "text": "..."
+	The text of each record.		
+
+     "allTokens": [ ... ]
+	Tokenized text.
+
+     "annotationSet": { "eyeColor": [ { ... } ... ], "hairType": [ { ... }
+     ... ] }
+	Annotations for eye color and hair type.
+
+     "uri": "xxx"
+        An identifier for the source of the record.
+
+sample1.json
+
+	This file is a short example of the expected data format, with human
+	annotations for eye color and hair color.
+
+adjudicated_modeled_live_eyehair_100_03.json
+
+	This file contains contains a larger sample of input data with
+	human annotations for eye color and hair color.
+
+adjudicated_modeled_live_eyehair_100_03-001.json
+adjudicated_modeled_live_eyehair_100_03-002.json
+adjudicated_modeled_live_eyehair_100_03-003.json
+
+	These files extract the first, second, and third data records
+from the larger dataset.
