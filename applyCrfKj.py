@@ -68,7 +68,8 @@ def main(argv=None):
         # Accumulate interesting tags.  We'll use a dictionary to a list of tokens.
         # We'll use the tag name as the key to the dictionary.  Would it be significantly
         # faster to use the tag index, instead?
-        tags = {}
+        currentTagName = None
+        tags = { } 
         for tokenIdx in range(0, tagger.size()):
             if args.debug:
                 for featureIdx in range (0, nfeatures):
@@ -83,13 +84,27 @@ def main(argv=None):
                 print "%s %s %d" % (tagger.x(tokenIdx, 0), tagger.yname(tagIdx), tagIdx)
             if tagIdx != 0:
                 tagName = tagger.yname(tagIdx)
+
+                if tagName != currentTagName:
+                    if currentTagName != None:
+                        print "%s\t%s" % (s.getKey(sidx), json.dumps(tags, indent=None))
+                        tags.clear()
+                    currentTagName = tagName
+
                 if tagName not in tags:
                     tags[tagName] = []
                 tags[tagName].append(tagger.x(tokenIdx, 0))
+            else:
+                if currentTagName != None:
+                    print "%s\t%s" % (s.getKey(sidx), json.dumps(tags, indent=None))
+                    tags.clear()
+                    currentTagName = None
 
-        # Write out the tags, nut only if we found any.
-        if len(tags) > 0:
+        # Write out any remaining tags (boundary case):
+        if currentTagName != None:
             print "%s\t%s" % (s.getKey(sidx), json.dumps(tags, indent=None))
+            tags.clear()
+            currentTagName = None
 
 # call main() if this is run as standalone
 if __name__ == "__main__":
