@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""This program will read JSON file (such as adjudicated_modeled_live_eyehair_100_03.json) and print the tokens in it."""
+"""This program will read a JSON file (such as adjudicated_modeled_live_eyehair_100_03.json) and process it with CRF++. The labels assigned by CRF++ are printed."""
 
 import argparse
 import sys
