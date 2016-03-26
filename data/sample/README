@@ -101,7 +101,7 @@ paste adjudicated_modeled_live_eyehair_100_03.uri \
       adjudicated_modeled_live_eyehair_100_03.jsonl \
     > adjudicated_modeled_live_eyehair_100_03.kjsonl
 
-7)	Using the Unix "paste" and "tr" commands, build a keyed JSON Lines
+8)	Using the Unix "paste" and "tr" commands, build a keyed JSON Lines
 	from the JSON Lines file and the URI file.  Strip the double quotes
 	from the URI key (assuming that the key does not contain internal
 	double quotes of significance).
