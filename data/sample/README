@@ -16,7 +16,7 @@ Structure
 =========
 
 [	The outermost container is a sequence, representing a sequence of
-	individual data sources
+	individual data sources.
 
   {	The next container is a map from properties to values:
 
@@ -33,19 +33,80 @@ Structure
      "uri": "xxx"
         An identifier for the source of the record.
 
-sample1.json
+Format
+======
+
+	The data samples originally arrived in JSON format.  All samples in a files
+were enclosed in an outer array (per the Structure notes, above), and the data was
+pretty printed (printed with line breaks and indentation).  
+
+http://json.org/
+
+	Pedro specified that the input and output should be keyed JSON Lines.
+The key will be a URI.  A "keyed JSON line" is a key, followed by <tab>,
+followed by a JSON line.  For more on JSON Lines, see:
+
+http://jsonlines.org/
+
+
+Files
+=====
+
+1)	sample1.json
 
 	This file is a short example of the expected data format, with human
 	annotations for eye color and hair color.
 
-adjudicated_modeled_live_eyehair_100_03.json
+2)	adjudicated_modeled_live_eyehair_100_03.json
 
 	This file contains contains a larger sample of input data with
 	human annotations for eye color and hair color.
 
-adjudicated_modeled_live_eyehair_100_03-001.json
-adjudicated_modeled_live_eyehair_100_03-002.json
-adjudicated_modeled_live_eyehair_100_03-003.json
+3)	adjudicated_modeled_live_eyehair_100_03-001.json
+	adjudicated_modeled_live_eyehair_100_03-002.json
+	adjudicated_modeled_live_eyehair_100_03-003.json
 
 	These files extract the first, second, and third data records
 from the larger dataset.
+
+4)	adjudicated_modeled_live_eyehair_100_03.jsonl
+
+	This is the larger sample, converted in into (unkeyed) JSON Lines
+format as follows:
+
+jq -c -M '.[]' \
+   < adjudicated_modeled_live_eyehair_100_03.json \
+   > adjudicated_modeled_live_eyehair_100_03.jsonl
+
+5)	Extracting the URI keys from the original dataset
+	(note that the URIs are written as quoted strings):
+
+jq -c -M '.[].uri' \
+   < adjudicated_modeled_live_eyehair_100_03.json \
+   > adjudicated_modeled_live_eyehair_100_03.uri
+
+6)	Extracting the URI keys from the JSON Lines dataset (note
+	that the '.[]' is gone) (note that the URIs are written as
+	quoted strings):
+
+jq -c -M '.uri' \
+   < adjudicated_modeled_live_eyehair_100_03.jsonl \
+   > adjudicated_modeled_live_eyehair_100_03.uri
+
+7)	Using the Unix "paste" command, build a keyed JSON Lines file
+	from the JSON Lines file and the URI file.  Should we use a
+	special filename extension, such as ".kjsonl"?
+
+paste adjudicated_modeled_live_eyehair_100_03.uri \
+      adjudicated_modeled_live_eyehair_100_03.jsonl \
+    > adjudicated_modeled_live_eyehair_100_03.kjsonl
+
+7)	Using the Unix "paste" and "tr" commands, build a keyed JSON Lines
+	from the JSON Lines file and the URI file.  Strip the double quotes
+	from the URI key (assuming that the key does not contain internal
+	double quotes of significance).
+
+cat adjudicated_modeled_live_eyehair_100_03.uri \
+| tr -d '"' \
+| paste - adjudicated_modeled_live_eyehair_100_03.jsonl \
+> adjudicated_modeled_live_eyehair_100_03.kjsonl
