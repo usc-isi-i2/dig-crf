@@ -28,13 +28,6 @@ def main(argv=None):
     # Create a CRF++ processor.
     tagger = CRFPP.Tagger("-m " + args.model)
 
-    # TODO: The model appears to have a saved copy of the features used to build it.
-    # It would be nidec to extract those feature definitions for uses in featurizing
-    # sentences.
-
-    if args.debug:
-        print "modelXsize=%d" % modelXsize
-
     for sidx in range(0, s.sentenceCount()):
         tokens = s.getAllTokens(sidx)
         if args.debug:
