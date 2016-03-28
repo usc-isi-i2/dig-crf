@@ -1,3 +1,4 @@
+import codecs
 import json
 
 """Tools for reading a Web scrapings file.
@@ -57,9 +58,9 @@ class CrfSentencesIterator:
         return result        
 
 class CrfSentencesFromJsonFile:
-    """Load a Web scrapings file in JSON format. The entire file is read during initialization."""
+    """Load a Web scrapings file in JSON format, assuming UTF-8 encoding. The entire file is read during initialization."""
     def __init__ (self, jsonFilename):
-        with open(jsonFilename) as jsonFile:
+        with codecs.open(jsonFilename, 'rb', 'utf-8') as jsonFile:
             self.sentences = json.load(jsonFile)
 
     def __iter__(self):
@@ -69,9 +70,9 @@ class CrfSentencesFromJsonFile:
 
 # This could perhaps be improved by making it a generator.
 class CrfSentencesFromKeyedJsonLinesFile:
-    """Load a Web scrapings file in keyed JSON Lines format. The file is read as needed for iteration."""
+    """Load a Web scrapings file in keyed JSON Lines format with UTF-8 encoding. The file is read as needed for iteration."""
     def __init__ (self, jsonFilename):
-        self.jsonFile = open(jsonFilename)
+        self.jsonFile = codecs.open(jsonFilename, 'rb', 'utf-8')
 
     def __iter__ (self):
         """Begin iterating over the contents of the file."""

@@ -46,7 +46,7 @@ def main(argv=None):
             if args.debug:
                 print "token#%d (%s) has %d features" % (idx, token, len(features))
             tf = token + ' ' + ' '.join(features)
-            tagger.add(tf.encode('utf8'))
+            tagger.add(tf.encode('utf-8'))
         tagger.parse()
         # tagger.size() returns the number of tokens that were added.
         # tagger.xsize() returns the number of features plus 1 (for the token).
