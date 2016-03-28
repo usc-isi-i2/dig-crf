@@ -24,7 +24,7 @@ def main(argv=None):
     parser.add_argument('-m','--model', help="Required input model file.", required=True)
     args = parser.parse_args()
 
-    # Create a CrfFeatures object.  This classs provides a lot of services, but we'll use only a subset.
+    # Create a CrfFeatures object.  This class provides a lot of services, but we'll use only a few.
     c = crff.CrfFeatures(args.featlist)
 
     # Create a CRF++ processor.

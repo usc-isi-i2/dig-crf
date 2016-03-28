@@ -17,7 +17,7 @@ def main(argv=None):
     # Read the Web scrapings:
     sentences = crfs.CrfSentencesFromJsonFile(args.input)
 
-    # Create a CrfFeatures object.  This classs provides a lot of services, but we'll uses only a subset.
+    # Create a CrfFeatures object.  This class provides a lot of services, but we'll use only a few.
     c = crff.CrfFeatures(args.featlist)
 
     for sentence in sentences:
