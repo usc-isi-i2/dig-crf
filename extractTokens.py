@@ -4,7 +4,7 @@
 
 import argparse
 import sys
-import scrapings
+import crf_sentences
 
 def main(argv=None):
     '''this is called if run from command line'''
@@ -13,9 +13,9 @@ def main(argv=None):
     args=parser.parse_args()
 
 
-    s = scrapings.Scrapings(args.input)
-    for sidx in range(0, s.sentenceCount()):
-        print s.getAllTokens(sidx)
+    sentences = crf_sentences.CrfSentencesFromJsonFile(args.input)
+    for sentence in sentences:
+        print sentence.getAllTokens()
 
 # call main() if this is run as standalone
 if __name__ == "__main__":

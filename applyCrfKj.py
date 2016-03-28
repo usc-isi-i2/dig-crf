@@ -10,7 +10,7 @@ text and tokens will not.
 
 import argparse
 import sys
-import scrapings
+import crf_sentences as crfs
 import crf_features as crff
 import CRFPP
 import json
@@ -22,7 +22,7 @@ def main(argv=None):
     parser.add_argument('-f','--featlist', help="Required input file with features to be extracted, one feature entry per line.", required=True)
     parser.add_argument('-i','--input', help="Required input file with Web scraping sentences in keyed JSON Lines format.", required=True)
     parser.add_argument('-m','--model', help="Required input model file.", required=True)
-    args=parser.parse_args()
+    args = parser.parse_args()
 
     # Create a CrfFeatures object.  This classs provides a lot of services, but we'll use only a subset.
     c = crff.CrfFeatures(args.featlist)
@@ -31,12 +31,10 @@ def main(argv=None):
     tagger = CRFPP.Tagger("-m " + args.model)
 
     # Read the Web scrapings as keyed JSON Lines:
-    s = scrapings.Scrapings(args.input, kj=True)
-    if args.debug:
-        print "sencence count=%d" % s.sentenceCount()
+    sentences = crfs.CrfSentencesFromKeyedJsonLinesFile(args.input)
 
-    for sidx in range(0, s.sentenceCount()):
-        tokens = s.getAllTokens(sidx)
+    for sentence in sentences:
+        tokens = sentence.getAllTokens()
         if args.debug:
             print "len(tokens)=%d" % len(tokens)
         fc = c.featurizeSentence(tokens)
@@ -87,7 +85,7 @@ def main(argv=None):
 
                 if tagName != currentTagName:
                     if currentTagName != None:
-                        print "%s\t%s" % (s.getKey(sidx), json.dumps(tags, indent=None))
+                        print "%s\t%s" % (sentence.getKey(), json.dumps(tags, indent=None))
                         tags.clear()
                     currentTagName = tagName
 
@@ -96,13 +94,13 @@ def main(argv=None):
                 tags[tagName].append(tagger.x(tokenIdx, 0))
             else:
                 if currentTagName != None:
-                    print "%s\t%s" % (s.getKey(sidx), json.dumps(tags, indent=None))
+                    print "%s\t%s" % (sentence.getKey(), json.dumps(tags, indent=None))
                     tags.clear()
                     currentTagName = None
 
         # Write out any remaining tags (boundary case):
         if currentTagName != None:
-            print "%s\t%s" % (s.getKey(sidx), json.dumps(tags, indent=None))
+            print "%s\t%s" % (sentence.getKey(), json.dumps(tags, indent=None))
             tags.clear()
             currentTagName = None
 

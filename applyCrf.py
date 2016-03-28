@@ -4,7 +4,7 @@
 
 import argparse
 import sys
-import scrapings
+import crf_sentences as crfs
 import crf_features as crff
 import CRFPP
 
@@ -18,9 +18,7 @@ def main(argv=None):
     args=parser.parse_args()
 
     # Read the Web scrapings:
-    s = scrapings.Scrapings(args.input)
-    if args.debug:
-        print "sencence count=%d" % s.sentenceCount()
+    sentences = crfs.CrfSentencesFromJsonFile(args.input)
 
     # Create a CrfFeatures object.  This classs provides a lot of services, but we'll use only a subset.
     c = crff.CrfFeatures(args.featlist)
@@ -28,8 +26,8 @@ def main(argv=None):
     # Create a CRF++ processor.
     tagger = CRFPP.Tagger("-m " + args.model)
 
-    for sidx in range(0, s.sentenceCount()):
-        tokens = s.getAllTokens(sidx)
+    for sentence in sentences:
+        tokens = sentence.getAllTokens()
         if args.debug:
             print "len(tokens)=%d" % len(tokens)
         fc = c.featurizeSentence(tokens)

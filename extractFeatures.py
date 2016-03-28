@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-"""This program will read JSON file (such as adjudicated_modeled_live_eyehair_100_03.json) and print the tokens in it."""
+"""This program will read JSON file (such as adjudicated_modeled_live_eyehair_100_03.json) and print the tokens in it with features."""
 
 import argparse
 import sys
-import scrapings
+import crf_sentences as crfs
 import crf_features as crff
 
 def main(argv=None):
@@ -15,13 +15,13 @@ def main(argv=None):
     args=parser.parse_args()
 
     # Read the Web scrapings:
-    s = scrapings.Scrapings(args.input)
+    sentences = crfs.CrfSentencesFromJsonFile(args.input)
 
     # Create a CrfFeatures object.  This classs provides a lot of services, but we'll uses only a subset.
     c = crff.CrfFeatures(args.featlist)
 
-    for sidx in range(0, s.sentenceCount()):
-        tokens = s.getAllTokens(sidx)
+    for sentence in sentences:
+        tokens = sentence.getAllTokens()
         fc = c.featurizeSentence(tokens)
         for idx, token in enumerate(tokens):
             features = fc[idx]
