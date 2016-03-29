@@ -16,56 +16,41 @@ import crf_features as crff
 import CRFPP
 import json
 
-def main(argv=None):
-    '''this is called if run from command line'''
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-d','--debug', help="Optionallly give debugging feedback.", required=False, action='store_true')
-    parser.add_argument('-f','--featlist', help="Required input file with features to be extracted, one feature entry per line.", required=True)
-    parser.add_argument('-i','--input', help="Required input file with Web scraping sentences in keyed JSON Lines format.", required=True)
-    parser.add_argument('-m','--model', help="Required input model file.", required=True)
-    parser.add_argument('-o','--output', help="Optional output file of phrases in keyed JSON Lines format.", required=False)
-    parser.add_argument('-s','--statistics', help="Optionally report use statistics.", required=False, action='store_true')
-    args = parser.parse_args()
+def applyCrf(sentences, featlist, model, debug=False, statistics=False):
+    """This is a generater for result phrases.  The primary input, 'sentences', is an iterator.  This model of an interator input and iterator results should work well with Spark."""
 
     # Create a CrfFeatures object.  This class provides a lot of services, but we'll use only a few.
-    c = crff.CrfFeatures(args.featlist)
+    crfFeatures = crff.CrfFeatures(featlist)
 
     # Create a CRF++ processor.
-    tagger = CRFPP.Tagger("-m " + args.model)
-
-    # Read the Web scrapings as keyed JSON Lines:
-    sentences = crfs.CrfSentencesFromKeyedJsonLinesFile(args.input)
+    tagger = CRFPP.Tagger("-m " + model)
 
     # Clear the statistics:
     sentenceCount = 0 # Number of input "sentences" -- e.g., ads
     tokenCount = 0    # Number of input tokens -- words, punctuation, whatever
     phraseCount = 0   # Number of output phrases
 
-    outfile = sys.stdout
-    if args.output != None:
-        outfile = codecs.open(args.output, 'wb', 'utf-8')
-
     for sentence in sentences:
         tokens = sentence.getAllTokens()
-        if args.debug:
+        if debug:
             print "len(tokens)=%d" % len(tokens)
-        sentenceCount += 1
-        tokenCount += len(tokens)
-
-        fc = c.featurizeSentence(tokens)
-        if args.debug:
+            sentenceCount += 1
+            tokenCount += len(tokens)
+            
+        fc = crfFeatures.featurizeSentence(tokens)
+        if debug:
             print "len(fc)=%d" % len(fc)
         tagger.clear()
         for idx, token in enumerate(tokens):
             features = fc[idx]
-            if args.debug:
+            if debug:
                 print "token#%d (%s) has %d features" % (idx, token, len(features))
             tf = token + ' ' + ' '.join(features)
             tagger.add(tf.encode('utf-8'))
         tagger.parse()
         # tagger.size() returns the number of tokens that were added.
         # tagger.xsize() returns the number of features plus 1 (for the token).
-        if args.debug:
+        if debug:
             print "size=%d" % tagger.size()
             print "xsize=%d" % tagger.xsize()
             print "ysize=%d" % tagger.ysize()
@@ -84,7 +69,7 @@ def main(argv=None):
         currentTagName = None
         tags = { } 
         for tokenIdx in range(0, tagger.size()):
-            if args.debug:
+            if debug:
                 for featureIdx in range (0, nfeatures):
                     print "x(%d, %d)=%s" % (tokenIdx, featureIdx, tagger.x(tokenIdx, featureIdx))
             # tagger.x(tokenIdx, 0) is the original token
@@ -93,14 +78,14 @@ def main(argv=None):
             #
             # Assume that tagger.y(tokenIdx) != 0 iff something interesting was found.
             tagIdx = tagger.y(tokenIdx)
-            if args.debug:
+            if debug:
                 print "%s %s %d" % (tagger.x(tokenIdx, 0), tagger.yname(tagIdx), tagIdx)
             if tagIdx != 0:
                 tagName = tagger.yname(tagIdx)
 
                 if tagName != currentTagName:
                     if currentTagName != None:
-                        outfile.write("%s\t%s\n" % (sentence.getKey(), json.dumps(tags, indent=None)))
+                        yield sentence.getKey() + '\t' + json.dumps(tags, indent=None)
                         phraseCount += 1
                         tags.clear()
                     currentTagName = tagName
@@ -110,24 +95,46 @@ def main(argv=None):
                 tags[tagName].append(tagger.x(tokenIdx, 0))
             else:
                 if currentTagName != None:
-                    outfile.write("%s\t%s\n" % (sentence.getKey(), json.dumps(tags, indent=None)))
+                    yield sentence.getKey() + '\t' + json.dumps(tags, indent=None)
                     phraseCount += 1
                     tags.clear()
                     currentTagName = None
 
         # Write out any remaining tags (boundary case):
         if currentTagName != None:
-            outfile.write("%s\t%s\n" % (sentence.getKey(), json.dumps(tags, indent=None)))
+            yield sentence.getKey() + '\t' + json.dumps(tags, indent=None)
             phraseCount += 1
             tags.clear()
             currentTagName = None
 
-    if args.output != None:
-        outfile.close()
-
-    if args.statistics:
+    if statistics:
         print "input:  %d sentences, %d tokens" % (sentenceCount, tokenCount)
         print "output: %d phrases" % phraseCount
+
+
+def main(argv=None):
+    '''this is called if run from command line'''
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-d','--debug', help="Optionallly give debugging feedback.", required=False, action='store_true')
+    parser.add_argument('-f','--featlist', help="Required input file with features to be extracted, one feature entry per line.", required=True)
+    parser.add_argument('-i','--input', help="Required input file with Web scraping sentences in keyed JSON Lines format.", required=True)
+    parser.add_argument('-m','--model', help="Required input model file.", required=True)
+    parser.add_argument('-o','--output', help="Optional output file of phrases in keyed JSON Lines format.", required=False)
+    parser.add_argument('-s','--statistics', help="Optionally report use statistics.", required=False, action='store_true')
+    args = parser.parse_args()
+
+    outfile = sys.stdout
+    if args.output != None:
+        outfile = codecs.open(args.output, 'wb', 'utf-8')
+
+    # Read the Web scrapings as keyed JSON Lines:
+    sentences = crfs.CrfSentencesFromKeyedJsonLinesFile(args.input)
+
+    for result in applyCrf(sentences, args.featlist, args.model, args.debug, args.statistics):
+        outfile.write(result + '\n')
+
+    if args.output != None:
+        outfile.close()
 
 # call main() if this is run as standalone
 if __name__ == "__main__":
