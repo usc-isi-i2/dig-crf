@@ -16,26 +16,62 @@ import crf_features as crff
 import CRFPP
 import json
 
-def applyCrfKj(sentences, featlist, model, debug=False, statistics=False):
-    """This is a generater for result phrases.  The primary input, 'sentences', is an iterator.  This model of an interator input and iterator results should work well with Spark."""
+def applyCrfKj(sentences, featureListFilePath, modelFilePath, debug=False, statistics=False):
+    """Apply CRF++ to a sequence of "sentences", generating tagged phrases as
+output.  0 to N tagged phrases will generated as output for each input
+sentence.
+
+The primary input, 'sentences', is an iterator, which is used without internal
+buffering.  This function is a generator, which is equivalent to producing an
+iterator as output.  This paradigm of an interator input, iterator results,
+and no internal buffering should work well with Spark.
+
+featureListFilePath is the path to the word and phrase-list control file used
+by crf_features.
+
+modelFilePath is the path to a trained CRF++ model.
+
+debug, when True, causes the code to emit helpful debugging information on
+standard output.
+
+statistics, when True, emits a count of input sentences and tokens, and a
+count of output phrases, when done.
+
+CRF++ is written in C++ code, which is accessed by a Python wrapper.  The
+CRF++ code must be installed in the Python interpreter.  If Spark is used to
+distribute processing among multiple systems, CRF++ must be installed on the
+Python interpreter used by Spark on each system.
+
+Opportunities for further optimization: The 'debug' and 'ststistics' code
+support could be removed.  crf_features could be restructured to isolate its
+core routines.  crf_sentences defines a CrfSentence object with getter
+methods; these could be interpolated into this code for efficiency, but that
+might reduce maintainability.
+
+    """
+
+    def result(sentence, tags):
+        return sentence.getKey() + '\t' + json.dumps(tags, indent=None)
+
 
     # Create a CrfFeatures object.  This class provides a lot of services, but we'll use only a few.
-    crfFeatures = crff.CrfFeatures(featlist)
+    crfFeatures = crff.CrfFeatures(featureListFilePath)
 
-    # Create a CRF++ processor.
-    tagger = CRFPP.Tagger("-m " + model)
+    # Create a CRF++ processor object:
+    tagger = CRFPP.Tagger("-m " + modelFilePath)
 
     # Clear the statistics:
-    sentenceCount = 0 # Number of input "sentences" -- e.g., ads
-    tokenCount = 0    # Number of input tokens -- words, punctuation, whatever
-    phraseCount = 0   # Number of output phrases
+    sentenceCount = 0     # Number of input "sentences" -- e.g., ads
+    tokenCount = 0        # Number of input tokens -- words, punctuation, whatever
+    taggedPhraseCount = 0 # Number of tagged output phrases
+    taggedTokenCount = 0  # Number of tagged output tokens
 
     for sentence in sentences:
+        sentenceCount += 1
         tokens = sentence.getAllTokens()
+        tokenCount += len(tokens)
         if debug:
             print "len(tokens)=%d" % len(tokens)
-            sentenceCount += 1
-            tokenCount += len(tokens)
             
         fc = crfFeatures.featurizeSentence(tokens)
         if debug:
@@ -85,31 +121,34 @@ def applyCrfKj(sentences, featlist, model, debug=False, statistics=False):
 
                 if tagName != currentTagName:
                     if currentTagName != None:
-                        yield sentence.getKey() + '\t' + json.dumps(tags, indent=None)
-                        phraseCount += 1
+                        yield result(sentence, tags)
+                        taggedPhraseCount += 1
                         tags.clear()
                     currentTagName = tagName
 
                 if tagName not in tags:
                     tags[tagName] = []
                 tags[tagName].append(tagger.x(tokenIdx, 0))
+                taggedTokenCount += 1
             else:
                 if currentTagName != None:
-                    yield sentence.getKey() + '\t' + json.dumps(tags, indent=None)
-                    phraseCount += 1
+                    yield result(sentence, tags)
+                    taggedPhraseCount += 1
+                    taggedTokenCount += len(tags)
                     tags.clear()
                     currentTagName = None
 
         # Write out any remaining tags (boundary case):
         if currentTagName != None:
-            yield sentence.getKey() + '\t' + json.dumps(tags, indent=None)
-            phraseCount += 1
+            yield result(sentence, tags)
+            taggedPhraseCount += 1
+            taggedTokenCount += len(tags)
             tags.clear()
             currentTagName = None
 
     if statistics:
         print "input:  %d sentences, %d tokens" % (sentenceCount, tokenCount)
-        print "output: %d phrases" % phraseCount
+        print "output: %d phrases, %d tokens" % (taggedPhraseCount, taggedTokenCount)
 
 
 def main(argv=None):
