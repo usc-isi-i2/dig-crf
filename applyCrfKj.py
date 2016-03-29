@@ -9,6 +9,7 @@ text and tokens will not.
 """
 
 import argparse
+import codecs
 import sys
 import crf_sentences as crfs
 import crf_features as crff
@@ -18,10 +19,12 @@ import json
 def main(argv=None):
     '''this is called if run from command line'''
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d','--debug', help="Optional give debugging feedback.", required=False, action='store_true')
+    parser.add_argument('-d','--debug', help="Optionallly give debugging feedback.", required=False, action='store_true')
     parser.add_argument('-f','--featlist', help="Required input file with features to be extracted, one feature entry per line.", required=True)
     parser.add_argument('-i','--input', help="Required input file with Web scraping sentences in keyed JSON Lines format.", required=True)
     parser.add_argument('-m','--model', help="Required input model file.", required=True)
+    parser.add_argument('-o','--output', help="Optional output file of phrases in keyed JSON Lines format.", required=False)
+    parser.add_argument('-s','--statistics', help="Optionally report use statistics.", required=False, action='store_true')
     args = parser.parse_args()
 
     # Create a CrfFeatures object.  This class provides a lot of services, but we'll use only a few.
@@ -33,10 +36,22 @@ def main(argv=None):
     # Read the Web scrapings as keyed JSON Lines:
     sentences = crfs.CrfSentencesFromKeyedJsonLinesFile(args.input)
 
+    # Clear the statistics:
+    sentenceCount = 0 # Number of input "sentences" -- e.g., ads
+    tokenCount = 0    # Number of input tokens -- words, punctuation, whatever
+    phraseCount = 0   # Number of output phrases
+
+    outfile = sys.stdout
+    if args.output != None:
+        outfile = codecs.open(args.output, 'wb', 'utf-8')
+
     for sentence in sentences:
         tokens = sentence.getAllTokens()
         if args.debug:
             print "len(tokens)=%d" % len(tokens)
+        sentenceCount += 1
+        tokenCount += len(tokens)
+
         fc = c.featurizeSentence(tokens)
         if args.debug:
             print "len(fc)=%d" % len(fc)
@@ -85,7 +100,8 @@ def main(argv=None):
 
                 if tagName != currentTagName:
                     if currentTagName != None:
-                        print "%s\t%s" % (sentence.getKey(), json.dumps(tags, indent=None))
+                        outfile.write("%s\t%s\n" % (sentence.getKey(), json.dumps(tags, indent=None)))
+                        phraseCount += 1
                         tags.clear()
                     currentTagName = tagName
 
@@ -94,15 +110,24 @@ def main(argv=None):
                 tags[tagName].append(tagger.x(tokenIdx, 0))
             else:
                 if currentTagName != None:
-                    print "%s\t%s" % (sentence.getKey(), json.dumps(tags, indent=None))
+                    outfile.write("%s\t%s\n" % (sentence.getKey(), json.dumps(tags, indent=None)))
+                    phraseCount += 1
                     tags.clear()
                     currentTagName = None
 
         # Write out any remaining tags (boundary case):
         if currentTagName != None:
-            print "%s\t%s" % (sentence.getKey(), json.dumps(tags, indent=None))
+            outfile.write("%s\t%s\n" % (sentence.getKey(), json.dumps(tags, indent=None)))
+            phraseCount += 1
             tags.clear()
             currentTagName = None
+
+    if args.output != None:
+        outfile.close()
+
+    if args.statistics:
+        print "input:  %d sentences, %d tokens" % (sentenceCount, tokenCount)
+        print "output: %d phrases" % phraseCount
 
 # call main() if this is run as standalone
 if __name__ == "__main__":
