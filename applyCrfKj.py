@@ -16,7 +16,7 @@ import crf_features as crff
 import CRFPP
 import json
 
-def applyCrf(sentences, featlist, model, debug=False, statistics=False):
+def applyCrfKj(sentences, featlist, model, debug=False, statistics=False):
     """This is a generater for result phrases.  The primary input, 'sentences', is an iterator.  This model of an interator input and iterator results should work well with Spark."""
 
     # Create a CrfFeatures object.  This class provides a lot of services, but we'll use only a few.
@@ -130,7 +130,7 @@ def main(argv=None):
     # Read the Web scrapings as keyed JSON Lines:
     sentences = crfs.CrfSentencesFromKeyedJsonLinesFile(args.input)
 
-    for result in applyCrf(sentences, args.featlist, args.model, args.debug, args.statistics):
+    for result in applyCrfKj(sentences, args.featlist, args.model, args.debug, args.statistics):
         outfile.write(result + '\n')
 
     if args.output != None:
