@@ -110,3 +110,49 @@ cat adjudicated_modeled_live_eyehair_100_03.uri \
 | tr -d '"' \
 | paste - adjudicated_modeled_live_eyehair_100_03.jsonl \
 > adjudicated_modeled_live_eyehair_100_03.kjsonl
+
+9)	adjudicated_modeled_live_eyehair_100_03-x100.json
+
+	Build a 100x larger data set by repeating the current sample
+	(992 lines) 100 times.  This larger data set hasn't been checked
+	into the repository, but is easily replicated using the
+	following csh command:
+
+(repeat 100 cat adjudicated_modeled_live_eyehair_100_03.kjsonl ) > \
+    adjudicated_modeled_live_eyehair_100_03-x100.json
+
+10)	adjudicated_modeled_live_eyehair_100_03-tags.kjsonl
+
+	This file contains the tagged phrases that are the output
+	of the CRF++ processor running on the sample dataset.
+
+cd ../../
+time ./applyCrfKj.csh
+
+11)	adjudicated_modeled_live_eyehair_100_03-x100-tags.kjsonl
+
+	This file contains the tagged phrases that are the output
+	of the CRF++ processor running on the 100x sample dataset.
+
+cd ../../
+time ./applyCrfKj-x100.csh
+
+12)	adjudicated_modeled_live_eyehair_100_03-tags.spark/
+
+	This directory contains the tagged phrases that are the output
+	of the CRF++ processor running on the sample dataset in the
+	Apache Spark local execution environment, using 8 partitions
+	and executors on an 8-core system.
+
+cd ../../
+time ./applyCrfKjSpark.csh
+
+13)	adjudicated_modeled_live_eyehair_100_03-x100-tags.spark/
+
+	This directory contains the tagged phrases that are the output
+	of the CRF++ processor running on the 100x sample dataset in the
+	Apache Spark local execution environment, using 8 partitions
+	and executors on an 8-core system.
+
+cd ../../
+time ./applyCrfKjSpark-x100.csh
