@@ -51,6 +51,7 @@ might reduce maintainability.
     """
 
     def result(sentence, tags):
+        """Format the result as keyed Json Lines."""
         return sentence.getKey() + '\t' + json.dumps(tags, indent=None)
 
 
