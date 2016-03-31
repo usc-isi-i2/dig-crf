@@ -61,7 +61,7 @@ def main(argv=None):
                     print "x(%d, %d)=%s" % (tokenIdx, featureIdx, tagger.x(tokenIdx, featureIdx))
             # tagger.x(tokenIdx, 0) is the original token
             # tagger.yname(tagger.y(tokenIdx)) is the label assigned to that token.
-            print "%s %s" % (tagger.x(tokenIdx, 0), tagger.yname(tagger.y(tokenIdx)))
+            print "%s %d %s" % (tagger.x(tokenIdx, 0), tagger.y(tokenIdx), tagger.yname(tagger.y(tokenIdx)))
 
 # call main() if this is run as standalone
 if __name__ == "__main__":
