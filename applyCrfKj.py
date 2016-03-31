@@ -113,7 +113,7 @@ might reduce maintainability.
             # tagger.y(tokenIdx) is the index of the tag assigned to that token.
             # tagger.yname(tagger.y(tokenIdx)) is the tag assigned to that token.
             #
-            # Assume that tagger.y(tokenIdx) != 0 iff something interesting was found.
+            # Assume that tagger.yname(tokenIdx) != "O" iff something interesting was found.
             tagIdx = tagger.y(tokenIdx)
             tagName = tagger.yname(tagIdx)
             if debug:
