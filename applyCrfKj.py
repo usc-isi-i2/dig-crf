@@ -115,11 +115,10 @@ might reduce maintainability.
             #
             # Assume that tagger.y(tokenIdx) != 0 iff something interesting was found.
             tagIdx = tagger.y(tokenIdx)
+            tagName = tagger.yname(tagIdx)
             if debug:
                 print "%s %s %d" % (tagger.x(tokenIdx, 0), tagger.yname(tagIdx), tagIdx)
-            if tagIdx != 0:
-                tagName = tagger.yname(tagIdx)
-
+            if tagName != "O":
                 if tagName != currentTagName:
                     if currentTagName != None:
                         yield result(sentence, tags)
