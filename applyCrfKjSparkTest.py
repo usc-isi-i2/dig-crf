@@ -29,8 +29,8 @@ def main(argv=None):
         print "Starting applyCrfKjSparkTest."
     sc = SparkContext()
     inputRDD = sc.textFile(args.input, args.partitions)
-    processor = applyCrf.ApplyCrfKj(args.featlist, args.model, args.debug, args.statistics)
-    resultsRDD = inputRDD.mapPartitions(processor.process)
+    tagger = applyCrf.ApplyCrfKj(args.featlist, args.model, args.debug, args.statistics)
+    resultsRDD = tagger.perform(inputRDD)
     resultsRDD.saveAsTextFile(args.output)
     if args.debug:
         print "Ending applyCrfKjSparkTest."

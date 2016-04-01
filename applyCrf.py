@@ -171,12 +171,17 @@ count of output phrases, when done.
 
     # TODO: Have applyCrfGenerator yield tupless.  Apply formatting
     # externally, using another generator. Rename aplyCrfBase to
-    # applyCrf. rename proessSentences(...) to process(...), and figure out
+    # applyCrf. rename processSentences(...) to perform(...), and figure out
     # the proper way to call it with super(...).
     def processSentences(self, sentences, resultFormatter):
         """Return a generator to process the sentences from the source.  This method may be called multiple times to process multiple sources."""
         self.setup() # Create the CRF Features and Tagger objects if necessary.
         return applyCrfGenerator(sentences, self.crfFeatures, self.tagger, resultFormatter, self.debug, self.statistics)
+
+    def perform(self, sourceRDD):
+        """Apply the process routine in an Apache Spark context."""
+        return sourceRDD.mapPartitions(self.process)
+        
 
 class ApplyCrfKj (ApplyCrfBase):
     """Process data in keyed JSON Lines format."""

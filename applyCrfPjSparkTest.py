@@ -30,8 +30,8 @@ def main(argv=None):
     sc = SparkContext()
     inputLinesRDD = sc.textFile(args.input, args.partitions)
     inputPairsRDD = inputLinesRDD.map(lambda s: s.split('\t', 1))
-    processor = applyCrf.ApplyCrfPj(args.featlist, args.model, args.debug, args.statistics)
-    resultsRDD = inputPairsRDD.mapPartitions(processor.process)
+    tagger = applyCrf.ApplyCrfPj(args.featlist, args.model, args.debug, args.statistics)
+    resultsRDD = tagger.perform(inputPairsRDD)
     resultsRDD.saveAsTextFile(args.output)
     if args.debug:
         print "Ending applyCrfPjSparkTest."
