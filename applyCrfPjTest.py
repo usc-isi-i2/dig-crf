@@ -13,20 +13,7 @@ import codecs
 import sys
 import crf_sentences as crfs
 import json
-import applyCrfBase
-
-class ApplyCrfPj (applyCrfBase.ApplyCrfBase):
-    def resultFormatter(self, sentence, currentTagName, phrase):
-        """Format the result as pairs of (key, JSON Line)."""
-        taggedPhrase = { }
-        taggedPhrase[currentTagName] = phrase
-        return sentence.getKey(), json.dumps(taggedPhrase, indent=None)
-
-    def process(self, pairSource):
-        """Return a generator to process the sentences.  This method may be called multiple times t process multiple sources."""
-        self.setup() # Create the CRF Features and Tagger objects if necessary.
-        sentences = crfs.CrfSentencesFromKeyedJsonLinesPairSource(pairSource)
-        return applyCrfBase.applyCrfGenerator(sentences, self.crfFeatures, self.tagger, self.resultFormatter, self.debug, self.statistics)
+import applyCrf
 
 def keyedJsonLinesPairReader(keyedJsonFilename):
     """This generator reads a keyed JSON Lines file and yields the lines split into (key, jsonLine) pairs."""
@@ -52,7 +39,7 @@ def main(argv=None):
 
     # Read the Web scrapings as keyed JSON Lines in pair format:
     pairSource = keyedJsonLinesPairReader(args.input)
-    processor = ApplyCrfPj(args.featlist, args.model, args.debug, args.statistics)
+    processor = applyCrf.ApplyCrfPj(args.featlist, args.model, args.debug, args.statistics)
     for key, jsonData in processor.process(pairSource):
         outfile.write(key + "\t" + jsonData + '\n')
 

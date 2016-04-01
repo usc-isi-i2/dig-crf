@@ -11,7 +11,7 @@ and tokens will not.
 import argparse
 import sys
 from pyspark import SparkContext
-import applyCrfKj
+import applyCrf
 
 def main(argv=None):
     '''this is called if run from command line'''
@@ -29,7 +29,7 @@ def main(argv=None):
         print "Starting applyCrfKjSpark."
     sc = SparkContext()
     inputRDD = sc.textFile(args.input, args.partitions)
-    processor = applyCrfKj.ApplyCrfKj(args.featlist, args.model, args.debug, args.statistics)
+    processor = applyCrf.ApplyCrfKj(args.featlist, args.model, args.debug, args.statistics)
     resultsRDD = inputRDD.mapPartitions(processor.process)
     resultsRDD.saveAsTextFile(args.output)
     if args.debug:

@@ -1,6 +1,6 @@
 #! /bin/tcsh
 
-python ./applyCrfKj.py \
+python ./applyCrfKjTest.py \
     --input data/sample/adjudicated_modeled_live_eyehair_100_03.kjsonl \
     --output data/sample/adjudicated_modeled_live_eyehair_100_03-tags.kjsonl \
     --featlist data/config/features.hair-eye \

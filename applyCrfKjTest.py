@@ -11,22 +11,8 @@ text and tokens will not.
 import argparse
 import codecs
 import sys
-import crf_sentences as crfs
 import json
-import applyCrfBase
-
-class ApplyCrfKj (applyCrfBase.ApplyCrfBase):
-    def resultFormatter(self, sentence, currentTagName, phrase):
-        """Format the result as keyed Json Lines."""
-        taggedPhrase = { }
-        taggedPhrase[currentTagName] = phrase
-        return sentence.getKey() + '\t' + json.dumps(taggedPhrase, indent=None)
-
-    def process(self, source):
-        """Return a generator to process the keyed JSON Lines from the source.  This method may be called multiple times to process multiple sources."""
-        self.setup() # Create the CRF Features and Tagger objects if necessary.
-        sentences = crfs.CrfSentencesFromKeyedJsonLinesSource(source)
-        return applyCrfBase.applyCrfGenerator(sentences, self.crfFeatures, self.tagger, self.resultFormatter, self.debug, self.statistics)
+import applyCrf
 
 # Is there a standard library way to do this?
 def keyedJsonLinesReader(keyedJsonFilename):
@@ -52,7 +38,7 @@ def main(argv=None):
 
     # Read the Web scrapings as keyed JSON Lines and process them:
     source = keyedJsonLinesReader(args.input)
-    processor = ApplyCrfKj(args.featlist, args.model, args.debug, args.statistics)
+    processor = applyCrf.ApplyCrfKj(args.featlist, args.model, args.debug, args.statistics)
     for result in processor.process(source):
         outfile.write(result + '\n')
 

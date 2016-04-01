@@ -11,7 +11,7 @@ through to the output file, but the text and tokens will not.
 import argparse
 import sys
 from pyspark import SparkContext
-import applyCrfPj
+import applyCrf
 
 def main(argv=None):
     '''this is called if run from command line'''
@@ -30,7 +30,7 @@ def main(argv=None):
     sc = SparkContext()
     inputLinesRDD = sc.textFile(args.input, args.partitions)
     inputPairsRDD = inputLinesRDD.map(lambda s: s.split('\t', 1))
-    processor = applyCrfPj.ApplyCrfPj(args.featlist, args.model, args.debug, args.statistics)
+    processor = applyCrf.ApplyCrfPj(args.featlist, args.model, args.debug, args.statistics)
     resultsRDD = inputPairsRDD.mapPartitions(processor.process)
     resultsRDD.saveAsTextFile(args.output)
     if args.debug:
