@@ -3,6 +3,110 @@
 """The applyCrfGenerator generator processes sentences with CRF++.  Wrappers
 are provided for various types of input and output.
 
+Code Structure
+==== =========
+
+class ApplyCrfKj
+    instantiates class CrfSentencesFromKeyedJsonLinesSource (an iterator)
+    extends class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines
+        extends class ApplyCrfToSentencesYieldingTaggedPhraseTuples
+            instantiates crfFeatures and CRF++
+            wraps generator function applyCrfGenerator
+
+class ApplyCrfPj
+    instantiates class CrfSentencesFromKeyedJsonLinesPairSource (an iterator)
+    extends class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines
+        extends class ApplyCrfToSentencesYieldingTaggedPhraseTuples
+            instantiates crfFeatures and CRF++
+            wraps generator function applyCrfGenerator
+
+The heart of this code is a generator, applyCrfGenerator(...).  It takes a
+sequence of "sentence" objects and produces a sequence of tagged phrase
+tuples.  It also requires a crfFeatures instance and a CRF++ tagger instance,
+which are instantiated in higher-level code, and a couple of debugging
+controls.
+
+ApplyCrfToSentencesYieldingTaggedPhraseTuples is a class that prepares the
+environment for applyCrfGenerator.  It is initialized with paths to the
+feature list file for crfFeatures and the trained model file for CRF++.  It
+creates instances of crfFeatures and the CRF++ tagger when needed, and starts
+applyCrfGenerator.  It provides a perform(...) method for use in Apache Spark
+scripts per USC/ISI's Dig project's conventions.
+
+ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines is a class that
+extends ApplyCrfToSentencesYieldingTaggedPhraseTuples.  It formats the output
+tuples produced by the generator, applyCrfGenerator(...), into a form that it
+close to what is needed in Dig's Apache Spark scripts.  The new output format
+is a sequence of tuples of (key, taggedPhraseJsonLine).
+
+ApplyCrfKj extends ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines to
+integrate with Dig's Apache Spark processing scripts.  It reads a sequence of
+keyed JSON lines, using an iterator in "crf_sentences.py" that converts the
+lines into a sequence of "sentence" objects.  It reformats the output provided
+by ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines into a sequence of
+keyed JSON lines (i.e., "key\ttaggedPhraseJsonLine").
+
+ApplyCrfPj also extends
+ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines to integrate with
+Dig's Apache Spark processing scripts.  It reads a sequence of (key,
+sentenceJsonLine) pairs, using an iterator in "crf_sentences.py" that converts
+the pairs into a sequence of "sentence" objects.  It does not need to
+reformate the output provided by its parent, which is already a (key,
+taggedPhraseJsonLine) pair.
+
+Usage
+=====
+
+        Here are code fragments that illustrate how the applyCrf code might be
+used in Apache Spark processing scripts, along with sample output when
+processed with the hair/eye CRF++ model and data from the
+"adjudicated_modeled_live_eyehair_100_03.json" dataset (which was preprocessed
+into keyed JSON Lines format).
+
+Example: ApplyCrfKj
+
+import applyCrf
+
+sc = SparkContext()
+inputRDD = sc.textFile(args.input, args.partitions)
+tagger = applyCrf.ApplyCrfKj(args.featlist, args.model, args.debug, args.statistics)
+resultsRDD = tagger.perform(inputRDD)
+resultsRDD.saveAsTextFile(args.output)
+
+Output:
+
+http://dig.isi.edu/sentence/253D8FF7A55A226FDBBC53939DBB90D763E77691    {"hairType": ["strawberry", "blond", "hair"]}
+http://dig.isi.edu/sentence/253D8FF7A55A226FDBBC53939DBB90D763E77691    {"eyeColor": ["blue", "eyes"]}
+http://dig.isi.edu/sentence/028269F87330E727ACE0A8A39855325C5DD60FF8    {"hairType": ["long", "blonde", "hair"]}
+http://dig.isi.edu/sentence/028269F87330E727ACE0A8A39855325C5DD60FF8    {"eyeColor": ["seductive", "blue", "eyes"]}
+
+
+Example: ApplyCrfPj
+
+import applyCrf
+
+sc = SparkContext()
+inputLinesRDD = sc.textFile(args.input, args.partitions)
+inputPairsRDD = inputLinesRDD.map(lambda s: s.split('\t', 1))
+tagger = applyCrf.ApplyCrfPj(args.featlist, args.model, args.debug, args.statistics)
+resultsRDD = tagger.perform(inputPairsRDD)
+resultsRDD.saveAsTextFile(args.output)
+
+Output:
+
+(u'http://dig.isi.edu/sentence/253D8FF7A55A226FDBBC53939DBB90D763E77691', '{"hairType": ["strawberry", "blond", "hair"]}')
+(u'http://dig.isi.edu/sentence/253D8FF7A55A226FDBBC53939DBB90D763E77691', '{"eyeColor": ["blue", "eyes"]}')
+(u'http://dig.isi.edu/sentence/028269F87330E727ACE0A8A39855325C5DD60FF8', '{"hairType": ["long", "blonde", "hair"]}')
+(u'http://dig.isi.edu/sentence/028269F87330E727ACE0A8A39855325C5DD60FF8', '{"eyeColor": ["seductive", "blue", "eyes"]}')
+
+Performance
+===========
+
+On typical development hardware, such as a Macbook Pro or an OpenSUSE Linux
+system running on an AMD FX-8150 processor, we see about 100 sentences
+processed per second using a single CPU core.  Using 8 logical CPU cores, we
+see approx. 500 sentences processed per second.
+
 """
 
 import crf_sentences as crfs
@@ -209,7 +313,7 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
 
     """
     def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
-        """Extract the tagged phrases and format the result as keyed Json Lines."""
+        """Extract the tagged phrases and format the result as keys and tagged phrase Json Lines."""
         phrase = sentence.getAllTokens()[phraseFirstTokenIdx:(phraseFirstTokenIdx+phraseTokenCount)]
         taggedPhrase = { }
         taggedPhrase[tagName] = phrase
