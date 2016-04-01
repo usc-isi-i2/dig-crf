@@ -15,46 +15,18 @@ import crf_sentences as crfs
 import crf_features as crff
 import CRFPP
 import json
-import applyCrfGenerator
+import applyCrfBase
 
-def keyedJsonLinesResultFormatter(sentence, currentTagName, phrase):
-    """Format the result as keyed Json Lines."""
-    taggedPhrase = { }
-    taggedPhrase[currentTagName] = phrase
-    return sentence.getKey() + '\t' + json.dumps(taggedPhrase, indent=None)
-
-class ApplyCrfKj:
-    def __init__(self, featureListFilePath, modelFilePath, debug=False, statistics=False):
-        """Initialize the ApplyCrfKj object.
-
-featureListFilePath is the path to the word and phrase-list control file used
-by crf_features.
-
-modelFilePath is the path to a trained CRF++ model.
-
-debug, when True, causes the code to emit helpful debugging information on
-standard output.
-
-statistics, when True, emits a count of input sentences and tokens, and a
-count of output phrases, when done.
-
-        """
-
-        self.featureListFilePath = featureListFilePath
-        self.modelFilePath = modelFilePath
-        self.debug = debug
-        self.statistics = statistics
-
-        # Create a CrfFeatures object.  This class provides a lot of services, but we'll use only a few.
-        self.crfFeatures = crff.CrfFeatures(featureListFilePath)
-
-        # Create a CRF++ processor object:
-        self.tagger = CRFPP.Tagger("-m " + modelFilePath)
-
+class ApplyCrfKj (applyCrfBase.ApplyCrfBase):
+    def resultFormatter(self, sentence, currentTagName, phrase):
+        """Format the result as keyed Json Lines."""
+        taggedPhrase = { }
+        taggedPhrase[currentTagName] = phrase
+        return sentence.getKey() + '\t' + json.dumps(taggedPhrase, indent=None)
 
     def process(self, sentences):
         """Return a generator to process the sentences."""
-        return applyCrfGenerator.applyCrfGenerator(sentences, self.crfFeatures, self.tagger, keyedJsonLinesResultFormatter, self.debug, self.statistics)
+        return applyCrfBase.applyCrfGenerator(sentences, self.crfFeatures, self.tagger, self.resultFormatter, self.debug, self.statistics)
 
 def main(argv=None):
     '''this is called if run from command line'''

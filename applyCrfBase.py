@@ -129,3 +129,30 @@ create their own classes.
         print "input:  %d sentences, %d tokens" % (sentenceCount, tokenCount)
         print "output: %d phrases, %d tokens" % (taggedPhraseCount, taggedTokenCount)
 
+class ApplyCrfBase:
+    def __init__(self, featureListFilePath, modelFilePath, debug=False, statistics=False):
+        """Initialize the ApplyCrfKj object.
+
+featureListFilePath is the path to the word and phrase-list control file used
+by crf_features.
+
+modelFilePath is the path to a trained CRF++ model.
+
+debug, when True, causes the code to emit helpful debugging information on
+standard output.
+
+statistics, when True, emits a count of input sentences and tokens, and a
+count of output phrases, when done.
+
+        """
+
+        self.featureListFilePath = featureListFilePath
+        self.modelFilePath = modelFilePath
+        self.debug = debug
+        self.statistics = statistics
+
+        # Create a CrfFeatures object.  This class provides a lot of services, but we'll use only a few.                                                                          
+        self.crfFeatures = crff.CrfFeatures(featureListFilePath)
+
+        # Create a CRF++ processor object:                                                                                                                                        
+        self.tagger = CRFPP.Tagger("-m " + modelFilePath)
