@@ -35,15 +35,12 @@ maintains an iterator strategy internally, and avoids re-buffering the input
 and output.
 
         """
-        # Pass the source iterator to the code that reads keyed JSON Lines
-        # data and builds sentence objects. The result, 'sentences', is also
-        # an iterator.
-        sentences = crfs.CrfSentencesFromKeyedJsonLinesSource(sourceRDD)
-        # Return a generator that takes the sentence iterator and produces
-        # tagged phrases in keyed JSON Lines format.  The returned generator
-        # is initialized with featureLiesFilePath, modelFilePath, etc. 
+        # Return a generator that takes the source iterator (an RDD) and
+        # produces tagged phrases in keyed JSON Lines format for storage in an
+        # RDD.  The returned generator is initialized with
+        # featureLiesFilePath, modelFilePath, etc.
         p = applyCrfKj.ApplyCrfKj(self.featureListFilePath, self.modelFilePath, self.debug, self.statistics)
-        return p.process(sentences)
+        return p.process(sourceRDD)
 
 
 def main(argv=None):

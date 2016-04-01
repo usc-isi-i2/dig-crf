@@ -24,8 +24,9 @@ class ApplyCrfPj (applyCrfBase.ApplyCrfBase):
         taggedPhrase[currentTagName] = phrase
         return sentence.getKey(), json.dumps(taggedPhrase, indent=None)
 
-    def process(self, sentences):
+    def process(self, pairSource):
         """Return a generator to process the sentences."""
+        sentences = crfs.CrfSentencesFromKeyedJsonLinesPairSource(pairSource)
         return applyCrfBase.applyCrfGenerator(sentences, self.crfFeatures, self.tagger, self.resultFormatter, self.debug, self.statistics)
 
 def keyedJsonLinesPairReader(keyedJsonFilename):
@@ -50,12 +51,10 @@ def main(argv=None):
     if args.output != None:
         outfile = codecs.open(args.output, 'wb', 'utf-8')
 
-    # Read the Web scrapings as keyed JSON Lines:
+    # Read the Web scrapings as keyed JSON Lines in pair format:
     pairSource = keyedJsonLinesPairReader(args.input)
-    sentences = crfs.CrfSentencesFromKeyedJsonLinesPairSource(pairSource)
-
     processor = ApplyCrfPj(args.featlist, args.model, args.debug, args.statistics)
-    for key, jsonData in processor.process(sentences):
+    for key, jsonData in processor.process(pairSource):
         outfile.write(key + "\t" + jsonData + '\n')
 
     if args.output != None:

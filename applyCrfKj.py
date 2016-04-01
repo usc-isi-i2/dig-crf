@@ -24,9 +24,17 @@ class ApplyCrfKj (applyCrfBase.ApplyCrfBase):
         taggedPhrase[currentTagName] = phrase
         return sentence.getKey() + '\t' + json.dumps(taggedPhrase, indent=None)
 
-    def process(self, sentences):
-        """Return a generator to process the sentences."""
+    def process(self, source):
+        """Return a generator to process the keyed JSON Lines from the source."""
+        sentences = crfs.CrfSentencesFromKeyedJsonLinesSource(source)
         return applyCrfBase.applyCrfGenerator(sentences, self.crfFeatures, self.tagger, self.resultFormatter, self.debug, self.statistics)
+
+# Is there a standard library way to do this?
+def keyedJsonLinesReader(keyedJsonFilename):
+    """This generator reads a keyed JSON Lines file and yields the lines."""
+    with codecs.open(keyedJsonFilename, 'rb', 'utf-8') as keyedJsonFile:
+        for line in keyedJsonFile:
+            yield line
 
 def main(argv=None):
     '''this is called if run from command line'''
@@ -43,11 +51,10 @@ def main(argv=None):
     if args.output != None:
         outfile = codecs.open(args.output, 'wb', 'utf-8')
 
-    # Read the Web scrapings as keyed JSON Lines:
-    sentences = crfs.CrfSentencesFromKeyedJsonLinesFile(args.input)
-
+    # Read the Web scrapings as keyed JSON Lines and process them:
+    source = keyedJsonLinesReader(args.input)
     processor = ApplyCrfKj(args.featlist, args.model, args.debug, args.statistics)
-    for result in processor.process(sentences):
+    for result in processor.process(source):
         outfile.write(result + '\n')
 
     if args.output != None:
