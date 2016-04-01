@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-"""This generator processes sentences with CRF++
+"""The applyCrfGenerator generator processes sentences with CRF++.  Wrappers
+are provided for various types of input and output.
 
 """
 
@@ -10,18 +11,24 @@ import CRFPP
 import json
 
 def applyCrfGenerator(sentences, crfFeatures, tagger, resultFormatter, debug=False, statistics=False):
-    """Apply CRF++ to a sequence of "sentences", generating tagged phrases as
-output.  0 to N tagged phrases will generated as output for each input
+    """Apply CRF++ to a sequence of "sentences", generating tagged phrases
+as output.  0 to N tagged phrases will generated as output for each input
 sentence.
 
 The primary input, 'sentences', is an iterator, which is used without internal
-buffering.  This function is a generator, which is equivalent to producing an
-iterator as output.  This paradigm of an interator input, iterator results,
-and no internal buffering should work well with Spark.
+buffering.  The function applyCrfGenerator is a generator, which is equivalent
+to producing an iterator as output.  This paradigm of an interator input,
+iterator results, and no internal buffering should work well with Spark.
 
 featureListFilePath is a crf_features object.
 
 tagger is a CRF++ instance with a trained CRF++ model.
+
+resultFormatter(sentence, tagName, phraseFirstTokenIdx, phraseTokenCount)
+ converts tagged phrase tuples into the desired output format.
+As a design alternative, the generator could be made to deliver tagged phrase
+tuples directly, with an external generator or iterator converting them into
+the desired format.
 
 debug, when True, causes the code to emit helpful debugging information on
 standard output.
@@ -34,7 +41,7 @@ CRF++ code must be installed in the Python interpreter.  If Spark is used to
 distribute processing among multiple systems, CRF++ must be installed on the
 Python interpreter used by Spark on each system.
 
-Opportunities for further optimization: The 'debug' and 'ststistics' code
+Opportunities for further optimization: The 'debug' and 'statistics' code
 support could be removed.  crf_features could be restructured to isolate its
 core routines.  crf_sentences defines a CrfSentence object with getter
 methods; these could be interpolated into this code for efficiency, but that
@@ -89,9 +96,10 @@ create their own classes.
             print "received %d tokens , expected %d" % (ntokens, len(tokens))
         nfeatures = tagger.xsize()
 
-        # Accumulate interesting tokens into phrases which are sent as results.
+        # Accumulate interesting tokens into tagged phrases which are sent as results.
         currentTagName = UNTAGGED_TAG_NAME
-        phrase = []
+        phraseFirstTokenIdx = 0 # Any value would do.
+        phraseTokenCount = 0
 
         for tokenIdx in range(0, tagger.size()):
             if debug:
@@ -107,32 +115,42 @@ create their own classes.
 
             # If we are changing tag names, write out any queued tagged phrase:
             if tagName != currentTagName:
-                if currentTagName != UNTAGGED_TAG_NAME:
-                    yield resultFormatter(sentence, currentTagName, phrase)
+                if phraseTokenCount > 0:
+                    yield resultFormatter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
                     taggedPhraseCount += 1
-                    phrase[:] = []
+                    phraseTokenCount = 0
                 currentTagName = tagName
 
             # Unless this token is untagged, append it to the current phrase.
             if tagName != UNTAGGED_TAG_NAME:
-                phrase.append(tagger.x(tokenIdx, 0))
+                if phraseTokenCount == 0:
+                    phraseFirstTokenIdx = tokenIdx
+                phraseTokenCount += 1
                 taggedTokenCount += 1
 
         # Write out any remaining phrase (boundary case):
-        if currentTagName != UNTAGGED_TAG_NAME:
-            yield resultFormatter(sentence, currentTagName, phrase)
+        if phraseTokenCount > 0:
+            yield resultFormatter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
             taggedPhraseCount += 1
             # Don't need to do these as we're about to exit the loop:
-            # phrase[:] = []
+            # phraseTokenCount = 0
             # currentTagName = UNTAGGED_TAG_NAME
 
     if statistics:
         print "input:  %d sentences, %d tokens" % (sentenceCount, tokenCount)
         print "output: %d phrases, %d tokens" % (taggedPhraseCount, taggedTokenCount)
 
-class ApplyCrfBase:
+class ApplyCrfToSentencesYieldingTaggedPhraseTuples(object):
+    """Apply CRF++ to a source of sentences, returning a sequence of tagged phrase
+    tuples.  The output tuples could be used to create something similar to the
+    MTurk sentence output.
+
+    (sentence, tagName, phraseFirstTokenIndex, phraseTokenCount)
+
+    """
+
     def __init__(self, featureListFilePath, modelFilePath, debug=False, statistics=False):
-        """Initialize the ApplyCrfKj object.
+        """Initialize the ApplyCrfToSentencesYieldingTaggedPhraseTuples object.
 
 featureListFilePath is the path to the word and phrase-list control file used
 by crf_features.
@@ -169,40 +187,69 @@ count of output phrases, when done.
             # Create a CRF++ processor object:
             self.tagger = CRFPP.Tagger("-m " + self.modelFilePath)
 
-    # TODO: Have applyCrfGenerator yield tupless.  Apply formatting
-    # externally, using another generator. Rename aplyCrfBase to
-    # applyCrf. rename processSentences(...) to perform(...), and figure out
-    # the proper way to call it with super(...).
-    def processSentences(self, sentences, resultFormatter):
+    def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
+        """Pass the result tuples through."""
+        return sentence, tagName, phraseFirstTokenIdx, phraseTokenCount
+
+    def process(self, sentences):
         """Return a generator to process the sentences from the source.  This method may be called multiple times to process multiple sources."""
         self.setup() # Create the CRF Features and Tagger objects if necessary.
-        return applyCrfGenerator(sentences, self.crfFeatures, self.tagger, resultFormatter, self.debug, self.statistics)
+        return applyCrfGenerator(sentences, self.crfFeatures, self.tagger, self.resultFormatter, self.debug, self.statistics)
 
     def perform(self, sourceRDD):
         """Apply the process routine in an Apache Spark context."""
         return sourceRDD.mapPartitions(self.process)
         
 
-class ApplyCrfKj (ApplyCrfBase):
-    """Process data in keyed JSON Lines format."""
-    def resultFormatter(self, sentence, currentTagName, phrase):
-        """Format the result as keyed Json Lines."""
-        taggedPhrase = { }
-        taggedPhrase[currentTagName] = phrase
-        return sentence.getKey() + '\t' + json.dumps(taggedPhrase, indent=None)
+class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentencesYieldingTaggedPhraseTuples):
+    """Apply CRF++ to a source of sentences, returning a sequence of keys and
+    tagged phrase structures.  The tagged phrase structures are encoded as JSON Lines.
 
-    def process(self, source):
-        """Return a generator to process the keyed JSON Lines from the source.  This method may be called multiple times to process multiple sources."""
-        return self.processSentences(crfs.CrfSentencesFromKeyedJsonLinesSource(source), self.resultFormatter)
+    yields: (key, taggedPhraseJsonLine)
 
-class ApplyCrfPj (ApplyCrfBase):
-    """Process data in paired (key, JSON Line) format."""
-    def resultFormatter(self, sentence, currentTagName, phrase):
-        """Format the result as pairs of (key, JSON Line)."""
+    """
+    def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
+        """Extract the tagged phrases and format the result as keyed Json Lines."""
+        phrase = sentence.getAllTokens()[phraseFirstTokenIdx:(phraseFirstTokenIdx+phraseTokenCount)]
         taggedPhrase = { }
-        taggedPhrase[currentTagName] = phrase
+        taggedPhrase[tagName] = phrase
         return sentence.getKey(), json.dumps(taggedPhrase, indent=None)
 
+class ApplyCrfKj (ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines):
+    """Apply CRF++ to a source of sentences in keyed JSON Lines format, returning
+a sequence of tagged phrases in keyed JSON Lines format.
+
+    yields: keyedTaggedPhraseJsonLine
+            key \t taggedPhraseJsonLine
+
+    """
+    def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
+        """Format the result as keyed Json Lines."""
+        key, taggedPhraseJsonLine = super(ApplyCrfKj, self).resultFormatter(sentence, tagName, phraseFirstTokenIdx, phraseTokenCount)
+        return key + '\t' + taggedPhraseJsonLine
+
+    def process(self, source):
+        """Return a generator to process a sequence of sentences from the source.  The
+source presents the sentences in keyed sentence JSON Lines format.  This
+method may be called multiple times to process multiple sources.
+
+        """
+        return super(ApplyCrfKj, self).process(crfs.CrfSentencesFromKeyedJsonLinesSource(source))
+
+class ApplyCrfPj (ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines):
+    """Apply CRF++ to a source of sentences in paired (key, sentenceJsonLine) format,
+    returning keys and tagged phrases in paired (key, taggedPhraseJsonLine) format.
+
+    yields: (key, taggedPhraseJsonLine)
+
+    """
+
+    # The parent resultFormatter(...) method returns the proper pair.
+
     def process(self, pairSource):
-        """Return a generator to process the sentences.  This method may be called multiple times t process multiple sources."""
-        return self.processSentences(crfs.CrfSentencesFromKeyedJsonLinesPairSource(pairSource), self.resultFormatter)
+        """Return a generator to process a sequence of sentences from the source.
+The source presents the sentences in paired (key, sentenceJsonLine) format.
+This method may be called multiple times to process multiple sources.
+
+        """
+        return super(ApplyCrfPj, self).process(crfs.CrfSentencesFromKeyedJsonLinesPairSource(pairSource))

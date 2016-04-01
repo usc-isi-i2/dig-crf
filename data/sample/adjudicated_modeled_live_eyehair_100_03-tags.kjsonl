@@ -900,7 +900,7 @@ http://dig.isi.edu/sentence/EF852DC2337CC66DC17CE0CCA2730E3A8FD1229C	{"eyeColor"
 http://dig.isi.edu/sentence/EF852DC2337CC66DC17CE0CCA2730E3A8FD1229C	{"hairType": ["Brown", "hair"]}
 http://dig.isi.edu/sentence/EF852DC2337CC66DC17CE0CCA2730E3A8FD1229C	{"hairType": ["blond", "hair"]}
 http://dig.isi.edu/sentence/3F9E4E61FD37D557A2ED4C736FF9E45B9A613017	{"hairType": ["blondish", "brown", "hair"]}
-http://dig.isi.edu/sentence/3F9E4E61FD37D557A2ED4C736FF9E45B9A613017	{"eyeColor": ["hazel", "green", "&lt;a", "eyes"]}
+http://dig.isi.edu/sentence/3F9E4E61FD37D557A2ED4C736FF9E45B9A613017	{"eyeColor": ["hazel", "green", "&lt;a target=\"_blank\" href=\"http://eyes.im/\"&gt;", "eyes"]}
 http://dig.isi.edu/sentence/568ED4C0F964F94DF7C8E93E352E3EA2E1E7F184	{"hairType": ["long", "light", "lighted", "brunette", "/", "golden", "hair"]}
 http://dig.isi.edu/sentence/568ED4C0F964F94DF7C8E93E352E3EA2E1E7F184	{"eyeColor": ["Light", "green", "/", "blue"]}
 http://dig.isi.edu/sentence/7F71A268BAE57A68F9D0B0F4D9DB79A10B392FA5	{"hairType": ["brown", "hair"]}
