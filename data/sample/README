@@ -119,7 +119,7 @@ cat adjudicated_modeled_live_eyehair_100_03.uri \
 	following csh command:
 
 (repeat 100 cat adjudicated_modeled_live_eyehair_100_03.kjsonl ) > \
-    adjudicated_modeled_live_eyehair_100_03-x100.json
+    adjudicated_modeled_live_eyehair_100_03-x100.kjsonl
 
 10)	adjudicated_modeled_live_eyehair_100_03-tags.kjsonl
 
