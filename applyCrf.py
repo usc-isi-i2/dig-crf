@@ -169,6 +169,15 @@ count of output phrases, when done.
             # Create a CRF++ processor object:
             self.tagger = CRFPP.Tagger("-m " + self.modelFilePath)
 
+    # TODO: Have applyCrfGenerator yield tupless.  Apply formatting
+    # externally, using another generator. Rename aplyCrfBase to
+    # applyCrf. rename proessSentences(...) to process(...), and figure out
+    # the proper way to call it with super(...).
+    def processSentences(self, sentences, resultFormatter):
+        """Return a generator to process the sentences from the source.  This method may be called multiple times to process multiple sources."""
+        self.setup() # Create the CRF Features and Tagger objects if necessary.
+        return applyCrfGenerator(sentences, self.crfFeatures, self.tagger, resultFormatter, self.debug, self.statistics)
+
 class ApplyCrfKj (ApplyCrfBase):
     """Process data in keyed JSON Lines format."""
     def resultFormatter(self, sentence, currentTagName, phrase):
@@ -179,9 +188,7 @@ class ApplyCrfKj (ApplyCrfBase):
 
     def process(self, source):
         """Return a generator to process the keyed JSON Lines from the source.  This method may be called multiple times to process multiple sources."""
-        self.setup() # Create the CRF Features and Tagger objects if necessary.
-        sentences = crfs.CrfSentencesFromKeyedJsonLinesSource(source)
-        return applyCrfGenerator(sentences, self.crfFeatures, self.tagger, self.resultFormatter, self.debug, self.statistics)
+        return self.processSentences(crfs.CrfSentencesFromKeyedJsonLinesSource(source), self.resultFormatter)
 
 class ApplyCrfPj (ApplyCrfBase):
     """Process data in paired (key, JSON Line) format."""
@@ -193,6 +200,4 @@ class ApplyCrfPj (ApplyCrfBase):
 
     def process(self, pairSource):
         """Return a generator to process the sentences.  This method may be called multiple times t process multiple sources."""
-        self.setup() # Create the CRF Features and Tagger objects if necessary.
-        sentences = crfs.CrfSentencesFromKeyedJsonLinesPairSource(pairSource)
-        return applyCrfGenerator(sentences, self.crfFeatures, self.tagger, self.resultFormatter, self.debug, self.statistics)
+        return self.processSentences(crfs.CrfSentencesFromKeyedJsonLinesPairSource(pairSource), self.resultFormatter)
