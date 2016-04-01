@@ -123,7 +123,6 @@ might reduce maintainability.
                     if currentTagName != None:
                         yield result(sentence, tags)
                         taggedPhraseCount += 1
-                        taggedTokenCount += len(tags)
                         tags.clear()
                     currentTagName = tagName
 
@@ -135,7 +134,6 @@ might reduce maintainability.
                 if currentTagName != None:
                     yield result(sentence, tags)
                     taggedPhraseCount += 1
-                    taggedTokenCount += len(tags)
                     tags.clear()
                     currentTagName = None
 
@@ -143,7 +141,6 @@ might reduce maintainability.
         if currentTagName != None:
             yield result(sentence, tags)
             taggedPhraseCount += 1
-            taggedTokenCount += len(tags)
             tags.clear()
             currentTagName = None
 
