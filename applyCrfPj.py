@@ -25,7 +25,8 @@ class ApplyCrfPj (applyCrfBase.ApplyCrfBase):
         return sentence.getKey(), json.dumps(taggedPhrase, indent=None)
 
     def process(self, pairSource):
-        """Return a generator to process the sentences."""
+        """Return a generator to process the sentences.  This method may be called multiple times t process multiple sources."""
+        self.setup() # Create the CRF Features and Tagger objects if necessary.
         sentences = crfs.CrfSentencesFromKeyedJsonLinesPairSource(pairSource)
         return applyCrfBase.applyCrfGenerator(sentences, self.crfFeatures, self.tagger, self.resultFormatter, self.debug, self.statistics)
 

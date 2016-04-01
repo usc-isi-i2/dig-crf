@@ -151,8 +151,19 @@ count of output phrases, when done.
         self.debug = debug
         self.statistics = statistics
 
-        # Create a CrfFeatures object.  This class provides a lot of services, but we'll use only a few.                                                                          
-        self.crfFeatures = crff.CrfFeatures(featureListFilePath)
+        # Defer creating these objects.  The benefit is better operation with
+        # Spark (deferring creating the tagger may be necessary with Spark).
+        # The downside is that problems opening the feature list file or the
+        # model file are reported later.
+        self.crfFeatures = None
+        self.tagger = None
 
-        # Create a CRF++ processor object:                                                                                                                                        
-        self.tagger = CRFPP.Tagger("-m " + modelFilePath)
+    def setup(self):
+        """create the CRF Features and CRF tagger objects, if they haven't been created yet."""
+        if self.crfFeatures == None:
+            # Create a CrfFeatures object.  This class provides a lot of services, but we'll use only a few.
+            self.crfFeatures = crff.CrfFeatures(self.featureListFilePath)
+
+        if self.tagger == None:
+            # Create a CRF++ processor object:
+            self.tagger = CRFPP.Tagger("-m " + self.modelFilePath)

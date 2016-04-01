@@ -9,39 +9,9 @@ text and tokens will not.
 """
 
 import argparse
-import crf_sentences as crfs
-import os
 import sys
 from pyspark import SparkContext
 import applyCrfKj
-
-class ApplyCrfKjSpark:
-    def __init__(self, featureListFilePath, modelFilePath, debug, statistics):
-        """Initialialize ApplyCrfKjSpark.
-
-Note: we cannot initialize ApplyCrfKj at this time, because that ties to the
-CRF++ code, which leads to a pickling error.
-
-        """
-        self.featureListFilePath = featureListFilePath
-        self.modelFilePath = modelFilePath
-        self.debug = debug
-        self.statistics = statistics
-
-    def process(self, sourceRDD): 
-        """This is a filter for mapPartitions.  It takes an iterator as a source (RDDs
-are iterators) and returns an iterator (more precisely, a generator).  It
-maintains an iterator strategy internally, and avoids re-buffering the input
-and output.
-
-        """
-        # Return a generator that takes the source iterator (an RDD) and
-        # produces tagged phrases in keyed JSON Lines format for storage in an
-        # RDD.  The returned generator is initialized with
-        # featureLiesFilePath, modelFilePath, etc.
-        p = applyCrfKj.ApplyCrfKj(self.featureListFilePath, self.modelFilePath, self.debug, self.statistics)
-        return p.process(sourceRDD)
-
 
 def main(argv=None):
     '''this is called if run from command line'''
@@ -55,14 +25,12 @@ def main(argv=None):
     parser.add_argument('-s','--statistics', help="Optionally report use statistics.", required=False, action='store_true')
     args = parser.parse_args()
 
-    # if os.path.exists(args.output):
-    #     os.remove(args.output)
-
     if args.debug:
         print "Starting applyCrfKjSpark."
     sc = SparkContext()
     inputRDD = sc.textFile(args.input, args.partitions)
-    resultsRDD = inputRDD.mapPartitions(ApplyCrfKjSpark(args.featlist, args.model, args.debug, args.statistics).process)
+    processor = applyCrfKj.ApplyCrfKj(args.featlist, args.model, args.debug, args.statistics)
+    resultsRDD = inputRDD.mapPartitions(processor.process)
     resultsRDD.saveAsTextFile(args.output)
     if args.debug:
         print "Ending applyCrfKjSpark."
