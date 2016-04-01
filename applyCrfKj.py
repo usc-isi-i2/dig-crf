@@ -16,7 +16,7 @@ import crf_features as crff
 import CRFPP
 import json
 
-def applyCrfKj(sentences, featureListFilePath, modelFilePath, debug=False, statistics=False):
+def applyCrfKjGenerator(sentences, crfFeatures, tagger, debug=False, statistics=False):
     """Apply CRF++ to a sequence of "sentences", generating tagged phrases as
 output.  0 to N tagged phrases will generated as output for each input
 sentence.
@@ -26,10 +26,9 @@ buffering.  This function is a generator, which is equivalent to producing an
 iterator as output.  This paradigm of an interator input, iterator results,
 and no internal buffering should work well with Spark.
 
-featureListFilePath is the path to the word and phrase-list control file used
-by crf_features.
+featureListFilePath is a crf_features object.
 
-modelFilePath is the path to a trained CRF++ model.
+tagger is a CRF++ instance with a trained CRF++ model.
 
 debug, when True, causes the code to emit helpful debugging information on
 standard output.
@@ -48,6 +47,9 @@ core routines.  crf_sentences defines a CrfSentence object with getter
 methods; these could be interpolated into this code for efficiency, but that
 might reduce maintainability.
 
+Note: Python generators apparently cannot be class methods.  They effectively
+create their own classes.
+
     """
 
     # Define the tag name that appears on words that have not been tagged by
@@ -60,12 +62,6 @@ might reduce maintainability.
         taggedPhrase = { }
         taggedPhrase[currentTagName] = phrase
         return sentence.getKey() + '\t' + json.dumps(taggedPhrase, indent=None)
-
-    # Create a CrfFeatures object.  This class provides a lot of services, but we'll use only a few.
-    crfFeatures = crff.CrfFeatures(featureListFilePath)
-
-    # Create a CRF++ processor object:
-    tagger = CRFPP.Tagger("-m " + modelFilePath)
 
     # Clear the statistics:
     sentenceCount = 0     # Number of input "sentences" -- e.g., ads
@@ -147,6 +143,38 @@ might reduce maintainability.
         print "input:  %d sentences, %d tokens" % (sentenceCount, tokenCount)
         print "output: %d phrases, %d tokens" % (taggedPhraseCount, taggedTokenCount)
 
+class ApplyCrfKj:
+    def __init__(self, featureListFilePath, modelFilePath, debug=False, statistics=False):
+        """Initialize the ApplyCrfKj object.
+
+featureListFilePath is the path to the word and phrase-list control file used
+by crf_features.
+
+modelFilePath is the path to a trained CRF++ model.
+
+debug, when True, causes the code to emit helpful debugging information on
+standard output.
+
+statistics, when True, emits a count of input sentences and tokens, and a
+count of output phrases, when done.
+
+        """
+
+        self.featureListFilePath = featureListFilePath
+        self.modelFilePath = modelFilePath
+        self.debug = debug
+        self.statistics = statistics
+
+        # Create a CrfFeatures object.  This class provides a lot of services, but we'll use only a few.
+        self.crfFeatures = crff.CrfFeatures(featureListFilePath)
+
+        # Create a CRF++ processor object:
+        self.tagger = CRFPP.Tagger("-m " + modelFilePath)
+
+
+    def process(self, sentences):
+        """Return a generator to process the sentences."""
+        return applyCrfKjGenerator(sentences, self.crfFeatures, self.tagger, self.debug, self.statistics)
 
 def main(argv=None):
     '''this is called if run from command line'''
@@ -166,7 +194,8 @@ def main(argv=None):
     # Read the Web scrapings as keyed JSON Lines:
     sentences = crfs.CrfSentencesFromKeyedJsonLinesFile(args.input)
 
-    for result in applyCrfKj(sentences, args.featlist, args.model, args.debug, args.statistics):
+    processor = ApplyCrfKj(args.featlist, args.model, args.debug, args.statistics)
+    for result in processor.process(sentences):
         outfile.write(result + '\n')
 
     if args.output != None:

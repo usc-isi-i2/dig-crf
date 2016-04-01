@@ -15,30 +15,36 @@ import sys
 from pyspark import SparkContext
 import applyCrfKj
 
-def applyCrfKjSpark(inputPath, outputPath, numPartitions, featureListFilePath, modelFilePath, debug, statistics):
-    def doCrf(source): 
-        """This is a filter for mapPartitions.  It takes an iterator as a source and
-returns an iterator (more precisely, a generator).  It maintains an iterator
-strategy internally, and avoids re-buffering the input and output.
+class ApplyCrfKjSpark:
+    def __init__(self, featureListFilePath, modelFilePath, debug, statistics):
+        """Initialialize ApplyCrfKjSpark.
+
+Note: we cannot initialize ApplyCrfKj at this time, because that ties to the
+CRF++ code, which leads to a pickling error.
 
         """
-        # Pass the source iterator to the code t reads keyed JSON Lines
+        self.featureListFilePath = featureListFilePath
+        self.modelFilePath = modelFilePath
+        self.debug = debug
+        self.statistics = statistics
+
+    def process(self, sourceRDD): 
+        """This is a filter for mapPartitions.  It takes an iterator as a source (RDDs
+are iterators) and returns an iterator (more precisely, a generator).  It
+maintains an iterator strategy internally, and avoids re-buffering the input
+and output.
+
+        """
+        # Pass the source iterator to the code that reads keyed JSON Lines
         # data and builds sentence objects. The result, 'sentences', is also
         # an iterator.
-        sentences = crfs.CrfSentencesFromKeyedJsonLinesSource(source)
+        sentences = crfs.CrfSentencesFromKeyedJsonLinesSource(sourceRDD)
         # Return a generator that takes the sentence iterator and produces
-        # tagged phrases in keyed JSON Lines format.  The regurned generator
-        # is initialized with featureLiesFilePath, modelFilePath, etc.
-        return applyCrfKj.applyCrfKj(sentences, featureListFilePath, modelFilePath, debug, statistics)
+        # tagged phrases in keyed JSON Lines format.  The returned generator
+        # is initialized with featureLiesFilePath, modelFilePath, etc. 
+        p = applyCrfKj.ApplyCrfKj(self.featureListFilePath, self.modelFilePath, self.debug, self.statistics)
+        return p.process(sentences)
 
-    if debug:
-        print "Starting applyCrfKjSpark."
-    sc = SparkContext()
-    inputSource = sc.textFile(inputPath, numPartitions)
-    results = inputSource.mapPartitions(doCrf)
-    results.saveAsTextFile(outputPath)
-    if debug:
-        print "Ending applyCrfKjSpark."
 
 def main(argv=None):
     '''this is called if run from command line'''
@@ -55,7 +61,14 @@ def main(argv=None):
     # if os.path.exists(args.output):
     #     os.remove(args.output)
 
-    applyCrfKjSpark(args.input, args.output, args.partitions, args.featlist, args.model, args.debug, args.statistics)
+    if args.debug:
+        print "Starting applyCrfKjSpark."
+    sc = SparkContext()
+    inputRDD = sc.textFile(args.input, args.partitions)
+    resultsRDD = inputRDD.mapPartitions(ApplyCrfKjSpark(args.featlist, args.model, args.debug, args.statistics).process)
+    resultsRDD.saveAsTextFile(args.output)
+    if args.debug:
+        print "Ending applyCrfKjSpark."
 
 # call main() if this is run as standalone
 if __name__ == "__main__":
