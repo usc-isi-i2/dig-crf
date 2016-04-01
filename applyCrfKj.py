@@ -55,9 +55,11 @@ might reduce maintainability.
     # a potential source of future failures.
     UNTAGGED_TAG_NAME = "O"
 
-    def result(sentence, tags):
+    def result(sentence, currentTagName, phrase):
         """Format the result as keyed Json Lines."""
-        return sentence.getKey() + '\t' + json.dumps(tags, indent=None)
+        taggedPhrase = { }
+        taggedPhrase[currentTagName] = phrase
+        return sentence.getKey() + '\t' + json.dumps(taggedPhrase, indent=None)
 
     # Create a CrfFeatures object.  This class provides a lot of services, but we'll use only a few.
     crfFeatures = crff.CrfFeatures(featureListFilePath)
@@ -104,20 +106,17 @@ might reduce maintainability.
             print "received %d tokens , expected %d" % (ntokens, len(tokens))
         nfeatures = tagger.xsize()
 
-        # Accumulate interesting tags.  We'll use a dictionary to a list of tokens.
-        # We'll use the tag name as the key to the dictionary.  Would it be significantly
-        # faster to use the tag index, instead?
+        # Accumulate interesting tokens into phrases which are sent as results.
         currentTagName = UNTAGGED_TAG_NAME
-        tags = { } 
+        phrase = []
+
         for tokenIdx in range(0, tagger.size()):
             if debug:
                 for featureIdx in range (0, nfeatures):
                     print "x(%d, %d)=%s" % (tokenIdx, featureIdx, tagger.x(tokenIdx, featureIdx))
             # tagger.x(tokenIdx, 0) is the original token
             # tagger.y(tokenIdx) is the index of the tag assigned to that token.
-            # tagger.yname(tagger.y(tokenIdx)) is the tag assigned to that token.
-            #
-            # Assume that tagger.yname(tokenIdx) != "O" iff something interesting was found.
+            # tagger.yname(tagger.y(tokenIdx)) is the name of the tag assigned to that token.
             tagIdx = tagger.y(tokenIdx)
             tagName = tagger.yname(tagIdx)
             if debug:
@@ -126,26 +125,23 @@ might reduce maintainability.
             # If we are changing tag names, write out any queued tagged phrase:
             if tagName != currentTagName:
                 if currentTagName != UNTAGGED_TAG_NAME:
-                    yield result(sentence, tags)
+                    yield result(sentence, currentTagName, phrase)
                     taggedPhraseCount += 1
-                    tags.clear()
+                    phrase[:] = []
                 currentTagName = tagName
 
             # Unless this token is untagged, append it to the current phrase.
-            # Note the two level structure: tags[tagName][tokens].  This
-            # causes json.dumps(...)  to produce the desired result.
             if tagName != UNTAGGED_TAG_NAME:
-                if tagName not in tags:
-                    tags[tagName] = []
-                tags[tagName].append(tagger.x(tokenIdx, 0))
+                phrase.append(tagger.x(tokenIdx, 0))
                 taggedTokenCount += 1
 
-        # Write out any remaining tags (boundary case):
+        # Write out any remaining phrase (boundary case):
         if currentTagName != UNTAGGED_TAG_NAME:
-            yield result(sentence, tags)
+            yield result(sentence, currentTagName, phrase)
             taggedPhraseCount += 1
-            tags.clear()
-            currentTagName = UNTAGGED_TAG_NAME
+            # Don't need to do these as we're about to exit the loop:
+            # phrase[:] = []
+            # currentTagName = UNTAGGED_TAG_NAME
 
     if statistics:
         print "input:  %d sentences, %d tokens" % (sentenceCount, tokenCount)
