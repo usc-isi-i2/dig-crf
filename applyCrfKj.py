@@ -50,6 +50,8 @@ might reduce maintainability.
 
     """
 
+    UNTAGGED_TAG_NAME = "O" # Don't know why this is so.
+
     def result(sentence, tags):
         """Format the result as keyed Json Lines."""
         return sentence.getKey() + '\t' + json.dumps(tags, indent=None)
@@ -103,7 +105,7 @@ might reduce maintainability.
         # Accumulate interesting tags.  We'll use a dictionary to a list of tokens.
         # We'll use the tag name as the key to the dictionary.  Would it be significantly
         # faster to use the tag index, instead?
-        currentTagName = None
+        currentTagName = UNTAGGED_TAG_NAME
         tags = { } 
         for tokenIdx in range(0, tagger.size()):
             if debug:
@@ -118,31 +120,27 @@ might reduce maintainability.
             tagName = tagger.yname(tagIdx)
             if debug:
                 print "%s %s %d" % (tagger.x(tokenIdx, 0), tagger.yname(tagIdx), tagIdx)
-            if tagName != "O":
-                if tagName != currentTagName:
-                    if currentTagName != None:
-                        yield result(sentence, tags)
-                        taggedPhraseCount += 1
-                        tags.clear()
-                    currentTagName = tagName
 
+            # If we are changing tag names, write ut any queued tags:
+            if tagName != currentTagName:
+                if currentTagName != UNTAGGED_TAG_NAME:
+                    yield result(sentence, tags)
+                    taggedPhraseCount += 1
+                    tags.clear()
+                currentTagName = tagName
+
+            if tagName != UNTAGGED_TAG_NAME:
                 if tagName not in tags:
                     tags[tagName] = []
                 tags[tagName].append(tagger.x(tokenIdx, 0))
                 taggedTokenCount += 1
-            else:
-                if currentTagName != None:
-                    yield result(sentence, tags)
-                    taggedPhraseCount += 1
-                    tags.clear()
-                    currentTagName = None
 
         # Write out any remaining tags (boundary case):
-        if currentTagName != None:
+        if currentTagName != UNTAGGED_TAG_NAME:
             yield result(sentence, tags)
             taggedPhraseCount += 1
             tags.clear()
-            currentTagName = None
+            currentTagName = UNTAGGED_TAG_NAME
 
     if statistics:
         print "input:  %d sentences, %d tokens" % (sentenceCount, tokenCount)
