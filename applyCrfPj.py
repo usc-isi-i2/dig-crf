@@ -2,7 +2,7 @@
 
 """This program will read keyed JSON Lines file (such as
 adjudicated_modeled_live_eyehair_100.kjsonl), process it with CRF++, and print
-detected attributes as a keyed JSON file, formatted to Karma's liking. The
+detected attributes as a keyed JSON file, formatted to with the pair RDD path. The
 keys in the input file will be passed through to the output file, but the
 text and tokens will not.
 
@@ -17,13 +17,13 @@ import CRFPP
 import json
 import applyCrfGenerator
 
-def keyedJsonLinesResultFormatter(sentence, currentTagName, phrase):
-    """Format the result as keyed Json Lines."""
+def pairRDDJsonLinesResultFormatter(sentence, currentTagName, phrase):
+    """Format the result as pairRDD Json Lines."""
     taggedPhrase = { }
     taggedPhrase[currentTagName] = phrase
-    return sentence.getKey() + '\t' + json.dumps(taggedPhrase, indent=None)
+    return sentence.getKey(), json.dumps(taggedPhrase, indent=None)
 
-class ApplyCrfKj:
+class ApplyCrfPj:
     def __init__(self, featureListFilePath, modelFilePath, debug=False, statistics=False):
         """Initialize the ApplyCrfKj object.
 
@@ -54,7 +54,14 @@ count of output phrases, when done.
 
     def process(self, sentences):
         """Return a generator to process the sentences."""
-        return applyCrfGenerator.applyCrfGenerator(sentences, self.crfFeatures, self.tagger, keyedJsonLinesResultFormatter, self.debug, self.statistics)
+        return applyCrfGenerator.applyCrfGenerator(sentences, self.crfFeatures, self.tagger, pairRDDJsonLinesResultFormatter, self.debug, self.statistics)
+
+def keyedJsonLinesPairReader(keyedJsonFilename):
+    """This generator reads a keyed JSON Lines file and yields the lines split into (key, jsonLine) pairs."""
+    with codecs.open(keyedJsonFilename, 'rb', 'utf-8') as keyedJsonFile:
+        for line in keyedJsonFile:
+            key, jsonData = line.split('\t', 1)
+            yield key, jsonData
 
 def main(argv=None):
     '''this is called if run from command line'''
@@ -72,11 +79,12 @@ def main(argv=None):
         outfile = codecs.open(args.output, 'wb', 'utf-8')
 
     # Read the Web scrapings as keyed JSON Lines:
-    sentences = crfs.CrfSentencesFromKeyedJsonLinesFile(args.input)
+    pairSource = keyedJsonLinesPairReader(args.input)
+    sentences = crfs.CrfSentencesFromKeyedJsonLinesPairSource(pairSource)
 
-    processor = ApplyCrfKj(args.featlist, args.model, args.debug, args.statistics)
-    for result in processor.process(sentences):
-        outfile.write(result + '\n')
+    processor = ApplyCrfPj(args.featlist, args.model, args.debug, args.statistics)
+    for key, jsonData in processor.process(sentences):
+        outfile.write(key + "\t" + jsonData + '\n')
 
     if args.output != None:
         outfile.close()

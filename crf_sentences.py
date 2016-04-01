@@ -126,3 +126,32 @@ class CrfSentencesFromKeyedJsonLinesSource:
         # Split the line into the key and JSON data.  Parse the JSON data and return a CrfSentence.
         key, jsonData = line.split('\t', 1)
         return CrfSentence(json.loads(jsonData), key)
+
+# This could perhaps be improved by making it a generator.
+class CrfSentencesFromKeyedJsonLinesPairSource:
+    """Load a Web scrapings source in keyed JSON Lines handled as (key, jsonLine) pairs. The source is accessed as needed."""
+    def __init__ (self, pairSource):
+        self.pairSource = pairSource
+
+    def __iter__ (self):
+        """Begin iterating over the contents of the source."""
+        return self;
+
+    def next (self):
+        """Return the next sentence from the source."""
+        if self.pairSource == None:
+            # We'll end up here if next() is called past the point that we
+            # returned StopIteration.  We might end up here if someone attempts to
+            # iterate more than once, which is not allowed since we read the input
+            # file as we iterate.
+            raise StopIteration
+
+        # Optimize the [None, None] into a shared object?
+        key, jsonData = next(self.pairSource, [None, None])
+        if key == None:
+            # End of source.
+            self.pairSource = None
+            raise StopIteration
+            
+        # Parse the JSON data and return a CrfSentence.
+        return CrfSentence(json.loads(jsonData), key)
