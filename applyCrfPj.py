@@ -12,8 +12,6 @@ import argparse
 import codecs
 import sys
 import crf_sentences as crfs
-import crf_features as crff
-import CRFPP
 import json
 import applyCrfBase
 
