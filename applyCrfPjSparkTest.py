@@ -26,7 +26,7 @@ def main(argv=None):
     args = parser.parse_args()
 
     if args.debug:
-        print "Starting applyCrfPjSpark."
+        print "Starting applyCrfPjSparkTest."
     sc = SparkContext()
     inputLinesRDD = sc.textFile(args.input, args.partitions)
     inputPairsRDD = inputLinesRDD.map(lambda s: s.split('\t', 1))
@@ -34,7 +34,7 @@ def main(argv=None):
     resultsRDD = inputPairsRDD.mapPartitions(processor.process)
     resultsRDD.saveAsTextFile(args.output)
     if args.debug:
-        print "Ending applyCrfPjSpark."
+        print "Ending applyCrfPjSparkTest."
 
 # call main() if this is run as standalone
 if __name__ == "__main__":

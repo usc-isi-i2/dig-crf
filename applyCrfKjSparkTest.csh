@@ -7,7 +7,7 @@ rm -rf ${OUTDIR}
 
 /home/rogers/src/apache/spark/spark-1.6.1/bin/spark-submit \
     --master 'local[8]' \
-    ./applyCrfKjSpark.py \
+    ./applyCrfKjSparkTest.py \
     --input data/sample/adjudicated_modeled_live_eyehair_100_03.kjsonl \
     --output ${OUTDIR} \
     --featlist data/config/features.hair-eye \

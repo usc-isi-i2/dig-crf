@@ -26,14 +26,14 @@ def main(argv=None):
     args = parser.parse_args()
 
     if args.debug:
-        print "Starting applyCrfKjSpark."
+        print "Starting applyCrfKjSparkTest."
     sc = SparkContext()
     inputRDD = sc.textFile(args.input, args.partitions)
     processor = applyCrf.ApplyCrfKj(args.featlist, args.model, args.debug, args.statistics)
     resultsRDD = inputRDD.mapPartitions(processor.process)
     resultsRDD.saveAsTextFile(args.output)
     if args.debug:
-        print "Ending applyCrfKjSpark."
+        print "Ending applyCrfKjSparkTest."
 
 # call main() if this is run as standalone
 if __name__ == "__main__":
