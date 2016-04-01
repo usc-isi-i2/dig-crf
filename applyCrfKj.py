@@ -50,12 +50,14 @@ might reduce maintainability.
 
     """
 
-    UNTAGGED_TAG_NAME = "O" # Don't know why this is so.
+    # Define the tag name that appears on words that have not been tagged by
+    # CRF++.  So far, we don't know why this particular value is used.  This is
+    # a potential source of future failures.
+    UNTAGGED_TAG_NAME = "O"
 
     def result(sentence, tags):
         """Format the result as keyed Json Lines."""
         return sentence.getKey() + '\t' + json.dumps(tags, indent=None)
-
 
     # Create a CrfFeatures object.  This class provides a lot of services, but we'll use only a few.
     crfFeatures = crff.CrfFeatures(featureListFilePath)
@@ -121,7 +123,7 @@ might reduce maintainability.
             if debug:
                 print "%s %s %d" % (tagger.x(tokenIdx, 0), tagger.yname(tagIdx), tagIdx)
 
-            # If we are changing tag names, write ut any queued tags:
+            # If we are changing tag names, write out any queued tagged phrase:
             if tagName != currentTagName:
                 if currentTagName != UNTAGGED_TAG_NAME:
                     yield result(sentence, tags)
@@ -129,6 +131,9 @@ might reduce maintainability.
                     tags.clear()
                 currentTagName = tagName
 
+            # Unless this token is untagged, append it to the current phrase.
+            # Note the two level structure: tags[tagName][tokens].  This
+            # causes json.dumps(...)  to produce the desired result.
             if tagName != UNTAGGED_TAG_NAME:
                 if tagName not in tags:
                     tags[tagName] = []
