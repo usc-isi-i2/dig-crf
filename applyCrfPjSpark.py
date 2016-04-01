@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 
-"""This program will use Apache Spark to read keyed JSON Lines file (such as
-adjudicated_modeled_live_eyehair_100.kjsonl), process it with CRF++, and print
-detected attributes as a keyed JSON file, formatted to Karma's liking. The
-keys in the input file will be passed through to the output file, but the text
-and tokens will not.
+"""This program will use Apache Spark to read a keyed JSON Lines file (such as
+adjudicated_modeled_live_eyehair_100.kjsonl), convert it to a pair RDD,
+process it with CRF++, and print detected attributes as pair RDD keyed JSON
+files, formatted to Karma's liking. The keys in the input file will be passed
+through to the output file, but the text and tokens will not.
 
 """
 
 import argparse
 import sys
 from pyspark import SparkContext
-import applyCrfKj
+import applyCrfPj
 
 def main(argv=None):
     '''this is called if run from command line'''
@@ -26,14 +26,15 @@ def main(argv=None):
     args = parser.parse_args()
 
     if args.debug:
-        print "Starting applyCrfKjSpark."
+        print "Starting applyCrfPjSpark."
     sc = SparkContext()
-    inputRDD = sc.textFile(args.input, args.partitions)
-    processor = applyCrfKj.ApplyCrfKj(args.featlist, args.model, args.debug, args.statistics)
-    resultsRDD = inputRDD.mapPartitions(processor.process)
+    inputLinesRDD = sc.textFile(args.input, args.partitions)
+    inputPairsRDD = inputLinesRDD.map(lambda s: s.split('\t', 1))
+    processor = applyCrfPj.ApplyCrfPj(args.featlist, args.model, args.debug, args.statistics)
+    resultsRDD = inputPairsRDD.mapPartitions(processor.process)
     resultsRDD.saveAsTextFile(args.output)
     if args.debug:
-        print "Ending applyCrfKjSpark."
+        print "Ending applyCrfPjSpark."
 
 # call main() if this is run as standalone
 if __name__ == "__main__":
