@@ -58,7 +58,7 @@ Data Flow
 ==== ====
 
 Data processed through ApplyCrfKj.perform(...) and ApplyCrfPj.perform(...)
-(and the lower-level process(...) routines) is passes through an
+(and the lower-level process(...) routines) is passed through an
 iterator/generator cascade.  The code processes a "sentence" at a time,
 instead of reading all the input before processing it, or buffering all output
 before releasing it.  Thus, if the data sources are also iterators/generators
@@ -112,6 +112,20 @@ phrase tuples into (key, taggedPhraseJsonLine) pairs, which are the converted
 into keyed JSON Lines (<key> "\t" <taggedPhraseJsonLine>) by the
 resultFormatter(...) method from class ApplyCrfKj.  The result can be loaded
 into an ordinary Apache Spark RDD.
+
+Data Content
+==== =======
+
+Note that although this description talks about "sentence" records and data
+structures, a single "sentence" record or data structure may contain the text
+of multiple sentences in English or some other language.  The text is encoded
+in Unicode, stored in UTF-8 format when serialized, and may contain HTML
+entities as well as ordinary words.  Furthermore, due to limitations in the
+tokenizer that processed the Web-based text before it reached the CFR++
+processing stage, a single sentence token may contain a complete English (or
+other human language) word, a partial word, multiple words, one or more word
+fragments with embedded punctuation and/or HTML entities, or other
+irregularities.
 
 Usage
 =====
