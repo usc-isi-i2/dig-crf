@@ -54,6 +54,19 @@ the pairs into a sequence of "sentence" objects.  It does not need to
 reformate the output provided by its parent, which is already a (key,
 taggedPhraseJsonLine) pair.
 
+Data Flow
+==== ====
+
+Data processed through ApplyCrfKj.perform(...) and ApplyCrfPj.perform(...)
+(and the lower-level process(...) routines) is passes through an
+iterator/generator cascade.  The code processes a "sentence" at a time,
+instead of reading all the input before processing it, or buffering all output
+before releasing it.  Thus, if the data sources are also iterators/generators
+(as is the case for Apache Spark RDDs) and the data destinations are also
+prepared to process data with a minimum of excess buffering (as is the case
+with Apache Spark RDDs), then the data will be processed using a minimum of
+memory.
+
 Usage
 =====
 
