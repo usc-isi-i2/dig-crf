@@ -67,6 +67,52 @@ prepared to process data with a minimum of excess buffering (as is the case
 with Apache Spark RDDs), then the data will be processed using a minimum of
 memory.
 
+Data records enter through one of the following iterator classes (located in
+"cfr_sentences.py"):
+
+CrfSentencesFromKeyedJsonLinesSource       processes keyed JSON Lines.
+
+CrfSentencesFromKeyedJsonLinesPairSource   processes (key, jsonLines) pairs.
+
+The JSON-formatted "sentence" data is loaded into Python data structures,
+which are wrapped in a CrfSentence object. The primary purpose of CrfSentences
+is to provide getter methods for specific portions of the sentence data. It
+also provides a place to store and fetch the key associated with the sentence.
+
+applyCrfGenerator accepts sentences, a record at a time, and begins processing
+the sentence tokens ("allTokens").  Each token has features generatered for
+it with crfFeatures (from "crf_features.py").  The token and its features are
+loaded into a CRF++ instance, which was initialized with a trained model.
+
+After all the tokens and features in the sentence have been loaded into CRF++,
+it processes them and assigns a tag to each token, or uses the special tag "O"
+to indicate that no special tag was assigned to the token.  applyCrfGenerator
+scans the tokens, extracting sequences ("tagged phrases") of consecutive
+tokens that have been assigned the same tag (excluding "O").  It records the
+starting index of each phrase, the number of tokens in the phrase, and the tag
+associated with the phrase.  Along with the sentence object, these form a
+"tagged phrase tuple".  0 to N tagged phrase tuples may be produced for each
+input sentence.
+
+The tagged phrase tuples are formatted before they are emitted by
+applyCrfGenerator to whatever outsid ecode is prepared to consume it.
+Formatting takes place with the resultFormatter(...) method.  Which
+resultFormatter(...) method(s) is/are used depends upon class inheritance.
+
+If the outermost object that caused applyCrfGenerator to be instantiated is of
+class ApplyCrfPj, then the resultFormatter(...) from class
+ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines converts the
+tagged phrase tuples into (key, taggedPhraseJsonLines) pairs, which can
+be loaded into Apache Spark pair RDDs.
+
+If the outermost object that caused applyCrfGenerator to be instantiated is of
+class ApplyCrfKj, then the resultFormatter(...) from class
+ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines converts the tagged
+phrase tuples into (key, taggedPhraseJsonLine) pairs, which are the converted
+into keyed JSON Lines (<key> "\t" <taggedPhraseJsonLine>) by the
+resultFormatter(...) method from class ApplyCrfKj.  The result can be loaded
+into an ordinary Apache Spark RDD.
+
 Usage
 =====
 
