@@ -350,19 +350,26 @@ count of output phrases, when done.
         # Defer creating these objects.  The benefit is better operation with
         # Spark (deferring creating the tagger may be necessary with Spark).
         # The downside is that problems opening the feature list file or the
-        # model file are reported later.
+        # model file are reported later rather than sooner.
         self.crfFeatures = None
         self.tagger = None
 
-    def setup(self):
-        """create the CRF Features and CRF tagger objects, if they haven't been created yet."""
+    def setupCrfFeatures(self):
+        """Create the CRF Features object, if it hasn't been created yet."""
         if self.crfFeatures == None:
             # Create a CrfFeatures object.  This class provides a lot of services, but we'll use only a few.
             self.crfFeatures = crff.CrfFeatures(self.featureListFilePath)
 
+    def setupCrfTagger(self):
+        """Create the CRF++ Tagger object, if it hasn't been created yet."""
         if self.tagger == None:
             # Create a CRF++ processor object:
             self.tagger = CRFPP.Tagger("-m " + self.modelFilePath)
+
+    def setup(self):
+        """Create the CRF Features and CRF++ Tagger objects, if they haven't been created yet."""
+        self.setupCrfFeatures()
+        self.setupCrfTagger()
 
     def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
         """Pass the result tuples through."""
