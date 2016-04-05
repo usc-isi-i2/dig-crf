@@ -12,6 +12,7 @@ rm -rf ${OUTDIR}
     --output ${OUTDIR} \
     --featlist data/config/features.hair-eye \
     --model data/config/dig-hair-eye-train.model \
+    --download \
     --partitions 8 \
     --statistics \
 
