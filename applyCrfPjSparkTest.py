@@ -9,8 +9,9 @@ through to the output file, but the text and tokens will not.
 """
 
 import argparse
+import os
 import sys
-from pyspark import SparkContext
+from pyspark import SparkContext, SparkFiles
 import applyCrf
 
 def main(argv=None):
@@ -31,14 +32,19 @@ def main(argv=None):
 
     sc = SparkContext()
 
+    featlist = args.featlist
+    model = args.model
     if args.download:
-        # Ask Spark to download the feature list and model files from the driver to the clients.                                                                    
-        sc.addFile(args.featlist)
-        sc.addFile(args.model)
+        # Ask Spark to download the feature list and model files from the driver to the clients.
+        sc.addFile(featlist)
+        sc.addFile(model)
+        # Use the downloaded file paths:
+        featlist = SparkFiles.get(os.path.basename(featlist))
+        model = SparkFiles.get(os.path.basename(model))
 
     inputLinesRDD = sc.textFile(args.input, args.partitions)
     inputPairsRDD = inputLinesRDD.map(lambda s: s.split('\t', 1))
-    tagger = applyCrf.ApplyCrfPj(args.featlist, args.model, args.debug, args.statistics)
+    tagger = applyCrf.ApplyCrfPj(featlist, model, args.debug, args.statistics)
     resultsRDD = tagger.perform(inputPairsRDD)
     resultsRDD.saveAsTextFile(args.output)
     if args.debug:

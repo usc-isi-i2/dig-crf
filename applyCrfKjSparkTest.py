@@ -9,8 +9,9 @@ and tokens will not.
 """
 
 import argparse
+import os
 import sys
-from pyspark import SparkContext
+from pyspark import SparkContext, SparkFiles
 import applyCrf
 
 def main(argv=None):
@@ -31,14 +32,18 @@ def main(argv=None):
 
     sc = SparkContext()
 
+    featlist = args.featlist
+    model = args.model
     if args.download:
         # Ask Spark to download the feature list and model files from the driver to the clients.
-        sc.addFile(args.featlist)
-        sc.addFile(args.model)
+        sc.addFile(featlist)
+        sc.addFile(model)
+        # Use the downloaded file paths:
+        featlist = SparkFiles.get(os.path.basename(featlist))
+        model = SparkFiles.get(os.path.basename(model))
 
     inputRDD = sc.textFile(args.input, args.partitions)
-    tagger = applyCrf.ApplyCrfKj(args.featlist, args.model, args.debug, args.statistics)
-    tagger.setUsingSparkDownloads(args.download)
+    tagger = applyCrf.ApplyCrfKj(featlist, model, args.debug, args.statistics)
     resultsRDD = tagger.perform(inputRDD)
     resultsRDD.saveAsTextFile(args.output)
     if args.debug:
