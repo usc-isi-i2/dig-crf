@@ -16,7 +16,8 @@ import applyCrf
 def main(argv=None):
     '''this is called if run from command line'''
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d','--debug', help="Optionallly give debugging feedback.", required=False, action='store_true')
+    parser.add_argument('-d','--debug', help="Optionally give debugging feedback.", required=False, action='store_true')
+    parser.add_argument('--download', help="Optionally ask Spark to download the feature list and model files to the clients.", required=False, action='store_true')
     parser.add_argument('-f','--featlist', help="Required input file with features to be extracted, one feature entry per line.", required=True)
     parser.add_argument('-i','--input', help="Required input file with Web scraping sentences in keyed JSON Lines format.", required=True)
     parser.add_argument('-m','--model', help="Required input model file.", required=True)
@@ -27,9 +28,17 @@ def main(argv=None):
 
     if args.debug:
         print "Starting applyCrfKjSparkTest."
+
     sc = SparkContext()
+
+    if args.download:
+        # Ask Spark to download the feature list and model files from the driver to the clients.
+        sc.addFile(args.featlist)
+        sc.addFile(args.model)
+
     inputRDD = sc.textFile(args.input, args.partitions)
     tagger = applyCrf.ApplyCrfKj(args.featlist, args.model, args.debug, args.statistics)
+    tagger.setUsingSparkDownloads(args.download)
     resultsRDD = tagger.perform(inputRDD)
     resultsRDD.saveAsTextFile(args.output)
     if args.debug:

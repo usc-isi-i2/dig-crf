@@ -127,6 +127,20 @@ other human language) word, a partial word, multiple words, one or more word
 fragments with embedded punctuation and/or HTML entities, or other
 irregularities.
 
+Spark Downloads
+===== =========
+
+This code has special support for downloading the featur elist and model files
+to Apache Spark client nodes.  When enabled, the location of the files is
+resolved just before they are opened using:
+
+path = SparkFiles.get(os.path.basename(path))
+
+You may ask, why couldn't that be done at a higher level, and passed into
+this code?  The reason is there there's no published guarantee that calling
+SparkFiles.get(...) on the driver will yield a valid value on the clients,
+so the call is made at a low level to ensure that it takes place on the client.
+
 Usage
 =====
 
@@ -186,6 +200,8 @@ import crf_sentences as crfs
 import crf_features as crff
 import CRFPP
 import json
+import os
+from pyspark import SparkFiles
 
 def applyCrfGenerator(sentences, crfFeatures, tagger, resultFormatter, debug=False, statistics=False):
     """Apply CRF++ to a sequence of "sentences", generating tagged phrases
@@ -354,17 +370,43 @@ count of output phrases, when done.
         self.crfFeatures = None
         self.tagger = None
 
+        # Do we want Spark to download the feature list and model files to the
+        # clients?
+        self.usingSparkDownloads = False
+
+    def setUsingSparkDownloads(self, download):
+        """Do we want Spark to download the feature list and model files to the clients?"""
+        self.usingSparkDownloads = download
+
     def setupCrfFeatures(self):
         """Create the CRF Features object, if it hasn't been created yet."""
         if self.crfFeatures == None:
+            path = self.featureListFilePath
+            if self.usingSparkDownloads:
+                # We've asked Spark to download the feature list file to the clients.
+                # We'll munge the file path to get the downloaded location.
+                path = SparkFiles.get(os.path.basename(path))
             # Create a CrfFeatures object.  This class provides a lot of services, but we'll use only a few.
-            self.crfFeatures = crff.CrfFeatures(self.featureListFilePath)
+            if self.debug:
+                print "Creating crfFeatures with path: " + path
+            self.crfFeatures = crff.CrfFeatures(path)
+            if self.debug:
+                print "Created crfFeatures."
 
     def setupCrfTagger(self):
         """Create the CRF++ Tagger object, if it hasn't been created yet."""
         if self.tagger == None:
+            path = self.modelFilePath
+            if self.usingSparkDownloads:
+                # We've asked Spark to download the model file to the clients.
+                # We'll munge the file path to get the downloaded location.
+                path = SparkFiles.get(os.path.basename(path))
             # Create a CRF++ processor object:
-            self.tagger = CRFPP.Tagger("-m " + self.modelFilePath)
+            if self.debug:
+                print "Creating CRFPP tagger with path: " + path
+            self.tagger = CRFPP.Tagger(str("-m " + path))
+            if self.debug:
+                print"Created CRFPP tagger."
 
     def setup(self):
         """Create the CRF Features and CRF++ Tagger objects, if they haven't been created yet."""
