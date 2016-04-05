@@ -12,6 +12,7 @@ rm -rf ${OUTDIR}
     --output ${OUTDIR} \
     --featlist data/config/features.name-ethnic \
     --model data/config/dig-name-ethnic-train.model \
+    --download \
     --partitions 8 \
     --statistics \
 
