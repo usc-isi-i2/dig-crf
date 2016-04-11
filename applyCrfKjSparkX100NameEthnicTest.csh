@@ -1,11 +1,13 @@
 #! /bin/tcsh
 
+# This script assumes that "spark-submit" is available on $PATH.
+
 set OUTDIR=data/sample/adjudicated_modeled_live_eyehair_100_03-x100-name-ethnic-tags.spark
 
 # Dangerous!
 rm -rf ${OUTDIR}
 
-/home/rogers/src/apache/spark/spark-1.6.1/bin/spark-submit \
+env spark-submit \
     --master 'local[8]' \
     ./applyCrfKjSparkTest.py \
     --input data/sample/adjudicated_modeled_live_eyehair_100_03-x100.kjsonl \
