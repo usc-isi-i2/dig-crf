@@ -29,7 +29,7 @@ def main(argv=None):
     if args.debug:
         print "Starting applyCrfKjSparkTest."
 
-    sc = SparkContext()
+    sc = SparkContext("applyCrfKjSparkTest")
 
     featlist = args.featlist
     model = args.model

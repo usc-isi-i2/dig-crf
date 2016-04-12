@@ -29,12 +29,13 @@ def main(argv=None):
     if args.debug:
         print "Starting applyCrfPjSparkTest."
 
-    sc = SparkContext()
+    sc = SparkContext("applyCrfPjSparkTest")
 
     featlist = args.featlist
     model = args.model
     if args.download:
         # Ask Spark to download the feature list and model files from the driver to the clients.
+        # This request must take place in the driver.
         sc.addFile(featlist)
         sc.addFile(model)
 
