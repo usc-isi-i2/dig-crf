@@ -1,13 +1,13 @@
-#! /bin/tcsh
+#! /bin/bash
 
 # This script assumes that "spark-submit" is available on $PATH.
 
-set OUTDIR=data/sample/adjudicated_modeled_live_eyehair_100_03-tags.spark
+OUTDIR=data/sample/adjudicated_modeled_live_eyehair_100_03-tags.spark
 
 # Dangerous!
 rm -rf ${OUTDIR}
 
-env spark-submit \
+spark-submit \
     --master 'local[8]' \
     ./applyCrfKjSparkTest.py \
     --input data/sample/adjudicated_modeled_live_eyehair_100_03.kjsonl \
