@@ -1,8 +1,8 @@
-#! /bin/tcsh
+#! /bin/bash
 
 # This script assumes that "spark-submit" is available on $PATH.
 
-set OUTDIR=data/sample/adjudicated_modeled_live_eyehair_100_03-x100-name-ethnic-tags.spark
+OUTDIR=data/sample/adjudicated_modeled_live_eyehair_100_03-x100-name-ethnic-tags.spark
 
 # Dangerous!
 rm -rf ${OUTDIR}

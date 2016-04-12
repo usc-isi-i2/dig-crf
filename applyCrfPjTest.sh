@@ -1,4 +1,4 @@
-#! /bin/tcsh
+#! /bin/bash
 
 python ./applyCrfPjTest.py \
     --input data/sample/adjudicated_modeled_live_eyehair_100_03.kjsonl \
