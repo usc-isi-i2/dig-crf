@@ -201,6 +201,9 @@ import crf_features as crff
 import CRFPP
 import json
 
+import os
+from pyspark import SparkFiles
+
 def applyCrfGenerator(sentences, crfFeatures, tagger, resultFormatter, debug=False, statistics=False):
     """Apply CRF++ to a sequence of "sentences", generating tagged phrases
 as output.  0 to N tagged phrases will generated as output for each input
@@ -368,10 +371,19 @@ count of output phrases, when done.
         self.crfFeatures = None
         self.tagger = None
 
+        self.download = False
+
+    def setDownload(self, download):
+        self.download = download
+
     def setupCrfFeatures(self):
         """Create the CRF Features object, if it hasn't been created yet."""
         if self.crfFeatures == None:
             path = self.featureListFilePath
+
+            if self.download:
+                path = SparkFiles.get(os.path.basename(path))
+
             # Create a CrfFeatures object.  This class provides a lot of services, but we'll use only a few.
             if self.debug:
                 print "Creating crfFeatures with path: " + path
@@ -383,6 +395,10 @@ count of output phrases, when done.
         """Create the CRF++ Tagger object, if it hasn't been created yet."""
         if self.tagger == None:
             path = self.modelFilePath
+
+            if self.download:
+                path = SparkFiles.get(os.path.basename(path))
+
             # Create a CRF++ processor object:
             if self.debug:
                 print "Creating CRFPP tagger with path: " + path
