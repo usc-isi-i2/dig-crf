@@ -130,16 +130,24 @@ irregularities.
 Spark Downloads
 ===== =========
 
-This code has special support for downloading the featur elist and model files
+This code has special support for downloading the feature list and model files
 to Apache Spark client nodes.  When enabled, the location of the files is
 resolved just before they are opened using:
 
-path = SparkFiles.get(os.path.basename(path))
+path = self.filePathMapper(path)
 
-You may ask, why couldn't that be done at a higher level, and passed into
-this code?  The reason is there there's no published guarantee that calling
-SparkFiles.get(...) on the driver will yield a valid value on the clients,
-so the call is made at a low level to ensure that it takes place on the client.
+where self.filePathMapper has been previously set with:
+
+self.setFilePathMapper(filePathMapper)
+
+You may ask, why couldn't that be done at a higher level, and passed into this
+code?  The reason is that calling SparkFiles.get(...) on the driver thread
+will not necessarily yield a valid value on worker threads running on other
+systems.  This constraint is not stated in the Spark documentation seen so
+far, but has been experimentally verified.  Due to the structure of
+applyCrfGenerator and perofm(...) methods defined below, it seems safest to
+make the call to filePathMapper(...) at a low level to ensure that each worker
+thread gets the proper file path.
 
 Usage
 =====
@@ -200,9 +208,6 @@ import crf_sentences as crfs
 import crf_features as crff
 import CRFPP
 import json
-
-import os
-from pyspark import SparkFiles
 
 def applyCrfGenerator(sentences, crfFeatures, tagger, resultFormatter, debug=False, showStatistics=False):
     """Apply CRF++ to a sequence of "sentences", generating tagged phrases
@@ -371,21 +376,24 @@ count of output phrases, when done.
         # model file are reported later rather than sooner.
         self.crfFeatures = None
         self.tagger = None
+        self.filePathMapper = None
 
-        self.download = False
-
-    def setDownload(self, download):
-        self.download = download
+    def setFilePathMapper(self, filePathMapper):
+        self.filePathMapper = filePathMapper
 
     def setupCrfFeatures(self):
         """Create the CRF Features object, if it hasn't been created yet."""
         if self.crfFeatures == None:
             path = self.featureListFilePath
 
-            if self.download:
-                path = SparkFiles.get(os.path.basename(path))
+            # Apply file path changes to the CRF Features file.  This may be
+            # necessary when running under Spark, for example, where the file
+            # path has to be obtained seperately by each worker,
+            if self.filePathMapper != None:
+                path = filePathMapper(path)
 
-            # Create a CrfFeatures object.  This class provides a lot of services, but we'll use only a few.
+            # Create a CrfFeatures object.  This class provides a lot of
+            # services, but we'll use only a few.
             if self.debug:
                 print "Creating crfFeatures with path: " + path
             self.crfFeatures = crff.CrfFeatures(path)
@@ -397,8 +405,11 @@ count of output phrases, when done.
         if self.tagger == None:
             path = self.modelFilePath
 
-            if self.download:
-                path = SparkFiles.get(os.path.basename(path))
+            # Apply file path changes to the CRF Model file.  This may be
+            # necessary when running under Spark, for example, where the file
+            # path has to be obtained seperately by each worker,
+            if self.filePathMapper != None:
+                path = filePathMapper(path)
 
             # Create a CRF++ processor object:
             if self.debug:
