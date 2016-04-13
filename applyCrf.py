@@ -204,7 +204,7 @@ import json
 import os
 from pyspark import SparkFiles
 
-def applyCrfGenerator(sentences, crfFeatures, tagger, resultFormatter, debug=False, statistics=False):
+def applyCrfGenerator(sentences, crfFeatures, tagger, resultFormatter, debug=False, showStatistics=False):
     """Apply CRF++ to a sequence of "sentences", generating tagged phrases
 as output.  0 to N tagged phrases will generated as output for each input
 sentence.
@@ -227,8 +227,9 @@ the desired format.
 debug, when True, causes the code to emit helpful debugging information on
 standard output.
 
-statistics, when True, emits a count of input sentences and tokens, and a
-count of output phrases, when done.
+showStatistics: when True, print a count of input sentences and tokens, and a
+count of output phrases, when done.  Statistics are always computed internally,
+the switch just determines whether or not to print them.
 
 CRF++ is written in C++ code, which is accessed by a Python wrapper.  The
 CRF++ code must be installed in the Python interpreter.  If Spark is used to
@@ -330,7 +331,7 @@ create their own classes.
             # phraseTokenCount = 0
             # currentTagName = UNTAGGED_TAG_NAME
 
-    if statistics:
+    if showStatistics:
         print "input:  %d sentences, %d tokens" % (sentenceCount, tokenCount)
         print "output: %d phrases, %d tokens" % (taggedPhraseCount, taggedTokenCount)
 
