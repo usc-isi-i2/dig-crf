@@ -26,6 +26,7 @@ def main(argv=None):
     parser.add_argument('-f','--featlist', help="Required input file with features to be extracted, one feature entry per line.", required=True)
     parser.add_argument('-k','--keyed', help="Optional: the input lines are keyed.", required=False, action='store_true')
     parser.add_argument('-i','--input', help="Required input file with Web scraping sentences in keyed JSON Lines format.", required=True)
+    parser.add_argument('--inputSeq', help="Optionally test the Hadoop SEQ data processing path.", required=False, action='store_true')
     parser.add_argument('-j','--justTokens', help="Optional: the input JSON line data is just tokens.", required=False, action='store_true')
     parser.add_argument('-m','--model', help="Required input model file.", required=True)
     parser.add_argument('-o','--output', help="Required output file of phrases in keyed JSON Lines format.", required=True)
@@ -34,6 +35,7 @@ def main(argv=None):
     parser.add_argument('--pairs', help="Optionally test the paired data processing path.", required=False, action='store_true')
     parser.add_argument('-p', '--partitions', help="Optional number of partitions.", required=False, type=int, default=1)
     parser.add_argument('-s','--statistics', help="Optionally report use statistics.", required=False, action='store_true')
+    parser.add_argument('-x','--extract', help="Optionally name the field with text or tokens.", required=False)
     args = parser.parse_args()
 
     if args.debug:
@@ -42,8 +44,9 @@ def main(argv=None):
     # Open a Spark context and set up a CRF tagger object.
     sc = SparkContext()
     tagger = applyCrf.ApplyCrf(args.featlist, args.model,
-                               inputPairs=args.inputPairs or args.pairs,
+                               inputPairs=args.inputPairs or args.pairs or args.inputSeq,
                                inputKeyed=args.keyed, inputJustTokens=args.justTokens,
+                               extractFrom=args.extract,
                                outputPairs=args.outputPairs or args.pairs,
                                debug=args.debug, showStatistics=args.statistics)
 
@@ -54,10 +57,20 @@ def main(argv=None):
         sc.addFile(args.model)
         tagger.setFilePathMapper(sparkFilePathMapper)
 
-    inputRDD = sc.textFile(args.input, args.partitions)
+    minPartitions = args.partitions
+    if minPartitions == 0:
+        minPartitions = None
+
     if args.inputPairs or args.pairs:
-        # Convert the input text file into input pairs:
+        # Read an input text file, converting it into input pairs:
+        inputRDD = sc.textFile(args.input, minPartitions)
         inputRDD = inputRDD.map(lambda s: s.split('\t', 1))
+    elif args.inputSeq:
+        inputRDD = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text",  "org.apache.hadoop.io.Text",
+                                   minSplits=minPartitions)
+    else:
+        inputRDD = sc.textFile(args.input, minPartitions)
+
     resultsRDD = tagger.perform(inputRDD)
     resultsRDD.saveAsTextFile(args.output) # Paired results will be converted automatically.
 

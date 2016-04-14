@@ -31,6 +31,7 @@ def main(argv=None):
     parser.add_argument('-o','--output', help="Optional output file of phrases in keyed JSON Lines format.", required=False)
     parser.add_argument('-p','--pairs', help="Optional test the paired data processing path.", required=False, action='store_true')
     parser.add_argument('-s','--statistics', help="Optionally report use statistics.", required=False, action='store_true')
+    parser.add_argument('-x','--extract', help="Optionally name the field with text or tokens.", required=False)
     args = parser.parse_args()
 
     outfile = sys.stdout
@@ -38,7 +39,8 @@ def main(argv=None):
         outfile = codecs.open(args.output, 'wb', 'utf-8')
 
     processor = applyCrf.ApplyCrf(args.featlist, args.model,
-                                  inputPairs=args.pairs, inputKeyed=args.keyed, inputJustTokens=args.justTokens,
+                                  inputPairs=args.pairs, inputKeyed=args.keyed,
+                                  inputJustTokens=args.justTokens, extractFrom=args.extract,
                                   outputPairs=args.pairs,
                                   debug=args.debug, showStatistics=args.statistics)
 

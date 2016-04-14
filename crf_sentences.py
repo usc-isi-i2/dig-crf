@@ -1,5 +1,6 @@
 import codecs
 import json
+import cmrTokenizer as tok
 
 """Tools for reading a Web scrapings file.
 
@@ -31,6 +32,7 @@ class CrfSentence:
     def __init__ (self, sentence, key=None):
         self.sentence = sentence
         self.key = key
+        self.tokens = None
 
     def getText (self):
         """Get the text for a sentence."""
@@ -44,13 +46,25 @@ class CrfSentence:
         """Get the internal URI value."""
         return self.sentence[self.URI_MARKER]
 
+    def getField (self, fieldName):
+        return self.sentence.get(fieldName)
+
     def getKey (self):
         """Get the key if provided, falling back to the internal URI."""
         if self.key != None:
             return self.key
         else:
             return self.getUri()
+
+    def setTokens (self, tokens):
+        self.tokens = tokens
                 
+    def getTokens (self):
+        if self.tokens != None:
+            return self.tokens
+        else:
+            return self.getAllTokens()
+
 class CrfSentencesFromJsonFile:
     """Load a Web scrapings file in JSON format, assuming UTF-8 encoding. The
 sentences are stored as a single array, so entire file is read during
@@ -91,11 +105,12 @@ insufficient, as it will not have a key.
         The source is accessed as needed.
 
     """
-    def __init__ (self, source, pairs=False, keyed=False, justTokens=False):
+    def __init__ (self, source, pairs=False, keyed=False, justTokens=False, extractFrom=None):
         self.source = source
         self.pairs = pairs
         self.keyed = keyed
         self.justTokens = justTokens
+        self.extractFrom = extractFrom
 
     def __iter__ (self):
         """Begin iterating over the contents of the source.  There's no option to
@@ -139,7 +154,18 @@ re-iterate fromt he beginning."""
             sentence = { CrfSentence.ALL_TOKENS_MARKER: json.loads(jsonData) }
         else:
             sentence = json.loads(jsonData)
-        return CrfSentence(sentence, key)
+        crfSentence= CrfSentence(sentence, key)
+
+        # Extract from some other field? Tokenize?
+        if self.extractFrom != None:
+            extractedData = crfSentence.getField(self.extractFrom)
+            if extractedData == None:
+                extractedData = [] # prevent fallback to getAllTokens()
+            elif isinstance(extractedData, basestring):
+                extractedData = tok.cmrTokenize(extractedData)
+            crfSentence.setTokens(extractedData)                
+
+        return crfSentence
 
 
 # Is there a standard library way to do this?
@@ -159,10 +185,10 @@ def CrfSentencesPairedJsonLinesReader(keyedJsonFilename):
 
 class CrfSentencesFromJsonLinesFile (CrfSentencesFromJsonLinesSource):
     """Load a Web scrapings file in keyed JSON Lines format with UTF-8 encoding. The file is read as needed for iteration."""
-    def __init__ (self, jsonFilename, pairs=False, keyed=False, justTokens=False):
+    def __init__ (self, jsonFilename, pairs=False, keyed=False, justTokens=False, extractFrom=None):
         if pairs:
             source = CrfSentencesPairedJsonLinesReader(jsonFilename)
         else:
             source = CrfSentencesJsonLinesReader(jsonFilename)
 
-        super(CrfSentencesFromJsonLinesFile, self).__init__(source, pairs=pairs, keyed=keyed, justTokens=justTokens)
+        super(CrfSentencesFromJsonLinesFile, self).__init__(source, pairs=pairs, keyed=keyed, justTokens=justTokens, extractFrom=extractFrom)

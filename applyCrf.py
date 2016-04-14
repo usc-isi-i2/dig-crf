@@ -219,7 +219,7 @@ buffering.  The function applyCrfGenerator is a generator, which is equivalent
 to producing an iterator as output.  This paradigm of an interator input,
 iterator results, and no internal buffering should work well with Spark.
 
-sentences returns objects that have a "getAllTokens()" method.  Other than that,
+sentences returns objects that have a "getTokens()" method.  Other than that,
 these objects are opaque to this code, and is passed through to the
 resultFormatter(...).
 
@@ -269,7 +269,7 @@ create their own classes.
 
     for sentence in sentences:
         sentenceCount += 1
-        tokens = sentence.getAllTokens()
+        tokens = sentence.getTokens()
         tokenCount += len(tokens)
         if debug:
             print "len(tokens)=%d" % len(tokens)
@@ -339,7 +339,6 @@ create their own classes.
             # Don't need to do these as we're about to exit the loop:
             # phraseTokenCount = 0
             # currentTagName = UNTAGGED_TAG_NAME
-
     if showStatistics:
         print "input:  %d sentences, %d tokens" % (sentenceCount, tokenCount)
         print "output: %d phrases, %d tokens" % (taggedPhraseCount, taggedTokenCount)
@@ -451,7 +450,7 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
     """
     def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
         """Extract the tagged phrases and format the result as keys and tagged phrase Json Lines."""
-        phrase = sentence.getAllTokens()[phraseFirstTokenIdx:(phraseFirstTokenIdx+phraseTokenCount)]
+        phrase = sentence.getTokens()[phraseFirstTokenIdx:(phraseFirstTokenIdx+phraseTokenCount)]
         taggedPhrase = { }
         taggedPhrase[tagName] = phrase
         return sentence.getKey(), json.dumps(taggedPhrase, indent=None)
@@ -465,12 +464,14 @@ a sequence of tagged phrases in keyed JSON Lines format or paired JSON Lines for
 
     """
     def __init__ (self, featureListFilePath, modelFilePath,
-                  inputPairs=False, inputKeyed=False, inputJustTokens=False, outputPairs=False,
+                  inputPairs=False, inputKeyed=False, inputJustTokens=False, extractFrom=None,
+                  outputPairs=False,
                   debug=False, showStatistics=False):
         self.inputPairs = inputPairs
         self.inputKeyed = inputKeyed
         self.inputJustTokens = inputJustTokens
         self.outputPairs = outputPairs
+        self.extractFrom = extractFrom
         super(ApplyCrf, self).__init__(featureListFilePath, modelFilePath, debug, showStatistics)
 
     def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
@@ -488,6 +489,6 @@ sentence JSON Lines format, or other choices.  This method may be called
 multiple times to process multiple sources.
 
         """
-        sentences = crfs.CrfSentencesFromJsonLinesSource(source, pairs=self.inputPairs, keyed=self.inputKeyed, justTokens=self.inputJustTokens)
+        sentences = crfs.CrfSentencesFromJsonLinesSource(source, pairs=self.inputPairs, keyed=self.inputKeyed, justTokens=self.inputJustTokens, extractFrom=self.extractFrom)
         return super(ApplyCrf, self).process(sentences)
 
