@@ -9,7 +9,7 @@ rm -rf ${OUTDIR}
 
 spark-submit \
     --master 'local[8]' \
-    ./applyCrfPjSparkTest.py \
+    ./applyCrfSparkTest.py --pairs \
     --input data/sample/adjudicated_modeled_live_eyehair_100_03.kjsonl \
     --output ${OUTDIR} \
     --featlist data/config/features.hair-eye \
