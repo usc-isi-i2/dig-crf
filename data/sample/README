@@ -157,13 +157,17 @@ time ./applyCrfKjSpark.csh
 cd ../../
 time ./applyCrfKjSpark-x100.csh
 
-14)	Extracting a keyed just-tokens sample set:
+14)	adjudicated_modeled_live_eyehair_100_03-justTokens.jsonl
+
+	Extracting a keyed just-tokens sample set:
 
 jq -c -M '.["allTokens"]' \
    < adjudicated_modeled_live_eyehair_100_03.jsonl \
    > adjudicated_modeled_live_eyehair_100_03-justTokens.jsonl
 
-8)	Using the Unix "paste" and "tr" commands, build a keyed JSON Lines from the
+8)	adjudicated_modeled_live_eyehair_100_03-justTokens.kjsonl
+
+	Using the Unix "paste" and "tr" commands, build a keyed JSON Lines from the
 	just-tokens JSON Lines file and the URI file.  Strip the double quotes
 	from the URI key (assuming that the key does not contain internal
 	double quotes of significance).
@@ -172,4 +176,14 @@ cat adjudicated_modeled_live_eyehair_100_03.uri \
 | tr -d '"' \
 | paste - adjudicated_modeled_live_eyehair_100_03-justTokens.jsonl \
 > adjudicated_modeled_live_eyehair_100_03-justTokens.kjsonl
+
+9)	adjudicated_modeled_live_eyehair_100_03-justTokens-x100.json
+
+	Build a 100x larger just-tokens data set by repeating the current sample
+	(992 lines) 100 times.  This larger data set hasn't been checked
+	into the repository, but is easily replicated using the
+	following csh command:
+
+(repeat 100 cat adjudicated_modeled_live_eyehair_100_03-justTokens.kjsonl ) > \
+    adjudicated_modeled_live_eyehair_100_03-justTokens-x100.kjsonl
 
