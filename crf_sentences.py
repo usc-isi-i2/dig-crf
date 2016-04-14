@@ -136,7 +136,7 @@ re-iterate fromt he beginning."""
 
         # Parse the JSON Line data and return a CrfSentence.
         if self.justTokens:
-            sentence = { ALL_TOKENS_MARKER: json.loads(jsonData) }
+            sentence = { CrfSentence.ALL_TOKENS_MARKER: json.loads(jsonData) }
         else:
             sentence = json.loads(jsonData)
         return CrfSentence(sentence, key)
