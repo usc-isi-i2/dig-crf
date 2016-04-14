@@ -156,3 +156,20 @@ time ./applyCrfKjSpark.csh
 
 cd ../../
 time ./applyCrfKjSpark-x100.csh
+
+14)	Extracting a keyed just-tokens sample set:
+
+jq -c -M '.["allTokens"]' \
+   < adjudicated_modeled_live_eyehair_100_03.jsonl \
+   > adjudicated_modeled_live_eyehair_100_03-justTokens.jsonl
+
+8)	Using the Unix "paste" and "tr" commands, build a keyed JSON Lines from the
+	just-tokens JSON Lines file and the URI file.  Strip the double quotes
+	from the URI key (assuming that the key does not contain internal
+	double quotes of significance).
+
+cat adjudicated_modeled_live_eyehair_100_03.uri \
+| tr -d '"' \
+| paste - adjudicated_modeled_live_eyehair_100_03-justTokens.jsonl \
+> adjudicated_modeled_live_eyehair_100_03-justTokens.kjsonl
+
