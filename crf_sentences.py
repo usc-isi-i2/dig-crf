@@ -151,7 +151,11 @@ re-iterate fromt he beginning."""
 
         # Parse the JSON Line data and return a CrfSentence.
         if self.justTokens:
-            sentence = { CrfSentence.ALL_TOKENS_MARKER: json.loads(jsonData) }
+            tokens = json.loads(jsonData)
+            if isinstance(tokens, basestring):
+                # If we loaded a string instead of a sequence of tokens, auto-tokenize.
+                tokens = tok.cmrTokenize(tokens)
+            sentence = { CrfSentence.ALL_TOKENS_MARKER: tokens }
         else:
             sentence = json.loads(jsonData)
         crfSentence= CrfSentence(sentence, key)
@@ -162,8 +166,9 @@ re-iterate fromt he beginning."""
             if extractedData == None:
                 extractedData = [] # prevent fallback to getAllTokens()
             elif isinstance(extractedData, basestring):
+                # If we loaded a string instead of a sequence of tokens, auto-tokenize.
                 extractedData = tok.cmrTokenize(extractedData)
-            crfSentence.setTokens(extractedData)                
+            crfSentence.setTokens(extractedData)
 
         return crfSentence
 
