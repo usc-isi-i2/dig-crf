@@ -31,12 +31,12 @@ spark-submit \
     --master 'yarn-client' \
     --py-files CRF++-0.58/python/dist/mecab_python-0.0.0-py2.7-linux-x86_64.egg,crf_features.py,crf_sentences.py,applyCrf.py \
     --conf "spark.executorEnv.PYTHON_EGG_CACHE=${PYTHON_EGG_CACHE}" \
-    ./applyCrfKjSparkTest.py \
+    ./applyCrfSparkTest.py \
     -- \
+    --keyed \
     --input ${MYHOME}/${INFILE} \
     --output ${MYHOME}/${OUTDIR} \
     --featlist ${MYHOME}/${FEATURES} \
     --model ${MYHOME}/${MODEL} \
     --download \
-    --partitions 8 \
-    --statistics
+    --partitions 8

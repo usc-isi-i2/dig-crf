@@ -219,12 +219,16 @@ buffering.  The function applyCrfGenerator is a generator, which is equivalent
 to producing an iterator as output.  This paradigm of an interator input,
 iterator results, and no internal buffering should work well with Spark.
 
+sentences returns objects that have a "getAllTokens()" method.  Other than that,
+these objects are opaque to this code, and is passed through to the
+resultFormatter(...).
+
 featureListFilePath is a crf_features object.
 
 tagger is a CRF++ instance with a trained CRF++ model.
 
 resultFormatter(sentence, tagName, phraseFirstTokenIdx, phraseTokenCount)
- converts tagged phrase tuples into the desired output format.
+converts tagged phrase tuples into the desired output format.
 As a design alternative, the generator could be made to deliver tagged phrase
 tuples directly, with an external generator or iterator converting them into
 the desired format.
@@ -257,7 +261,7 @@ create their own classes.
     # a potential source of future failures.
     UNTAGGED_TAG_NAME = "O"
 
-    # Clear the statistics:
+    # Clear the statistics counters:
     sentenceCount = 0     # Number of input "sentences" -- e.g., ads
     tokenCount = 0        # Number of input tokens -- words, punctuation, whatever
     taggedPhraseCount = 0 # Number of tagged output phrases
@@ -349,7 +353,7 @@ class ApplyCrfToSentencesYieldingTaggedPhraseTuples(object):
 
     """
 
-    def __init__(self, featureListFilePath, modelFilePath, debug=False, statistics=False):
+    def __init__(self, featureListFilePath, modelFilePath, debug=False, showStatistics=False):
         """Initialize the ApplyCrfToSentencesYieldingTaggedPhraseTuples object.
 
 featureListFilePath is the path to the word and phrase-list control file used
@@ -368,7 +372,7 @@ count of output phrases, when done.
         self.featureListFilePath = featureListFilePath
         self.modelFilePath = modelFilePath
         self.debug = debug
-        self.statistics = statistics
+        self.showStatistics = showStatistics
 
         # Defer creating these objects.  The benefit is better operation with
         # Spark (deferring creating the tagger may be necessary with Spark).
@@ -390,7 +394,7 @@ count of output phrases, when done.
             # necessary when running under Spark, for example, where the file
             # path has to be obtained seperately by each worker,
             if self.filePathMapper != None:
-                path = filePathMapper(path)
+                path = self.filePathMapper(path)
 
             # Create a CrfFeatures object.  This class provides a lot of
             # services, but we'll use only a few.
@@ -409,7 +413,7 @@ count of output phrases, when done.
             # necessary when running under Spark, for example, where the file
             # path has to be obtained seperately by each worker,
             if self.filePathMapper != None:
-                path = filePathMapper(path)
+                path = self.filePathMapper(path)
 
             # Create a CRF++ processor object:
             if self.debug:
@@ -430,7 +434,8 @@ count of output phrases, when done.
     def process(self, sentences):
         """Return a generator to process the sentences from the source.  This method may be called multiple times to process multiple sources."""
         self.setup() # Create the CRF Features and Tagger objects if necessary.
-        return applyCrfGenerator(sentences, self.crfFeatures, self.tagger, self.resultFormatter, self.debug, self.statistics)
+        return applyCrfGenerator(sentences, self.crfFeatures, self.tagger, self.resultFormatter,
+                                 debug=self.debug, showStatistics=self.showStatistics)
 
     def perform(self, sourceRDD):
         """Apply the process routine in an Apache Spark context."""
@@ -451,41 +456,38 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
         taggedPhrase[tagName] = phrase
         return sentence.getKey(), json.dumps(taggedPhrase, indent=None)
 
-class ApplyCrfKj (ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines):
-    """Apply CRF++ to a source of sentences in keyed JSON Lines format, returning
-a sequence of tagged phrases in keyed JSON Lines format.
+class ApplyCrf (ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines):
+    """Apply CRF++ to a source of sentences in keyed, unkeyed, or paired JSON Lines format, returning
+a sequence of tagged phrases in keyed JSON Lines format or paired JSON Lines format.
 
-    yields: keyedTaggedPhraseJsonLine
-            key \t taggedPhraseJsonLine
+    yields: "key\ttaggedPhraseJsonLine"
+        or: (key, taggedPhraseJsonLine)
 
     """
+    def __init__ (self, featureListFilePath, modelFilePath,
+                  inputPairs=False, inputKeyed=False, inputJustTokens=False, outputPairs=False,
+                  debug=False, showStatistics=False):
+        self.inputPairs = inputPairs
+        self.inputKeyed = inputKeyed
+        self.inputJustTokens = inputJustTokens
+        self.outputPairs = outputPairs
+        super(ApplyCrf, self).__init__(featureListFilePath, modelFilePath, debug, showStatistics)
+
     def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
-        """Format the result as keyed Json Lines."""
-        key, taggedPhraseJsonLine = super(ApplyCrfKj, self).resultFormatter(sentence, tagName, phraseFirstTokenIdx, phraseTokenCount)
-        return key + '\t' + taggedPhraseJsonLine
+        """Format the result as keyed or paired Json Lines."""
+        key, taggedPhraseJsonLine = super(ApplyCrf, self).resultFormatter(sentence, tagName, phraseFirstTokenIdx, phraseTokenCount)
+        if self.outputPairs:
+            return key, taggedPhraseJsonLine
+        else:
+            return key + '\t' + taggedPhraseJsonLine
 
     def process(self, source):
         """Return a generator to process a sequence of sentences from the source.  The
-source presents the sentences in keyed sentence JSON Lines format.  This
-method may be called multiple times to process multiple sources.
+source presents the sentences in keyed sentence JSON Lines format, paired
+sentence JSON Lines format, or other choices.  This method may be called
+multiple times to process multiple sources.
 
         """
-        return super(ApplyCrfKj, self).process(crfs.CrfSentencesFromKeyedJsonLinesSource(source))
+        sentences = crfs.CrfSentencesFromJsonLinesSource(source, pairs=self.inputPairs, keyed=self.inputKeyed, justTokens=self.inputJustTokens)
+        return super(ApplyCrf, self).process(sentences)
 
-class ApplyCrfPj (ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines):
-    """Apply CRF++ to a source of sentences in paired (key, sentenceJsonLine) format,
-    returning keys and tagged phrases in paired (key, taggedPhraseJsonLine) format.
-
-    yields: (key, taggedPhraseJsonLine)
-
-    """
-
-    # The parent resultFormatter(...) method returns the proper pair.
-
-    def process(self, pairSource):
-        """Return a generator to process a sequence of sentences from the source.
-The source presents the sentences in paired (key, sentenceJsonLine) format.
-This method may be called multiple times to process multiple sources.
-
-        """
-        return super(ApplyCrfPj, self).process(crfs.CrfSentencesFromKeyedJsonLinesPairSource(pairSource))
