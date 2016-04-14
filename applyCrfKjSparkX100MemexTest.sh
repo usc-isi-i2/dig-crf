@@ -12,21 +12,19 @@ OUTDIR=results-x100
 PYTHON_EGG_CACHE=./python-eggs
 export PYTHON_EGG_CACHE
 
-# PYTHONPATH=/home/crogers/effect/dig-crf/dig-crf/crf/lib/python2.7/site-packages/
-# export PYTHONPATH
-
 # Dangerous!
+echo "Clearing the output folder: ${OUTDIR}"
 hadoop fs -rm -r -f ${OUTDIR}
-# rm -rf ${OUTDIR}
 
-#    --input file:///home/crogers/effect/dig-crf/dig-crf/d_modeled_live_eyehair_100_03.kjsonl
-
+echo "Copying the input data, feature control file, and CRF model to Hadoop."
 hadoop fs -copyFromLocal -f data/sample/$INFILE $INFILE
 hadoop fs -copyFromLocal -f data/config/$FEATURES $MYHOME/$FEATURES
 hadoop fs -copyFromLocal -f data/config/$MODEL $MYHOME/$MODEL
 
+echo "Creating the Python Egg cache folder: $PYTHON_EGG_CACHE"
 hadoop fs -mkdir -p $PYTHON_EGG_CACHE
 
+echo "Submitting the job to the Memex cluster."
 spark-submit \
     --master 'yarn-client' \
     --num-executors 100 \
