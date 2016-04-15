@@ -204,10 +204,11 @@ see approx. 500 sentences processed per second.
 
 """
 
+import json
+
 import crf_sentences as crfs
 import crf_features as crff
 import CRFPP
-import json
 
 def applyCrfGenerator(sentences, crfFeatures, tagger, resultFormatter, debug=False, showStatistics=False):
     """Apply CRF++ to a sequence of "sentences", generating tagged phrases
@@ -269,7 +270,13 @@ create their own classes.
 
     for sentence in sentences:
         sentenceCount += 1
-        tokens = sentence.getTokens()
+
+        try:
+            tokens = sentence.getTokens()
+        except ValueError:
+            print "Processing sentence %d" % sentenceCount
+            raise
+
         tokenCount += len(tokens)
         if debug:
             print "len(tokens)=%d" % len(tokens)

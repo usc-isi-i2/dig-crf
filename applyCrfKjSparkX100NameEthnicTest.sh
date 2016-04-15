@@ -16,7 +16,4 @@ spark-submit \
     --model data/config/dig-name-ethnic-train.model \
     --download \
     --partitions 8 \
-    --statistics \
-
-
-
+    --verbose --statistics

@@ -15,4 +15,4 @@ spark-submit \
     --featlist data/config/features.hair-eye \
     --model data/config/dig-hair-eye-train.model \
     --partitions 8 \
-    --statistics
+    --verbose --statistics

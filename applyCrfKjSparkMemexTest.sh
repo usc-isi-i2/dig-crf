@@ -37,4 +37,5 @@ spark-submit \
     --featlist ${MYHOME}/${FEATURES} \
     --model ${MYHOME}/${MODEL} \
     --download \
-    --partitions 8
+    --partitions 8 \
+    --verbose

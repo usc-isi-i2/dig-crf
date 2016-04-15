@@ -16,4 +16,4 @@ spark-submit \
     --model data/config/dig-hair-eye-train.model \
     --download \
     --partitions 8 \
-    --statistics
+    --verbose --statistics

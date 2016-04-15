@@ -12,7 +12,7 @@ def cmrTokenize(value):
     NORMAL_STATE = 0
     EOS_STATE = 1
     SKIP_ENTITY_STATE = 2
-    SKIP_CHAR_STATE = 3
+    SKIP_CHAR_ENTITY_STATE = 3
     state = [NORMAL_STATE]
     tokens = []
     token = [""]
@@ -23,14 +23,28 @@ def cmrTokenize(value):
         state[0] = NORMAL_STATE
     for c in value:
         if state[0] == SKIP_ENTITY_STATE:
+            if c in [' ', '\t', '\n']:
+                continue # Cheat for safety?
             token[0] += c
             if c in ['>']:
                 finishToken()
-        elif state[0] == SKIP_CHAR_STATE:
-            token[0] += c
-            if c in [';']:
+            continue
+
+        if state[0] == SKIP_CHAR_ENTITY_STATE:
+            if c in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+                     'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+                     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+                     'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+                     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '#', ';']:
+                token[0] += c
+                if c in [';']:
+                    finishToken()
+                continue
+            else:
                 finishToken()
-        elif c in [' ', '\t', '\n']:
+                # intentional fall-through
+                    
+        if c in [' ', '\t', '\n']:
             finishToken()
         elif c in ['.', '?', '!']:
             if state[0] != EOS_STATE:
@@ -48,7 +62,7 @@ def cmrTokenize(value):
         elif c in ['&']:
             finishToken()
             token[0] = c
-            state[0] = SKIP_CHAR_STATE
+            state[0] = SKIP_CHAR_ENTITY_STATE
         else:
             if state[0] != NORMAL_STATE:
                 finishToken()

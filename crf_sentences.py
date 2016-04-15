@@ -151,7 +151,12 @@ re-iterate fromt he beginning."""
 
         # Parse the JSON Line data and return a CrfSentence.
         if self.justTokens:
-            tokens = json.loads(jsonData)
+            try:
+                tokens = json.loads(jsonData)
+            except ValueError:
+                print "jsonData: " + jsonData
+                raise
+
             if isinstance(tokens, basestring):
                 # If we loaded a string instead of a sequence of tokens, auto-tokenize.
                 tokens = tok.cmrTokenize(tokens)

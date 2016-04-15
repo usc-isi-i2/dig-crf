@@ -17,7 +17,7 @@ export PYTHON_EGG_CACHE
 echo "Clearing the output folder: ${OUTDIR}"
 hadoop fs -rm -r -f ${OUTDIR}
 
-echo "Copying the feature control file, and CRF model to Hadoop."
+echo "Copying the feature control file and CRF model to Hadoop."
 hadoop fs -copyFromLocal -f data/config/$FEATURES $MYHOME/$FEATURES
 hadoop fs -copyFromLocal -f data/config/$MODEL $MYHOME/$MODEL
 
@@ -39,5 +39,7 @@ spark-submit \
     --output ${MYHOME}/${OUTDIR} \
     --featlist ${MYHOME}/${FEATURES} \
     --model ${MYHOME}/${MODEL} \
-    --download
+    --download \
+    --verbose
+
 
