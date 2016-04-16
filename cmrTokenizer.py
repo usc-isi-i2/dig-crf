@@ -37,24 +37,45 @@ There is also special provision to group contiguous punctuation characters."""
         self.groupPunctuation = False
         self.recognizeHtmlTags = False
         self.recognizeHtmlEntities = False
+        self.tokenPrefix = None
 
     def setGroupPunctuation (self, groupPunctuation):
+        """When True, group adjacent punctuation characters into a token."""
         self.groupPunctuation = groupPunctuation
 
     def setRecognizeHtmlTags (self, recognizeHtmlTags):
-        # such as <bold>
+        """When True, assume that the text being parsed is HTML.  Recognize HTML tags,
+        such as "<bold>", and parse them into single tokens (e.g., "<bold>"
+        instead of ["<", "bold", ">"]).
+
+        """
         self.recognizeHtmlTags = recognizeHtmlTags
 
     def setRecognizeHtmlEntities (self, recognizeHtmlEntities):
-        # such as &gt;
+        """When True, assume that the text being parsed is HTML.  Recognize HTML
+        entities, such as "&gt;", and parse them into single tokens (e.g.,
+        "&gt;" instead of ["&", "gt", ";"]).
+
+        """
         self.recognizeHtmlEntities = recognizeHtmlEntities
 
+    def setTokenPrefix (self, tokenPrefix):
+        """When non None, a string that should be prepended to each token. This may be
+        useful when tokens are being generated from different sources, and it
+        is desired to be able to distinguish the source of a token.
+
+        """
+        self.tokenPrefix = tokenPrefix
+
     def tokenize (self, value):
-        """Takes a string and breaks it into tokens, which are returned as a list of strings."""
+        """Take a string and break it into tokens. Return the tokens as a list of
+        strings.
+
+        """
 
         # This code uses a state machine:
         NORMAL_STATE = 0
-        GROUP_PUNCTUATION_STATE = 1 # Group contiguous punctuation.
+        GROUP_PUNCTUATION_STATE = 1
         PROCESS_HTML_TAG_STATE = 2
         PROCESS_HTML_ENTITY_STATE = 3
 
@@ -156,6 +177,13 @@ There is also special provision to group contiguous punctuation characters."""
         if state[0] == PROCESS_HTML_ENTITY_STATE:
             fixBrokenHtmlEntity()
         finishToken()
+
+        # Was a token prefix requested? If so, we'll apply it now.  If the
+        # normal case is not to apply a token prefix, this might be a little
+        # more efficient than applying the prefix in finishToken().
+        if self.tokenPrefix is not None and len(self.tokenPrefix) > 0:
+            tokens = map(lambda x: self.tokenPrefix + x, tokens)
+
         return tokens            
 
 def main(argv=None):
@@ -178,6 +206,10 @@ def main(argv=None):
     print t.tokenize("Big & little.")
     print t.tokenize("blond&curly.")
     print t.tokenize("&brokenHtml")
+    t.setTokenPrefix("X:")
+    print t.tokenize("Tokenize with prefixes.")
+    t.setTokenPrefix(None)
+    print t.tokenize("No more  prefixes.")
 
 # call main() if this is run as standalone                                                             
 if __name__ == "__main__":
