@@ -7,7 +7,7 @@ OUTDIR=data/sample/adjudicated_modeled_live_eyehair_100_03-justTokens-x100-tags.
 # Dangerous!
 rm -rf ${OUTDIR}
 
-spark-submit \
+time spark-submit \
     --master 'local[8]' \
     ./applyCrfSparkTest.py --keyed --justTokens \
     --input data/sample/adjudicated_modeled_live_eyehair_100_03-justTokens-x100.kjsonl \

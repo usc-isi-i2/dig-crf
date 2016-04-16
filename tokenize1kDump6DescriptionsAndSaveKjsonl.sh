@@ -9,7 +9,7 @@ echo "Clearing the output folder: ${OUTFILE}"
 hadoop fs -rm -r -f ${OUTFILE}
 
 echo "Submitting the job to the Memex cluster."
-spark-submit \
+time spark-submit \
     --master 'yarn-client' \
     --num-executors 5 \
     --py-files cmrTokenizer.py \
