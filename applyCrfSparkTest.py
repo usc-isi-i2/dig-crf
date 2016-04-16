@@ -54,7 +54,7 @@ def main(argv=None):
                                inputPairs=args.inputPairs or args.pairs or args.inputSeq,
                                inputKeyed=args.keyed, inputJustTokens=args.justTokens,
                                extractFrom=args.extract,
-                               outputPairs=args.outputPairs or args.pairs,
+                               outputPairs=args.outputPairs or args.pairs or args.outputSeq,
                                debug=args.debug, showStatistics=args.statistics)
 
     if args.download:
@@ -68,18 +68,18 @@ def main(argv=None):
     if minPartitions == 0:
         minPartitions = None
 
-    if args.inputPairs or args.pairs:
+    if args.inputSeq:
+        inputRDD = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text",  "org.apache.hadoop.io.Text",
+                                   minSplits=minPartitions)
+    elif args.inputPairs or args.pairs:
         # Read an input text file, converting it into input pairs:
         inputRDD = sc.textFile(args.input, minPartitions)
         inputRDD = inputRDD.map(lambda s: s.split('\t', 1))
-    elif args.inputSeq:
-        inputRDD = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text",  "org.apache.hadoop.io.Text",
-                                   minSplits=minPartitions)
     else:
         inputRDD = sc.textFile(args.input, minPartitions)
 
     if args.coalesceInput > 0:
-        numPartitions = extractedValuePairs.getNumPartitions()
+        numPartitions = inputRDD.getNumPartitions()
         if args.coalesceInput < numPartitions:
             print "========================================"
             print "Coalescing %d ==> %d input partitions" % (numPartitions, args.coalesceInput)
@@ -89,7 +89,7 @@ def main(argv=None):
     resultsRDD = tagger.perform(inputRDD)
 
     if args.coalesceOutput > 0:
-        numPartitions = extractedValuePairs.getNumPartitions()
+        numPartitions = resultsRDD.getNumPartitions()
         if args.coalesceOutput < numPartitions:
             print "========================================"
             print "Coalescing %d ==> %d output partitions" % (numPartitions, args.coalesceOutput)
