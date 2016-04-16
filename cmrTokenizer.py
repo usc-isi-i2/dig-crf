@@ -74,14 +74,15 @@ There is also special provision to group contiguous punctuation characters."""
         """
 
         # This code uses a state machine:
-        NORMAL_STATE = 0
-        GROUP_PUNCTUATION_STATE = 1
-        PROCESS_HTML_TAG_STATE = 2
-        PROCESS_HTML_ENTITY_STATE = 3
+        class STATE:
+            NORMAL = 0
+            GROUP_PUNCTUATION = 1
+            PROCESS_HTML_TAG = 2
+            PROCESS_HTML_ENTITY = 3
 
         # "state" and "token" have array values to allow their
         # contents to be modified within finishToken().
-        state = [NORMAL_STATE]
+        state = [STATE.NORMAL]
         token = [""] # The current token being assembled.
         tokens = [] # The tokens extracted from the input.
 
@@ -90,7 +91,7 @@ There is also special provision to group contiguous punctuation characters."""
             if len(token[0]) > 0:
                 tokens.append(token[0])
                 token[0] = ""
-            state[0] = NORMAL_STATE
+            state[0] = STATE.NORMAL
 
         def fixBrokenHtmlEntity():
             # This is not a valid HTML entity. Emit the
@@ -108,7 +109,7 @@ There is also special provision to group contiguous punctuation characters."""
 
         # Process each character in the input string:
         for c in value:
-            if state[0] == PROCESS_HTML_TAG_STATE:
+            if state[0] == STATE.PROCESS_HTML_TAG:
                 if c in cmrTokenizer.whitespaceSet:
                     continue # Suppress for safety. CRF++ doesn't like spaces in tokens, for example.
                 token[0] += c
@@ -116,7 +117,7 @@ There is also special provision to group contiguous punctuation characters."""
                     finishToken()
                 continue
 
-            if state[0] == PROCESS_HTML_ENTITY_STATE:
+            if state[0] == STATE.PROCESS_HTML_ENTITY:
                 # Parse an HTML entity name. TODO: embedded "#"
                 # characters imply more extensive parsing rules should
                 # be performed here.
@@ -142,21 +143,21 @@ There is also special provision to group contiguous punctuation characters."""
 
             elif c == cmrTokenizer.START_HTML_TAG_CHAR and self.recognizeHtmlTags:
                 finishToken()
-                state[0] = PROCESS_HTML_TAG_STATE
+                state[0] = STATE.PROCESS_HTML_TAG
                 token[0] = c
 
             elif c == cmrTokenizer.START_HTML_ENTITY_CHAR and self.recognizeHtmlEntities:
                 finishToken()
-                state[0] = PROCESS_HTML_ENTITY_STATE
+                state[0] = STATE.PROCESS_HTML_ENTITY
                 token[0] = c
 
             elif c in cmrTokenizer.punctuationSet:
                 if self.groupPunctuation:
                     # Finish any current token.  Concatenate
                     # contiguous punctuation into a single token:
-                    if state[0] != GROUP_PUNCTUATION_STATE:
+                    if state[0] != STATE.GROUP_PUNCTUATION:
                         finishToken()
-                        state[0] = GROUP_PUNCTUATION_STATE
+                        state[0] = STATE.GROUP_PUNCTUATION
                     token[0] = token[0] + c
                 else:
                     # Finish any current token and form a token from
@@ -169,12 +170,12 @@ There is also special provision to group contiguous punctuation characters."""
                 # Everything else goes here. Presumably, that includes
                 # Unicode characters that aren't ASCII
                 # strings. Further work is needed.
-                if state[0] != NORMAL_STATE:
+                if state[0] != STATE.NORMAL:
                     finishToken()
                 token[0] = token[0] + c
 
         # Finish any final token and return the array of tokens:
-        if state[0] == PROCESS_HTML_ENTITY_STATE:
+        if state[0] == STATE.PROCESS_HTML_ENTITY:
             fixBrokenHtmlEntity()
         finishToken()
 
