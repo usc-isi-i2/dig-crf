@@ -262,6 +262,10 @@ create their own classes.
     # a potential source of future failures.
     UNTAGGED_TAG_NAME = "O"
 
+    # CRF++ has an undocumented limit of approx. 8192 characters for the length
+    # of a token+features string.
+    MAX_TF_LEN = 8140
+
     # Clear the statistics counters:
     sentenceCount = 0     # Number of input "sentences" -- e.g., ads
     tokenCount = 0        # Number of input tokens -- words, punctuation, whatever
@@ -274,8 +278,13 @@ create their own classes.
         try:
             tokens = sentence.getTokens()
         except ValueError:
-            print "Processing sentence %d" % sentenceCount
-            raise
+            # TODO: Need better logging here. On a Spark worker it gets lost.
+            print "Error getting tokens for sentence %d" % sentenceCount
+            tokens = []
+            pass # Try to keep on going
+
+        if len(tokens) == 0:
+            continue
 
         tokenCount += len(tokens)
         if debug:
@@ -284,13 +293,18 @@ create their own classes.
         fc = crfFeatures.featurizeSentence(tokens)
         if debug:
             print "len(fc)=%d" % len(fc)
+
         tagger.clear()
         for idx, token in enumerate(tokens):
             features = fc[idx]
             if debug:
                 print "token#%d (%s) has %d features" % (idx, token, len(features))
             tf = token + ' ' + ' '.join(features)
-            tagger.add(tf.encode('utf-8'))
+            tfstr = tf.encode('utf-8')
+            # TODO: complain when this limit is exceeded.
+            if len(tfstr) < MAX_TF_LEN:
+                tagger.add(tfstr)
+
         tagger.parse()
         # tagger.size() returns the number of tokens that were added.
         # tagger.xsize() returns the number of features plus 1 (for the token).
@@ -301,7 +315,7 @@ create their own classes.
             print "dsize=%d" % tagger.dsize()
             print "vlevel=%d" % tagger.vlevel()
             print "nbest=%d" % tagger.nbest()
-
+            
         ntokens = tagger.size()
         if ntokens != len(tokens):
             print "received %d tokens , expected %d" % (ntokens, len(tokens))
@@ -346,6 +360,7 @@ create their own classes.
             # Don't need to do these as we're about to exit the loop:
             # phraseTokenCount = 0
             # currentTagName = UNTAGGED_TAG_NAME
+
     if showStatistics:
         print "input:  %d sentences, %d tokens" % (sentenceCount, tokenCount)
         print "output: %d phrases, %d tokens" % (taggedPhraseCount, taggedTokenCount)

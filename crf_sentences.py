@@ -154,8 +154,10 @@ re-iterate fromt he beginning."""
             try:
                 tokens = json.loads(jsonData)
             except ValueError:
+                # TODO: Remove this trap if possible!
                 print "jsonData: " + jsonData
-                raise
+                tokens = []
+                pass
 
             if isinstance(tokens, basestring):
                 # If we loaded a string instead of a sequence of tokens, auto-tokenize.
@@ -163,6 +165,7 @@ re-iterate fromt he beginning."""
             sentence = { CrfSentence.ALL_TOKENS_MARKER: tokens }
         else:
             sentence = json.loads(jsonData)
+
         crfSentence= CrfSentence(sentence, key)
 
         # Extract from some other field? Tokenize?
