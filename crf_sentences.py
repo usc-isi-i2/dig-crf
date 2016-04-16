@@ -1,6 +1,6 @@
 import codecs
 import json
-import cmrTokenizer as tok
+import cmrTokenizer
 
 """Tools for reading a Web scrapings file.
 
@@ -111,6 +111,10 @@ insufficient, as it will not have a key.
         self.keyed = keyed
         self.justTokens = justTokens
         self.extractFrom = extractFrom
+        self.tok = cmrTokenizer.cmrTokenizer()
+        self.tok.setGroupPunctuation(True)
+        self.tok.setRecognizeHtmlTags(True)
+        self.tok.setRecognizeHtmlEntities(True)
 
     def __iter__ (self):
         """Begin iterating over the contents of the source.  There's no option to
@@ -161,7 +165,7 @@ re-iterate fromt he beginning."""
 
             if isinstance(tokens, basestring):
                 # If we loaded a string instead of a sequence of tokens, auto-tokenize.
-                tokens = tok.cmrTokenize(tokens)
+                tokens = self.tok.tokenize(tokens)
             sentence = { CrfSentence.ALL_TOKENS_MARKER: tokens }
         else:
             sentence = json.loads(jsonData)
@@ -175,7 +179,7 @@ re-iterate fromt he beginning."""
                 extractedData = [] # prevent fallback to getAllTokens()
             elif isinstance(extractedData, basestring):
                 # If we loaded a string instead of a sequence of tokens, auto-tokenize.
-                extractedData = tok.cmrTokenize(extractedData)
+                extractedData = self.tok.tokenize(extractedData)
             crfSentence.setTokens(extractedData)
 
         return crfSentence

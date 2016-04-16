@@ -8,7 +8,7 @@ import argparse
 import json
 import sys
 from pyspark import SparkContext
-import cmrTokenizer as tok
+import cmrTokenizer
 
 def main(argv=None):
     '''this is called if run from command line'''
@@ -29,6 +29,11 @@ def main(argv=None):
 
     extractionKey = args.key
     pruning = args.prune
+
+    tok = cmrTokenizer.cmrTokenizer()
+    tok.setGroupPunctuation(True)
+    tok.setRecognizeHtmlTags(True)
+    tok.setRecognizeHtmlEntities(True)
 
     def extractStringValues(value):
         try:
@@ -52,7 +57,7 @@ def main(argv=None):
         try:
             d = json.loads(value)
             if extractionKey in d:
-                return iter([tok.cmrTokenize(d[extractionKey])])
+                return iter([tok.tokenize(d[extractionKey])])
             else:
                 if pruning:
                     return iter(())
