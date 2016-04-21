@@ -8,7 +8,7 @@ import argparse
 import json
 import sys
 from pyspark import SparkContext
-import cmrTokenizer
+import crf_tokenizer as crft
 
 def main(argv=None):
     '''this is called if run from command line'''
@@ -30,7 +30,7 @@ def main(argv=None):
     extractionKey = args.key
     pruning = args.prune
 
-    tok = cmrTokenizer.cmrTokenizer()
+    tok = crft.CrfTokenizer()
     tok.setGroupPunctuation(True)
     tok.setRecognizeHtmlTags(True)
     tok.setRecognizeHtmlEntities(True)

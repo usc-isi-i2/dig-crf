@@ -1,6 +1,6 @@
 import codecs
 import json
-import cmrTokenizer
+import crf_tokenizer as crft
 
 """Tools for reading a Web scrapings file.
 
@@ -111,7 +111,7 @@ insufficient, as it will not have a key.
         self.keyed = keyed
         self.justTokens = justTokens
         self.extractFrom = extractFrom
-        self.tok = cmrTokenizer.cmrTokenizer()
+        self.tok = crft.CrfTokenizer()
         self.tok.setGroupPunctuation(True)
         self.tok.setRecognizeHtmlTags(True)
         self.tok.setRecognizeHtmlEntities(True)
