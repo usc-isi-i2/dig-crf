@@ -9,6 +9,9 @@ newlines are stripped out so as not to confuse CRF++. HTML entities
 begin with "&" and end with ";", with certain characters allowed
 inbetween. They are treated as single tokens.
 
+HTML tags and HTML entities optionally can be skipped (omitted form the
+output array of tokens) after recognition.
+
 There are risks to the HTML processing rules when the text being
 tokenized is not proper HTML.  Left angle brackets can cause the
 following text to become a single token.  Ampersands can merge into
@@ -19,7 +22,54 @@ the defined set of HTML entities. It is harder to think of a solution
 to the bare left angle bracket problem; perhaps check if they are
 followed by the beginning of a valid HTML tag name?
 
-There is also special provision to group contiguous punctuation characters."""
+There is also special provision to group contiguous punctuation characters.
+
+The way to use this tokenizer is to create an instance of it, set any
+processing flags you need, then call the tokenize(value) function,
+which will return the tokens in an array.
+
+To tokenize, breaking on punctuation without recognizing HTML tags and
+entities, try:
+
+t = CrfTokenizer()
+tokens = t.tokenize(value)
+
+To tokenize, breaking on punctuation and recognizing both HTML tags and
+entites as special tokens, try:
+
+t = CrfTokenizer()
+t.setRecognizeHtmlEntities(True)
+t.setRecognizeHtmlTags(True)
+tokens = t.tokenize(value)
+
+To tokenize, breaking on punctuation, recognizing and HTML tags and
+entities, and skipping the tags, try:
+
+t = CrfTokenizer()
+t.setRecognizeHtmlEntities(True)
+t.setRecognizeHtmlTags(True)
+t.setSkipHtmlTags(True)
+tokens = t.tokenize(value)
+
+The following sequence will tokenize, strip HTML tags, then join the tokens
+into a string.  The final result will be the input string with HTML entities
+treated as single tokens, HTML tags stripped out, punctuation separated from
+adjacent words, and excess white space removed.
+
+t = CrfTokenizer()
+t.setRecognizeHtmlEntities(True)
+t.setRecognizeHtmlTags(True)
+t.setSkipHtmlTags(True)
+result = t.tokenize(value).join(" ")
+
+The same as above, but with punctuation remaining glued to adjacent words:
+
+t = CrfTokenizer()
+t.setRecognizePunctuation(False)
+t.setRecognizeHtmlTags(True)
+t.setSkipHtmlTags(True)
+result = t.tokenize(value).join(" ")
+    """
 
     whitespaceSet = set(string.whitespace)
     punctuationSet = set(string.punctuation)
@@ -37,12 +87,16 @@ There is also special provision to group contiguous punctuation characters."""
         self.groupPunctuation = False
         self.recognizeHtmlEntities = False
         self.recognizeHtmlTags = False
+        self.recognizePunctuation = True # Notice
         self.skipHtmlEntities = False
         self.skipHtmlTags = False
         self.tokenPrefix = None
 
     def setGroupPunctuation (self, groupPunctuation):
-        """When True, group adjacent punctuation characters into a token."""
+        """When True and self.recognizePunctuation is True, group adjacent punctuation
+        characters into a token.
+
+        """
         self.groupPunctuation = groupPunctuation
 
     def setRecognizeHtmlEntities (self, recognizeHtmlEntities):
@@ -60,6 +114,12 @@ There is also special provision to group contiguous punctuation characters."""
 
         """
         self.recognizeHtmlTags = recognizeHtmlTags
+
+    def setRecognizePunctuation (self, recognizePunctuation):
+        """When True, treate punctuation characters as separate tokens.
+
+        """
+        self.recognizePunctuation = recognizePunctuation
 
     def setSkipHtmlEntities (self, skipHtmlEntities):
         """When True and when self.recognizeHtmlEntities is True, skip HTML entities instead of storing them as tokens.
@@ -116,6 +176,15 @@ There is also special provision to group contiguous punctuation characters."""
             # This is not a valid HTML entity.
             # TODO: embedded "#" characters should be treated better
             # here.
+            if not self.recognizePunctuation:
+                # If we aren't treating punctuation specially, then just treat
+                # the broken HTML entity as an ordinary token.
+                #
+                # TODO: This is not quite correct.  "x& " should
+                # be treated as a single token, althouth "s & "
+                # should result in two tokens.
+                state[0] = STATE.NORMAL
+                return
             if self.groupPunctuation:
                 # If all the saved tokens are punctuation characters, then
                 # enter STATE.GROUP_PUNCTUATION insted of STATE.NORMAL.
@@ -162,9 +231,15 @@ There is also special provision to group contiguous punctuation characters."""
                         # True, return to normal parsing state in case more
                         # punctuation follows.  Otherwise, emit "&" and ";" as
                         # separate tokens.
-                        if self.groupPunctuation:
+                        if not self.recognizePunctuation:
+                            # TODO: This is not quite correct.  "x&;" should
+                            # be treated as a single token, althouth "s &;"
+                            # should result in two tokens.
                             token[0] = token[0] + c
                             state[0] = STATE.NORMAL
+                        elif self.groupPunctuation:
+                            token[0] = token[0] + c
+                            state[0] = STATE.GROUP_PUNCTUATION
                         else:
                             emitToken() # Emit the "&" as a seperate token.
                             token[0] = token[0] + c
@@ -198,7 +273,7 @@ There is also special provision to group contiguous punctuation characters."""
                 state[0] = STATE.PROCESS_HTML_ENTITY
                 token[0] = c
 
-            elif c in CrfTokenizer.punctuationSet:
+            elif c in CrfTokenizer.punctuationSet and self.recognizePunctuation:
                 if self.groupPunctuation:
                     # Finish any current token.  Concatenate
                     # contiguous punctuation into a single token:
@@ -240,6 +315,7 @@ def main(argv=None):
     t = CrfTokenizer()
     print t.tokenize("This is a sentence.")
     print t.tokenize("Buy???This...Now!!!")
+    print t.tokenize("The <bold>only</bold> source.")
     print t.tokenize("The<bold>only</bold>source.")
     print t.tokenize("Big&gt;little.")
     print t.tokenize("Big & little.")
@@ -249,6 +325,7 @@ def main(argv=None):
     t.setRecognizeHtmlTags(True)
     t.setRecognizeHtmlEntities(True)
     print t.tokenize("Buy???This...Now!!!")
+    print t.tokenize("The <bold>only</bold> source.")
     print t.tokenize("The<bold>only</bold>source.")
     print t.tokenize("Big&gt;little.")
     print t.tokenize("Big & little.")
@@ -257,6 +334,7 @@ def main(argv=None):
     t.setSkipHtmlTags(True)
     t.setSkipHtmlEntities(True)
     print t.tokenize("Buy???This...Now!!!")
+    print t.tokenize("The <bold>only</bold> source.")
     print t.tokenize("The<bold>only</bold>source.")
     print t.tokenize("Big&gt;little.")
     print t.tokenize("Big & little.")
@@ -266,6 +344,15 @@ def main(argv=None):
     print t.tokenize("Tokenize with prefixes.")
     t.setTokenPrefix(None)
     print t.tokenize("No more  prefixes.")
+    t.setRecognizePunctuation(False)
+    print t.tokenize("This is a sentence.")
+    print t.tokenize("Buy???This...Now!!!")
+    print t.tokenize("The <bold>only</bold> source.")
+    print t.tokenize("The<bold>only</bold>source.")
+    print t.tokenize("Big&gt;little.")
+    print t.tokenize("Big & little.")
+    print t.tokenize("blond&curly.")
+    print t.tokenize("&brokenHtml")
 
 # call main() if this is run as standalone                                                             
 if __name__ == "__main__":
