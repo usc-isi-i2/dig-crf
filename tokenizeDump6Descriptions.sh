@@ -7,7 +7,7 @@ echo "Submitting the job to the Memex cluster."
 time spark-submit \
     --master 'yarn-client' \
     --num-executors 50 \
-    --py-files cmrTokenizer.py \
+    --py-files crf_tokenizer.py \
     ./extractAndTokenizeField.py \
     -- \
     --input ${DUMP6FILE} \
