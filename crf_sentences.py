@@ -155,6 +155,7 @@ re-iterate fromt he beginning."""
 
         # Parse the JSON Line data and return a CrfSentence.
         if self.justTokens:
+            # The JSON Line data will be either an array of tokens or a string.
             try:
                 tokens = json.loads(jsonData)
             except ValueError:
