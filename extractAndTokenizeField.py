@@ -79,20 +79,15 @@ def main(argv=None):
         try:
             d = json.loads(value)
             if newRddKeyKey in d:
-                return iter([d[newRddKeyKey]])
+                return [d[newRddKeyKey]]
             else:
-                return iter(oldKey)
+                return oldKey
 
         except:
             # TODO: optionally count these failures or die
-            return iter(oldKey)
+            return oldKey
 
     sc = SparkContext()
-
-    # Make the console log quieter:
-    logger = sc._jvm.org.apache.log4j
-    logger.LogManager.getLogger("org"). setLevel( logger.Level.ERROR )
-    logger.LogManager.getLogger("akka").setLevel( logger.Level.ERROR )
 
     # Open the input file, a HadoopFS sequence file.
     data = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
@@ -114,7 +109,7 @@ def main(argv=None):
         print "========================================"
         print "Extracting new RDD keys."
         print "========================================"
-        extractedValuePairs = extractedValuePairs.map(lambda x: (extractNewRddKey(x[1], [x0]), x[1]))
+        extractedValuePairs = extractedValuePairs.map(lambda x: (extractNewRddKey(x[1], x[0]), x[1]))
 
     if args.repartition > 0:
         # Repartition if increasing the number of partitions.
