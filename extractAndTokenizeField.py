@@ -88,6 +88,13 @@ def main(argv=None):
             return iter(oldKey)
 
     sc = SparkContext()
+
+    # Make the console log quieter:
+    logger = sc._jvm.org.apache.log4j
+    logger.LogManager.getLogger("org"). setLevel( logger.Level.ERROR )
+    logger.LogManager.getLogger("akka").setLevel( logger.Level.ERROR )
+
+    # Open the input file, a HadoopFS sequence file.
     data = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
     if args.take > 0:
         data = sc.parallelize(data.take(args.take))
