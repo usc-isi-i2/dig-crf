@@ -68,6 +68,10 @@ def main(argv=None):
     if minPartitions == 0:
         minPartitions = None
 
+    # We'll accept three types of input files: a Sequence file, a text file
+    # with tab-separated key and JSON Lines data, or a text file of JSON Lines
+    # data (with the output field embedded as an entry in the top-level
+    # dictionary).
     if args.inputSeq:
         inputRDD = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text",  "org.apache.hadoop.io.Text",
                                    minSplits=minPartitions)
@@ -78,6 +82,7 @@ def main(argv=None):
     else:
         inputRDD = sc.textFile(args.input, minPartitions)
 
+    # Which is better? coalescing before processing or after processing?
     if args.coalesceInput > 0:
         numPartitions = inputRDD.getNumPartitions()
         if args.coalesceInput < numPartitions:
@@ -86,8 +91,10 @@ def main(argv=None):
             print "========================================"
             inputRDD = inputRDD.coalesce(args.coalesceInput)
 
+    # Perform the main RDD processing.
     resultsRDD = tagger.perform(inputRDD)
 
+    # Which is better? coalescing before processing or after processing?
     if args.coalesceOutput > 0:
         numPartitions = resultsRDD.getNumPartitions()
         if args.coalesceOutput < numPartitions:
@@ -96,6 +103,10 @@ def main(argv=None):
             print "========================================"
             resultsRDD = resultsRDD.coalesce(args.coalesceOutput)
 
+    # The output will either be a Sequence file or a text file.  If it's a
+    # text file, it might be a tab-separated pair file, or just JSON Lines
+    # data.  In either case, the main RDD processing took care of all
+    # necessary formatting.
     if args.outputSeq:
         if args.verbose:
             print "========================================"
