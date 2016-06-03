@@ -1,6 +1,6 @@
 #! /bin/bash                                                                                           
 
-INPUTFILE=/user/worker/hbase-dump-2015-10-01-2015-12-01-aman/webpage
+INPUTFILE=/user/crogers/results-name-ethnic-dump-2015-10-01-2015-12-01-aman.seq
 
 echo "Submitting the job to the Memex cluster."
 time spark-submit \
