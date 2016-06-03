@@ -97,15 +97,14 @@ def main(argv=None):
             resultsRDD = resultsRDD.coalesce(args.coalesceOutput)
 
     if args.outputSeq:
-        encodedResultsRDD = resultsRDD.mapValues(lambda x: json.dumps(x))
         if args.verbose:
             print "========================================"
             print "Saving data as a Hadoop SEQ file."
             print args.output
             print "========================================"
-        encodedResultsRDD.saveAsNewAPIHadoopFile(args.output,
-                                                 "org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat",
-                                                 "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
+        resultsRDD.saveAsNewAPIHadoopFile(args.output,
+                                          "org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat",
+                                          "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
     else:
         if args.verbose:
             print "========================================"
