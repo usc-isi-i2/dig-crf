@@ -2,6 +2,7 @@
 
 DUMP6FILE=/user/worker/hbase-dump-2015-10-01-2015-12-01-aman/webpage
 KEY_TO_EXTRACT=description
+NEW_RDD_KEY_KEY=url
 OUTFILE=/user/crogers/hbase-dump-2015-10-01-2015-12-01-aman-webpage-descriptions-tokens.seq
 
 # Dangerous!
@@ -17,6 +18,7 @@ time spark-submit \
     -- \
     --input ${DUMP6FILE} \
     --key ${KEY_TO_EXTRACT} \
+    --newRddKeyKey ${NEW_RDD_KEY_KEY} \
     --prune --repartition 350 --cache \
     --count \
     --output ${OUTFILE} \
