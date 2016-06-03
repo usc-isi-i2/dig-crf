@@ -16,19 +16,22 @@ def getKeys(value):
     try:
         d = json.loads(value)
         goodJsonRecords += 1
-        if publisherKey in d:
-            publisher = d[publisherKey]
-            if publisherNameKey in publisher:
-                return (json.dumps(publisher[publisherNameKey]) + " - " + key for key in d.keys())
-            else:
-                noPublisherNameRecords += 1
-                return iter([])                
-        else:
-            noPublisherRecords += 1
-            return iter([])
     except:
         badJsonRecords += 1
         return iter([])
+
+    if publisherKey not in d:
+        publisherName = "(no publisher)"
+        noPublisherRecords += 1
+    else:
+        publisher = d[publisherKey]
+        if publisherNameKey not in publisher:
+            publisherName = "(no publisher name)"
+            noPublisherNameRecords += 1
+        else:
+            publisherName  = publisher[publisherNameKey]
+        
+    return (json.dumps(publisherName + " - " + key for key in d.keys())
 
 def main(argv=None):
     '''this is called if run from command line'''
