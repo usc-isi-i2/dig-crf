@@ -30,8 +30,7 @@ def getKeys(value):
             noPublisherNameRecords += 1
         else:
             publisherName  = publisher[publisherNameKey]
-        
-    return (json.dumps(publisherName + " - " + key for key in d.keys())
+    return (json.dumps(publisherName + " - " + key for key in d.keys()))
 
 def main(argv=None):
     '''this is called if run from command line'''
