@@ -15,7 +15,6 @@ import crf_tokenizer as crft
 
 def main(argv=None):
     '''this is called if run from command line'''
-
     parser = argparse.ArgumentParser()
     parser.add_argument('-c','--count', help="Optionally report a count of records extracted.", required=False, action='store_true')
     parser.add_argument('--cache', help="Optionally cache the RDD in memory.", required=False, action='store_true')
@@ -40,59 +39,99 @@ def main(argv=None):
     tok.setRecognizeHtmlTags(True)
     tok.setRecognizeHtmlEntities(True)
 
-    def extractStringValues(value):
+    sc = SparkContext()
+
+    global tokenCount, noTokenCount, emptyTokenCount, exceptionNoTokenCount, exceptionEmptyTokenCount
+    tokenCount = sc.accumulator(0)
+    noTokenCount = sc.accumulator(0)
+    emptyTokenCount = sc.accumulator(0)
+    exceptionNoTokenCount = sc.accumulator(0)
+    exceptionEmptyTokenCount = sc.accumulator(0)   
+
+    def extractStringValues(jsonData):
+        """Extract a string field from the JSON-encoded data. Returns an iterator for flatMapValues(...), so pruning can cause a record to be skipped."""
+        global tokenCount, noTokenCount, emptyTokenCount, exceptionNoTokenCount, exceptionEmptyTokenCount
         try:
-            d = json.loads(value)
+            d = json.loads(jsonData)
             if extractionKey in d:
-                return iter([d[extractionKey]])
+                result = iter([d[extractionKey]])
+                tokenCount += 1
+                return result
             else:
                 if pruning:
+                    noTokenCount += 1
                     return iter(())
                 else:
+                    emptyTokenCount += 1
                     return iter("")
 
         except:
             # TODO: optionally count these failures or die
             if pruning:
+                exceptionNoTokenCount += 1
                 return iter(())
             else:
+                exceptionEmptyTokenCount += 1
                 return iter("")
 
-    def extractTokenValues(value):
+    def extractTokenValues(jsonData):
+        """Extract tokens from a string field from the JSON-encoded data. Returns an iterator for flatMapValues(...), so pruning can cause a record to be skipped."""
+        global tokenCount, noTokenCount, emptyTokenCount, exceptionNoTokenCount, exceptionEmptyTokenCount
         try:
-            d = json.loads(value)
+            d = json.loads(jsonData)
             if extractionKey in d:
-                return iter([tok.tokenize(d[extractionKey])])
+                result = iter([tok.tokenize(d[extractionKey])])
+                tokenCount += 1
+                return result
             else:
                 if pruning:
+                    noTokenCount += 1
                     return iter(())
                 else:
+                    emptyTokenCount += 1
                     return iter([])
         except:
             # TODO: optionally count these failures or die
             if pruning:
+                exceptionNoTokenCount += 1
                 return iter(())
             else:
+                exceptionEmptyTokenCount += 1
                 return iter([])
 
-    def extractNewRddKey(value, oldKey):
+    global newRddCount, noNewRddCount, extractNewRddExceptionCount
+    newRddCount = sc.accumulator(0)
+    noNewRddCount = sc.accumulator(0)
+    extractNewRddExceptionCount = sc.accumulator(0)
+
+    def extractNewRddKey(pairData):
+        """Extract a new RDD key from the JSON-encoded data in pair data. Returns an iterator for flatMap(...), so records without ren RDD keys can be skipped."""
+        global newRddCount, noNewRddCount, extractNewRddExceptionCount
         try:
-            d = json.loads(value)
+            d = json.loads(pairData[1])
             if newRddKeyKey in d:
-                return [d[newRddKeyKey]]
+                result = iter([(d[newRddKeyKey], pairData[1])])
+                newRddCount += 1
+                return result
             else:
-                return oldKey
+                noNewRddCount += 1
+                return iter(())
 
         except:
             # TODO: optionally count these failures or die
-            return oldKey
-
-    sc = SparkContext()
+            extractNewRddExceptionCount += 1
+            return iter(())
 
     # Open the input file, a HadoopFS sequence file.
     data = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
     if args.take > 0:
         data = sc.parallelize(data.take(args.take))
+
+    if newRddKeyKey != None:
+        print "========================================"
+        print "Extracting new RDD keys."
+        print "========================================"
+        data = data.flatMap(extractNewRddKey)
 
     if args.notokenize:
         print "========================================"
@@ -104,12 +143,6 @@ def main(argv=None):
         print "Extracting and tokenizing"
         print "========================================"
         extractedValuePairs = data.flatMapValues(extractTokenValues)
-
-    if newRddKeyKey != None:
-        print "========================================"
-        print "Extracting new RDD keys."
-        print "========================================"
-        extractedValuePairs = extractedValuePairs.map(lambda x: (extractNewRddKey(x[1], x[0]), x[1]))
 
     if args.repartition > 0:
         # Repartition if increasing the number of partitions.
@@ -161,6 +194,19 @@ def main(argv=None):
             print "========================================"
             keyValueTextRDD = encodedValuePairs.map(lambda x: x[0] + '\t' + x[1])
             keyValueTextRDD.saveAsTextFile(args.output)
+
+    print "========================================"
+    if newRddKeyKey != None:
+        print "newRddCount = %d" % newRddCount.value
+        print "noNewRddCount = %d" % noNewRddCount.value
+        print "extractNewRddExceptionCount = %d" % extractNewRddExceptionCount.value
+    print "tokenCount = %d" % tokenCount.value
+    print "noTokenCount = %d" % noTokenCount.value
+    print "emptyTokenCount = %d" % emptyTokenCount.value
+    print "exceptionNoTokenCount = %d" % exceptionNoTokenCount.value
+    print "exceptionEmptyTokenCount = %d" % exceptionEmptyTokenCount.value
+    print "========================================"
+
     print "========================================"
     print "All done."
     print "========================================"
