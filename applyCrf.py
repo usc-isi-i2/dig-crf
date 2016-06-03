@@ -361,6 +361,11 @@ create their own classes.
             # phraseTokenCount = 0
             # currentTagName = UNTAGGED_TAG_NAME
 
+    # This code doesn't work properly under Spark.  The output gets lost. It would be
+    # better to sum the statistics up through an accumulator and display it from the master
+    # process.
+    #
+    # TODO: Refactor this code.
     if showStatistics:
         print "input:  %d sentences, %d tokens" % (sentenceCount, tokenCount)
         print "output: %d phrases, %d tokens" % (taggedPhraseCount, taggedTokenCount)
@@ -458,6 +463,9 @@ count of output phrases, when done.
         return applyCrfGenerator(sentences, self.crfFeatures, self.tagger, self.resultFormatter,
                                  debug=self.debug, showStatistics=self.showStatistics)
 
+    # This is the only Spark-specific code.  I'm not very happy that it's here.
+    #
+    # TODO: Refactor this code.
     def perform(self, sourceRDD):
         """Apply the process routine in an Apache Spark context."""
         return sourceRDD.mapPartitions(self.process)
