@@ -12,6 +12,7 @@ class Token:
         self.count = count
         self.cumulativeCount = 0
 
+    # for debugging output:
     def __repr__(self):
         return repr((self.name, self.count, self.cumulativeCount))
 
@@ -45,7 +46,7 @@ def main(argv=None):
     print "badJsonRecords = %d" % badJsonRecords.value
     print "========================================"
 
-    # Restructure the data, grouping by key (token type indicator).
+    # Restructure the data, grouping by key (token type indicator):
     keyTokenLists = {}
     for keyToken in keyTokenCounts.keys():
         (key, tokenName) = keyToken.split(":", 1)
@@ -54,7 +55,7 @@ def main(argv=None):
             keyTokenLists[key] = []
         keyTokenLists[key].append(Token(tokenName, count))
 
-    # Process each key seperately
+    # Process each key seperately:
     for key in keyTokenLists.keys():
         tokenList = keyTokenLists[key]
 
@@ -68,10 +69,13 @@ def main(argv=None):
             totalTokens += token.count
             token.cumulativeCount = totalTokens
 
+        # We'll use the final total later, but we need it as a float to ensure
+        # floating point division is used:
+        floatTotalTokens = float(totalTokens)
+
         # Print the sorted tokens with cumulative counts, fraction of total, and index.
         print "========================================"
         tokenIndex = 0
-        floatTotalTokens = float(totalTokens)
         for token in sortedTokenList:
             tokenIndex += 1
             fractionOfTotal = token.cumulativeCount / floatTotalTokens
