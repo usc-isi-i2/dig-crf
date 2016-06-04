@@ -30,7 +30,17 @@ def getKeys(value):
             noPublisherNameRecords += 1
         else:
             publisherName  = publisher[publisherNameKey]
-    return (json.dumps(publisherName + " - " + key for key in d.keys()))
+            # Handle some dirty data.
+            if not isinstance(publisherName, basestring):
+                if isinstance(publisherName, list):
+                    if len(publisherName) == 1:
+                        publisherName = publisherName[0] # Observed dirty data can be fixed here.
+                    else:
+                        publisherName = json.dumps(publisherName) # Handle nasty potential cases.
+                else:
+                    publisherName = json.dumps(publisherName) # Handle nasty potential cases.
+
+    return (json.dumps(publisherName + " - " + key) for key in d.keys())
 
 def main(argv=None):
     '''this is called if run from command line'''
