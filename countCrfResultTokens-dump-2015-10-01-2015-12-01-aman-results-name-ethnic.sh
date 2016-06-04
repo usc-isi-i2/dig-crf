@@ -1,6 +1,7 @@
 #! /bin/bash                                                                                           
 
 INPUTFILE=/user/crogers/results-name-ethnic-dump-2015-10-01-2015-12-01-aman.seq
+OUTPUTFILE=results-name-ethnic-dump-2015-10-01-2015-12-01-aman-token-counts.txt
 
 echo "Submitting the job to the Memex cluster."
 time spark-submit \
@@ -8,4 +9,6 @@ time spark-submit \
     --num-executors 50 \
     ./countCrfResultTokens.py \
     -- \
-    --input ${INPUTFILE}
+    --input ${INPUTFILE} \
+    --output ${OUTPUTFILE} \
+    --printToLog
