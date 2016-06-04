@@ -39,7 +39,8 @@ def main(argv=None):
         print k, keyCounts[k]
     print "========================================"
 
+    sc.stop()
+
 # call main() if this is run as standalone                                                             
 if __name__ == "__main__":
     sys.exit(main())
-

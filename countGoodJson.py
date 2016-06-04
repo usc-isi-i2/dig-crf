@@ -30,6 +30,8 @@ def main(argv=None):
     print recordCount
     print "========================================"
 
+    sc.stop()
+
 # call main() if this is run as standalone                                                             
 if __name__ == "__main__":
     sys.exit(main())

@@ -210,6 +210,7 @@ def main(argv=None):
     print "========================================"
     print "All done."
     print "========================================"
+    sc.stop()
 
 # call main() if this is run as standalone                                                             
 if __name__ == "__main__":
