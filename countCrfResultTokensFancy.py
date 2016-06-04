@@ -74,10 +74,9 @@ def main(argv=None):
         floatTotalTokens = float(totalTokens)
         for token in sortedTokenList:
             tokenIndex += 1
-            count = token.count
-            cumulativeCount = token.cumulativeCount
-            fractionOfTotal = cumulativeCount / floatTotalTokens
-            print("{0:8d} {1:50} {2:10d} {3:10d} {4:.5f}".format(tokenIndex, json.dumps(key + ": " + token.name), count, cumulativeCount, fractionOfTotal))
+            fractionOfTotal = token.cumulativeCount / floatTotalTokens
+            print("{0:8d} {1:50} {2:10d} {3:10d} {4:.5f}".format(tokenIndex, json.dumps(key + ": " + token.name),
+                                                                 token.count, token.cumulativeCount, fractionOfTotal))
         print "========================================"
 
 # call main() if this is run as standalone                                                             
