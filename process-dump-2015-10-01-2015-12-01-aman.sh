@@ -41,3 +41,9 @@
 
 ./countCrfResultTokens-dump-2015-10-01-2015-12-01-aman-results-name-ethnic.sh \
 | tee countCrfResultTokens-dump-2015-10-01-2015-12-01-aman-results-name-ethnic.log
+
+./countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-results-hair-eyes.sh \
+| tee countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-results-hair-eyes.log
+
+./countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-results-name-ethnic.sh \
+| tee countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-results-name-ethnic.log

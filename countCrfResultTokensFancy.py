@@ -2,8 +2,18 @@
 
 import argparse
 import json
+from operator import attrgetter
 import sys
 from pyspark import SparkContext
+
+class Token:
+    def __init__(self, name, count):
+        self.name = name
+        self.count = count
+        self.cumulativeCount = 0
+
+    def __repr__(self):
+        return repr((self.name, self.count, self.cumulativeCount))
 
 def getTokens(value):
     global goodJsonRecords, badJsonRecords
@@ -36,38 +46,38 @@ def main(argv=None):
     print "========================================"
 
     # Restructure the data, grouping by key (token type indicator).
-    splitKeyTokenCounts = {}
+    keyTokenLists = {}
     for keyToken in keyTokenCounts.keys():
-        (key, token) = keyToken.split(":", 1)
+        (key, tokenName) = keyToken.split(":", 1)
         count = keyTokenCounts[keyToken]
-        splitKeyTokenCounts[key][token]["count"] = count
-        splitKeyTokenCounts[key][token]["token"] = token # for multilevel sort
+        if key not in keyTokenLists:
+            keyTokenLists[key] = []
+        keyTokenLists[key].append(Token(tokenName, count))
 
     # Process each key seperately
-    for key in splitKeyTokenCounts.keys():
-        tokenCounts = splitKeyTokenCounts[key]
+    for key in keyTokenLists.keys():
+        tokenList = keyTokenLists[key]
 
-        # Sort the tokens by count and token value.
-        #
-        # TODO: descending on count, ascending sort on token value.
-        tokensSortedByCount = sorted(tokenCounts, attrgetter=("count", "token"), reverse=True)
+        # Sort the tokens by descending count and ascending token value:
+        sortedTokenList = sorted(tokenList, key=attrgetter("name"))
+        sortedTokenList = sorted(sortedTokenList, key=attrgetter("count"), reverse=True)
 
         # Calculate the cumulative token count for each token in sorted order:
         totalTokens = 0
-        for token in tokensSortedByCount:
-            totalTokens += tokenCounts[token]["count"]
-            tokenCounts[token]["cumulativeCount"] = totalTokens
+        for token in sortedTokenList:
+            totalTokens += token.count
+            token.cumulativeCount = totalTokens
 
         # Print the sorted tokens with cumulative counts, fraction of total, and index.
         print "========================================"
         tokenIndex = 0
         floatTotalTokens = float(totalTokens)
-        for token in tokensSortedByCount:
+        for token in sortedTokenList:
             tokenIndex += 1
-            count = tokenCounts[token]["count"]
-            cumulativeCount = tokenCounts[token]["cumulativeCount"]
-            fractionOfTotal = floatTotalTokens / cumulativeCount
-            print("{0:8d} {1:40} {2:10d} {3:10d} {4:.5f}".format(tokenIndex, json.dumps(key + ": " + token), count, cumulativeCount, fractionOfTotal)
+            count = token.count
+            cumulativeCount = token.cumulativeCount
+            fractionOfTotal = cumulativeCount / floatTotalTokens
+            print("{0:8d} {1:50} {2:10d} {3:10d} {4:.5f}".format(tokenIndex, json.dumps(key + ": " + token.name), count, cumulativeCount, fractionOfTotal))
         print "========================================"
 
 # call main() if this is run as standalone                                                             
