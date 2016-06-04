@@ -33,12 +33,11 @@
 ./countGoodKeys-dump-2015-10-01-2015-12-01-aman-results-hair-eyes.sh \
 | tee countGoodKeys-dump-2015-10-01-2015-12-01-aman-results-hair-eyes.log
 
+./countGoodKeys-dump-2015-10-01-2015-12-01-aman-results-name-ethnic.sh \
+| tee countGoodKeys-dump-2015-10-01-2015-12-01-aman-results-name-ethnic.log
+
 ./countCrfResultTokens-dump-2015-10-01-2015-12-01-aman-results-hair-eyes.sh \
 | tee countCrfResultTokens-dump-2015-10-01-2015-12-01-aman-results-hair-eyes.log
 
 ./countCrfResultTokens-dump-2015-10-01-2015-12-01-aman-results-name-ethnic.sh \
 | tee countCrfResultTokens-dump-2015-10-01-2015-12-01-aman-results-name-ethnic.log
-
-./countGoodKeys-dump-2015-10-01-2015-12-01-aman-results-name-ethnic.sh \
-| tee countGoodKeys-dump-2015-10-01-2015-12-01-aman-results-name-ethnic.log
-
