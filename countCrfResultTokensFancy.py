@@ -7,21 +7,21 @@ import sys
 from pyspark import SparkContext
 
 class Token:
-    def __init__(self, name, count):
-        self.name = name
+    def __init__(self, value, count):
+        self.value = value
         self.count = count
         self.cumulativeCount = 0
 
     # for debugging output:
     def __repr__(self):
-        return repr((self.name, self.count, self.cumulativeCount))
+        return repr((self.value, self.count, self.cumulativeCount))
 
 def getTokens(value):
     global goodJsonRecords, badJsonRecords
     try:
         d = json.loads(value)
         goodJsonRecords += 1
-        return (key + ':' + token for key in d.keys() for token in d[key])
+        return (tag + ':' + token for tag in d.keys() for token in d[tag])
     except:
         badJsonRecords += 1
         return iter([])
@@ -38,7 +38,7 @@ def main(argv=None):
     goodJsonRecords = sc.accumulator(0)
     badJsonRecords = sc.accumulator(0)
     data = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
-    keyTokenCounts = data.values().flatMap(getTokens).countByValue()
+    tagTokenCounts = data.values().flatMap(getTokens).countByValue()
     sc.stop()
 
     print "========================================"
@@ -46,21 +46,21 @@ def main(argv=None):
     print "badJsonRecords = %d" % badJsonRecords.value
     print "========================================"
 
-    # Restructure the data, grouping by key (token type indicator):
-    keyTokenLists = {}
-    for keyToken in keyTokenCounts.keys():
-        (key, tokenName) = keyToken.split(":", 1)
-        count = keyTokenCounts[keyToken]
-        if key not in keyTokenLists:
-            keyTokenLists[key] = []
-        keyTokenLists[key].append(Token(tokenName, count))
+    # Restructure the data, grouping by tag (token type indicator):
+    tagTokenLists = {}
+    for tagToken in tagTokenCounts.keys():
+        (tag, tokenValue) = tagToken.split(":", 1)
+        count = tagTokenCounts[tagToken]
+        if tag not in tagTokenLists:
+            tagTokenLists[tag] = []
+        tagTokenLists[tag].append(Token(tokenValue, count))
 
-    # Process each key seperately:
-    for key in keyTokenLists.keys():
-        tokenList = keyTokenLists[key]
+    # Process each tag seperately:
+    for tag in tagTokenLists.keys():
+        tokenList = tagTokenLists[tag]
 
         # Sort the tokens by descending count and ascending token value:
-        sortedTokenList = sorted(tokenList, key=attrgetter("name"))
+        sortedTokenList = sorted(tokenList, key=attrgetter("value"))
         sortedTokenList = sorted(sortedTokenList, key=attrgetter("count"), reverse=True)
 
         # Calculate the cumulative token count for each token in sorted order:
@@ -73,13 +73,15 @@ def main(argv=None):
         # floating point division is used:
         floatTotalTokens = float(totalTokens)
 
-        # Print the sorted tokens with cumulative counts, fraction of total, and index.
+        # Print the sorted tokens with cumulative counts, fraction of
+        # total (cunumative distribution function), and index
+        # (enumerate the tokens per tag, starting with 1).
         print "========================================"
         tokenIndex = 0
         for token in sortedTokenList:
             tokenIndex += 1
             fractionOfTotal = token.cumulativeCount / floatTotalTokens
-            print("{0:8d} {1:50} {2:10d} {3:10d} {4:.5f}".format(tokenIndex, json.dumps(key + ": " + token.name),
+            print("{0:8d} {1:50} {2:10d} {3:10d} {4:.5f}".format(tokenIndex, json.dumps(tag + ": " + token.value),
                                                                  token.count, token.cumulativeCount, fractionOfTotal))
         print "========================================"
 

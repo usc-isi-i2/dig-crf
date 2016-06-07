@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-"""The applyCrfGenerator generator processes sentences with CRF++.  Wrappers
+"""The applyCrfGenerator generator processes sentences with CRF++.
+Each word (token) in an input sentence may be assigned a tag. Wrappers
 are provided for various types of input and output.
 
 Code Structure

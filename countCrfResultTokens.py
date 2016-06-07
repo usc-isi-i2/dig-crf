@@ -1,4 +1,4 @@
-"""Count the occurances of tokens in the CRF results, by classifier."""
+"""Count the occurances of tokens in the CRF results, by tag."""
 
 import argparse
 import codecs
@@ -11,7 +11,7 @@ def getTokens(value):
     try:
         d = json.loads(value)
         goodJsonRecords += 1
-        return (key + ': ' + token for key in d.keys() for token in d[key])
+        return (tag + ': ' + token for tag in d.keys() for token in d[tag])
     except:
         badJsonRecords += 1
         return iter([])
@@ -30,19 +30,19 @@ def main(argv=None):
     goodJsonRecords = sc.accumulator(0)
     badJsonRecords = sc.accumulator(0)
     data = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
-    keyCounts = data.values().flatMap(getTokens).countByValue()
+    tagCounts = data.values().flatMap(getTokens).countByValue()
 
     if args.output != None:
         with codecs.open(args.output, 'wb', 'utf-8') as f:
-            for k in sorted(keyCounts):
-                f.write(k + " " + str(keyCounts[k]) + "\n")
+            for k in sorted(tagCounts):
+                f.write(k + " " + str(tagCounts[k]) + "\n")
 
     print "========================================"
     print "goodJsonRecords = %d" % goodJsonRecords.value
     print "badJsonRecords = %d" % badJsonRecords.value
     if args.printToLog:
-        for k in sorted(keyCounts):
-            print json.dumps(k), keyCounts[k]
+        for k in sorted(tagCounts):
+            print json.dumps(k), tagCounts[k]
     print "========================================"
 
 # call main() if this is run as standalone                                                             
