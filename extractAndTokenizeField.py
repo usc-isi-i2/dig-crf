@@ -15,10 +15,10 @@ at the moment.  Examples:
 -k extractions:text:results,extractions:text:title
 
 When -k supplies a list of keys, the code will consider the extraction
-successful if at least one key path in the list succeeds.  When multiple
-paths succeed, the results are appended (see below).  The value at the end
-of a key path may be a list of strings instead of a single string;  if so,
-the results are appended.
+successful if at least one key path in the list succeeds.  When multiple paths
+succeed, the results are appended (see below).  The value at the end of a key
+path may be a list of strings instead of a single string; if so, the results
+are appended.
 
 When appending results and not tokenizing:
 
@@ -26,8 +26,15 @@ When appending results and not tokenizing:
 
 2) a space is inserted a s a seperator between non-empty strings.
 
-When appending results and tokenizing, each string is tokenized
-independently and the resulting lists of tokens are concatenated.
+When appending results and tokenizing, each string is tokenized independently
+and the resulting lists of tokens are concatenated (more precisely, the result
+list is extended).
+
+You may ask, why not concatenate strings (with a space separator) and then, if
+requested, tokenize?  This would indeed simplify the code, but there's an
+advantage to the tokenize-then-concatenate approach: the tokenizer is reset at
+hard boundaries, thus limiting possible runaway effects, such as an unclosed
+HTML entity.
 
 newRddKey (-K) does not yet support this complex behavior.  It expects
 the newRDDKey to be a single string field in the outermost dictionary
