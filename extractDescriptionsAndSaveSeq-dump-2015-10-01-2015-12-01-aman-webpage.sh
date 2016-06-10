@@ -20,7 +20,7 @@ time spark-submit \
     --input ${INPUTFILE} \
     --key ${KEY_TO_EXTRACT} \
     --newRddKeyKey ${NEW_RDD_KEY_KEY} \
-    --notokenize --prune --repartition 700 --cache \
+    --notokenize --prune --repartition 350 --cache \
     --count \
     --output ${OUTFILE} \
     --outputSeq

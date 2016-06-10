@@ -3,7 +3,7 @@
 INPUTFILE=/user/worker/hbase-dump-2015-10-01-2015-12-01-aman/hbase
 KEYS_TO_EXTRACT=extractions:title:results,extractions:text:results
 NEW_RDD_KEY_KEY=url
-OUTFILE=/user/crogers/hbase-dump-2015-10-01-2015-12-01-aman-hbase-descriptions.seq
+OUTFILE=/user/crogers/hbase-dump-2015-10-01-2015-12-01-aman-hbase-title-and-text.seq
 
 # Dangerous!
 echo "Clearing the output folder: ${OUTFILE}"
@@ -20,7 +20,7 @@ time spark-submit \
     --input ${INPUTFILE} \
     --key ${KEYS_TO_EXTRACT} \
     --newRddKeyKey ${NEW_RDD_KEY_KEY} \
-    --notokenize --prune --repartition 700 --cache \
+    --notokenize --prune --repartition 350 --cache \
     --count \
     --output ${OUTFILE} \
     --outputSeq
