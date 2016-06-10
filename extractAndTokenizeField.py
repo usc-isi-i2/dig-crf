@@ -69,7 +69,7 @@ def main(argv=None):
                         if len(value) > 0:
                             if len(result) > 0:
                                 result += " " # Join multiple results with a space.
-                                result += value
+                            result += value
                     elif isinstance(value, list):
                         for val in value:
                             if isinstance(val, basestring):
@@ -77,7 +77,7 @@ def main(argv=None):
                                 if len(val) > 0:
                                     if len(result) > 0:
                                         result += " " # Join multiple results with a space.
-                                        result += val
+                                    result += val
 
             if gotResult:
                 valueCount += 1
