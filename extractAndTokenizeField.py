@@ -41,63 +41,90 @@ def main(argv=None):
 
     sc = SparkContext()
 
-    global tokenCount, noTokenCount, emptyTokenCount, exceptionNoTokenCount, exceptionEmptyTokenCount
-    tokenCount = sc.accumulator(0)
-    noTokenCount = sc.accumulator(0)
-    emptyTokenCount = sc.accumulator(0)
-    exceptionNoTokenCount = sc.accumulator(0)
-    exceptionEmptyTokenCount = sc.accumulator(0)   
+    global valueCount, noValueCount, emptyValueCount, exceptionNoValueCount, exceptionEmptyValueCount
+    valueCount = sc.accumulator(0)
+    noValueCount = sc.accumulator(0)
+    emptyValueCount = sc.accumulator(0)
+    exceptionNoValueCount = sc.accumulator(0)
+    exceptionEmptyValueCount = sc.accumulator(0)   
 
     def extractStringValues(jsonData):
-        """Extract a string field from the JSON-encoded data. Returns an iterator for flatMapValues(...), so pruning can cause a record to be skipped."""
-        global tokenCount, noTokenCount, emptyTokenCount, exceptionNoTokenCount, exceptionEmptyTokenCount
+        """Extract one or more string fields from the JSON-encoded data. Returns an iterator for flatMapValues(...), so pruning can cause a record to be skipped."""
+        global valueCount, noValueCount, emptyValueCount, exceptionNoValueCount, exceptionEmptyValueCount
         try:
-            d = json.loads(jsonData)
-            if extractionKey in d:
-                result = iter([d[extractionKey]])
-                tokenCount += 1
-                return result
+            gotResult = False
+            result = ""
+            value = json.loads(jsonData)
+            for extractionKeyPath in extractionKey.split(","):
+                fault = False
+                for keyComponent in extractionKeyPath.split(":"):
+                    if keyComponent in value:
+                        value  = value[keyComponent]
+                    else:
+                        fault = True
+                        break
+                if not fault and isinstance(value, basestring):
+                    gotResult = True
+                    if len(value) > 0:
+                        if len(result) > 0:
+                            result += " " # Join multiple results with a space.
+                        result += value
+            if gotResult:
+                valueCount += 1
+                return iter([result])
+            if pruning:
+                noValueCount += 1
+                return iter(())
             else:
-                if pruning:
-                    noTokenCount += 1
-                    return iter(())
-                else:
-                    emptyTokenCount += 1
-                    return iter("")
+                emptyValueCount += 1
+                return iter([""])
 
         except:
             # TODO: optionally count these failures or die
             if pruning:
-                exceptionNoTokenCount += 1
+                exceptionNoValueCount += 1
                 return iter(())
             else:
-                exceptionEmptyTokenCount += 1
-                return iter("")
+                exceptionEmptyValueCount += 1
+                return iter([""])
 
-    def extractTokenValues(jsonData):
-        """Extract tokens from a string field from the JSON-encoded data. Returns an iterator for flatMapValues(...), so pruning can cause a record to be skipped."""
-        global tokenCount, noTokenCount, emptyTokenCount, exceptionNoTokenCount, exceptionEmptyTokenCount
+    def extractTokenValues(jsonData, tokenize=False):
+        """Extract one or more string fields from the JSON-encoded data and tokenize.  Returns an iterator for flatMapValues(...), so pruning can cause a record to be skipped."""
+        global valueCount, noValueCount, emptyValueCount, exceptionNoValueCount, exceptionEmptyValueCount
         try:
-            d = json.loads(jsonData)
-            if extractionKey in d:
-                result = iter([tok.tokenize(d[extractionKey])])
-                tokenCount += 1
-                return result
+            gotResult = False
+            result = []
+            value = json.loads(jsonData)
+            for extractionKeyPath in extractionKey.split(","):
+                fault = False
+                for keyComponent in extractionKeyPath.split(":"):
+                    if keyComponent in value:
+                        value = value[keyComponent]
+                    else:
+                        fault = True
+                        break
+                if not fault and isinstance(value, basestring):
+                    gotResult = True
+                    result.extend(tok.tokenize(value))
+
+            if gotResult:
+                valueCount += 1
+                return iter(result)
+            if pruning:
+                noValueCount += 1
+                return iter(())
             else:
-                if pruning:
-                    noTokenCount += 1
-                    return iter(())
-                else:
-                    emptyTokenCount += 1
-                    return iter([])
+                emptyValueCount += 1
+                return iter([""])
+
         except:
             # TODO: optionally count these failures or die
             if pruning:
-                exceptionNoTokenCount += 1
+                exceptionNoValueCount += 1
                 return iter(())
             else:
-                exceptionEmptyTokenCount += 1
-                return iter([])
+                exceptionEmptyValueCount += 1
+                return iter([""])
 
     global newRddCount, noNewRddCount, extractNewRddExceptionCount
     newRddCount = sc.accumulator(0)
@@ -200,11 +227,11 @@ def main(argv=None):
         print "newRddCount = %d" % newRddCount.value
         print "noNewRddCount = %d" % noNewRddCount.value
         print "extractNewRddExceptionCount = %d" % extractNewRddExceptionCount.value
-    print "tokenCount = %d" % tokenCount.value
-    print "noTokenCount = %d" % noTokenCount.value
-    print "emptyTokenCount = %d" % emptyTokenCount.value
-    print "exceptionNoTokenCount = %d" % exceptionNoTokenCount.value
-    print "exceptionEmptyTokenCount = %d" % exceptionEmptyTokenCount.value
+    print "valueCount = %d" % valueCount.value
+    print "noValueCount = %d" % noValueCount.value
+    print "emptyValueCount = %d" % emptyValueCount.value
+    print "exceptionNoValueCount = %d" % exceptionNoValueCount.value
+    print "exceptionEmptyValueCount = %d" % exceptionEmptyValueCount.value
     print "========================================"
 
     print "========================================"

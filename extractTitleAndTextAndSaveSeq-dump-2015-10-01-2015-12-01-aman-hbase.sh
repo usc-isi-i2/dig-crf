@@ -1,7 +1,7 @@
 #! /bin/bash                                                                                           
 
 INPUTFILE=/user/worker/hbase-dump-2015-10-01-2015-12-01-aman/hbase
-KEY_TO_EXTRACT=description
+KEYS_TO_EXTRACT=extractions:title:results,extractions:text:results
 NEW_RDD_KEY_KEY=url
 OUTFILE=/user/crogers/hbase-dump-2015-10-01-2015-12-01-aman-hbase-descriptions.seq
 
@@ -18,7 +18,7 @@ time spark-submit \
     ./extractAndTokenizeField.py \
     -- \
     --input ${INPUTFILE} \
-    --key ${KEY_TO_EXTRACT} \
+    --key ${KEYS_TO_EXTRACT} \
     --newRddKeyKey ${NEW_RDD_KEY_KEY} \
     --notokenize --prune --repartition 700 --cache \
     --count \
