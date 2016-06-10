@@ -105,7 +105,7 @@ def main(argv=None):
     extractNewRddExceptionCount = sc.accumulator(0)
 
     def extractNewRddKey(pairData):
-        """Extract a new RDD key from the JSON-encoded data in pair data. Returns an iterator for flatMap(...), so records without ren RDD keys can be skipped."""
+        """Extract a new RDD key from the JSON-encoded data in pair data. Returns an iterator for flatMap(...), so records without new RDD keys can be skipped."""
         global newRddCount, noNewRddCount, extractNewRddExceptionCount
         try:
             d = json.loads(pairData[1])
