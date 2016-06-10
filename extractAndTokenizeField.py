@@ -5,6 +5,34 @@ value key (key2).  Optionally, select an additional value (newRddKey) from each
 dictionary to use as a replacement for key1 in the output.  Return a new pair
 RDD of (key1, value2) (or (newKey1, value2)).  Print the count of records extracted.
 
+The key extraction behavior has been made more complicated.
+
+-k supplies the name of the key to extract (key2, above).  It may be a list of
+keys sepearated by commas (","), and the keys may give a path through nested
+dictionaries, separated by colons (":").  The separators (",", ":") are fixed
+at the moment.  Examples:
+
+-k extractions:text:results,extractions:text:title
+
+When -k supplies a list of keys, the code will consider the extraction
+successful if at least one key path in the list succeeds.  When multiple
+paths succeed, the results are appended (see below).  The value at the end
+of a key path may be a list of strings instead of a single string;  if so,
+the results are appended.
+
+When appending results and not tokenizing:
+
+1) empty strings are ignored, and
+
+2) a space is inserted a s a seperator between non-empty strings.
+
+When appending results and tokenizing, each string is tokenized
+independently and the resulting lists of tokens are concatenated.
+
+newRddKey (-K) does not yet support this complex behavior.  It expects
+the newRDDKey to be a single string field in the outermost dictionary
+of the input object.
+
 """
 
 import argparse
