@@ -76,23 +76,31 @@ def main(argv=None):
 
     sc = SparkContext()
 
-    global valueCount, noValueCount, emptyValueCount, exceptionNoValueCount, exceptionEmptyValueCount
+    global valueCount, noValueCount, emptyValueCount, exceptionNoValueCount, exceptionEmptyValueCount, extractionKeyPathHitCounts
     valueCount = sc.accumulator(0)
     noValueCount = sc.accumulator(0)
     emptyValueCount = sc.accumulator(0)
     exceptionNoValueCount = sc.accumulator(0)
-    exceptionEmptyValueCount = sc.accumulator(0)   
+    exceptionEmptyValueCount = sc.accumulator(0)
+
+    extractionKeyPaths = extractionKey.split(",");
+    extractionKeyPathComponents = []
+    extractionKeyPathHitCounts = []
+    for extractionKeyPath in extractionKeyPaths:
+        extractionKeyPathComponents.append(extractionKeyPath.split(":"))
+        extractionKeyPathHitCounts.append(sc.accumulator(0))
 
     def extractStringValues(jsonData):
         """Extract one or more string fields from the JSON-encoded data. Returns an iterator for flatMapValues(...), so pruning can cause a record to be skipped."""
-        global valueCount, noValueCount, emptyValueCount, exceptionNoValueCount, exceptionEmptyValueCount
+        global valueCount, noValueCount, emptyValueCount, exceptionNoValueCount, exceptionEmptyValueCount, extractionKeyPathHitCounts
         try:
             gotResult = False
             result = ""
             value = json.loads(jsonData)
-            for keyPath in extractionKey.split(","):
+            keyPathIndex = 0
+            for keyComponents in extractionKeyPathComponents:
                 goodKeyPath = True
-                for keyComponent in keyPath.split(":"):
+                for keyComponent in keyComponents:
                     if keyComponent in value:
                         value  = value[keyComponent]
                     else:
@@ -105,14 +113,20 @@ def main(argv=None):
                             if len(result) > 0:
                                 result += " " # Join multiple results with a space.
                             result += value
+                            extractionKeyPathHitCounts[keyPathIndex] += 1
                     elif isinstance(value, list):
+                        gotNonEmptyValue = False
                         for val in value:
                             if isinstance(val, basestring):
                                 gotResult = True
                                 if len(val) > 0:
+                                    gotNonEmptyValue = True
                                     if len(result) > 0:
                                         result += " " # Join multiple results with a space.
                                     result += val
+                        if gotNonEmptyValue:
+                            extractionKeyPathHitCounts[keyPathIndex] += 1
+                keyPathIndex += 1
 
             if gotResult:
                 valueCount += 1
@@ -135,14 +149,15 @@ def main(argv=None):
 
     def extractTokenValues(jsonData, tokenize=False):
         """Extract one or more string fields from the JSON-encoded data and tokenize.  Returns an iterator for flatMapValues(...), so pruning can cause a record to be skipped."""
-        global valueCount, noValueCount, emptyValueCount, exceptionNoValueCount, exceptionEmptyValueCount
+        global valueCount, noValueCount, emptyValueCount, exceptionNoValueCount, exceptionEmptyValueCount, extractionKeyPathHitCounts
         try:
             gotResult = False
             result = []
             value = json.loads(jsonData)
-            for keyPath in extractionKey.split(","):
+            keyPathIndex = 0
+            for keyComponents in extractionKeyPathComponents:
                 goodKeyPath = True
-                for keyComponent in keyPath.split(":"):
+                for keyComponent in keyComponents:
                     if keyComponent in value:
                         value = value[keyComponent]
                     else:
@@ -151,12 +166,24 @@ def main(argv=None):
                 if goodKeyPath:
                     if isinstance(value, basestring):
                         gotResult = True
-                        result.extend(tok.tokenize(value))
+                        if len(value) > 0:
+                            tokens = tok.tokenize(value)
+                            if len(tokens) > 0:
+                                result.extend(tokens)
+                                extractionKeyPathHitCounts[keyPathIndex] += 1
                     elif isinstance(value, list):
+                        gotNonEmptyValue = False
                         for val in value:
                             if isinstance(val, basestring):
                                 gotResult = True
-                                result.extend(tok.tokenize(value))
+                                if len(value) > 0:
+                                    tokens = tok.tokenize(value)
+                                    if len(tokens) > 0:
+                                        result.extend(tokens)
+                                        gotNonEmptyValue = True
+                        if gotNonEmptyValue:
+                            extractionKeyPathHitCounts[keyPathIndex] += 1
+                keyPathIndex += 1
 
             if gotResult:
                 valueCount += 1
@@ -283,6 +310,10 @@ def main(argv=None):
     print "emptyValueCount = %d" % emptyValueCount.value
     print "exceptionNoValueCount = %d" % exceptionNoValueCount.value
     print "exceptionEmptyValueCount = %d" % exceptionEmptyValueCount.value
+
+    for keyPath, hitCount in zip(extractionKeyPaths, extractionKeyPathHitCounts):
+        print "hitCount[\"%s\"] = %d" % (keyPath, hitCount.value)
+
     print "========================================"
 
     print "========================================"
