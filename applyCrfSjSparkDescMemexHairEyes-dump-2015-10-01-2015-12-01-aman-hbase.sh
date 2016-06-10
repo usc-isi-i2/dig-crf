@@ -4,10 +4,10 @@
 
 MYHOME=hdfs:///user/crogers
 
-INFILE=${MYHOME}/hbase-dump-2015-10-01-2015-12-01-aman-webpage-descriptions-tokens.seq
-FEATURES=features.name-ethnic
-MODEL=dig-name-ethnic-train.model
-OUTDIR=results-name-ethnic-dump-2015-10-01-2015-12-01-aman.seq
+INFILE=${MYHOME}/hbase-dump-2015-10-01-2015-12-01-aman-hbase-descriptions-tokens.seq
+FEATURES=features.hair-eye
+MODEL=dig-hair-eye-train.model
+OUTDIR=hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes.seq
 
 PYTHON_EGG_CACHE=./python-eggs
 export PYTHON_EGG_CACHE
