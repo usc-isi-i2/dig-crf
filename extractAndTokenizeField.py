@@ -105,17 +105,23 @@ def main(argv=None):
             gotResult = False
             result = []
             value = json.loads(jsonData)
-            for extractionKeyPath in extractionKey.split(","):
-                fault = False
-                for keyComponent in extractionKeyPath.split(":"):
+            for keyPath in extractionKey.split(","):
+                goodKeyPath = True
+                for keyComponent in keyPath.split(":"):
                     if keyComponent in value:
                         value = value[keyComponent]
                     else:
-                        fault = True
+                        goodKeyPath = False
                         break
-                if not fault and isinstance(value, basestring):
-                    gotResult = True
-                    result.extend(tok.tokenize(value))
+                if goodKeyPath:
+                    if isinstance(value, basestring):
+                        gotResult = True
+                        result.extend(tok.tokenize(value))
+                    elif isinstance(value, list):
+                        for val in value:
+                            if isinstance(val, basestring):
+                                gotResult = True
+                                result.extend(tok.tokenize(value))
 
             if gotResult:
                 valueCount += 1
