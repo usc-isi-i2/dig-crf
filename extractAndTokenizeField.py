@@ -70,7 +70,7 @@ def main(argv=None):
                             if len(result) > 0:
                                 result += " " # Join multiple results with a space.
                                 result += value
-                    else if isinstance(value, list):
+                    elif isinstance(value, list):
                         for val in value:
                             if isinstance(val, basestring):
                                 gotResult = True
