@@ -148,7 +148,7 @@ def main(argv=None):
                 exceptionEmptyValueCount += 1
                 return iter([""])
 
-    def extractTokenValues(jsonData, tokenize=False):
+    def extractTokenValues(jsonData):
         """Extract one or more string fields from the JSON-encoded data and tokenize.  Returns an iterator for flatMapValues(...), so pruning can cause a record to be skipped."""
         global valueCount, noValueCount, emptyValueCount, exceptionNoValueCount, exceptionEmptyValueCount, extractionKeyPathHitCounts
         try:
@@ -178,8 +178,8 @@ def main(argv=None):
                         for val in value:
                             if isinstance(val, basestring):
                                 gotResult = True
-                                if len(value) > 0:
-                                    tokens = tok.tokenize(value)
+                                if len(val) > 0:
+                                    tokens = tok.tokenize(val)
                                     if len(tokens) > 0:
                                         result.extend(tokens)
                                         gotNonEmptyValue = True
@@ -189,13 +189,13 @@ def main(argv=None):
 
             if gotResult:
                 valueCount += 1
-                return iter(result)
+                return iter([result])
             if pruning:
                 noValueCount += 1
                 return iter(())
             else:
                 emptyValueCount += 1
-                return iter([""])
+                return iter([[]])
 
         except:
             # TODO: optionally count these failures or die
