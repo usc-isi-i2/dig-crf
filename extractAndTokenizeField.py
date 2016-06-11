@@ -96,9 +96,10 @@ def main(argv=None):
         try:
             gotResult = False
             result = ""
-            value = json.loads(jsonData)
+            jsonData = json.loads(jsonData)
             keyPathIndex = 0
             for keyComponents in extractionKeyPathComponents:
+                value = jsonData
                 goodKeyPath = True
                 for keyComponent in keyComponents:
                     if keyComponent in value:
@@ -153,9 +154,10 @@ def main(argv=None):
         try:
             gotResult = False
             result = []
-            value = json.loads(jsonData)
+            jsonData = json.loads(jsonData)
             keyPathIndex = 0
             for keyComponents in extractionKeyPathComponents:
+                value = jsonData
                 goodKeyPath = True
                 for keyComponent in keyComponents:
                     if keyComponent in value:
