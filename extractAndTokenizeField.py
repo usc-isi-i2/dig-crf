@@ -62,6 +62,7 @@ def main(argv=None):
     parser.add_argument('--prune', help="Optionally remove records without the extraction key.", required=False, action='store_true')
     parser.add_argument('-r','--repartition', type=int, default=0, help="Optionally repartition or coalesce.", required=False)
     parser.add_argument('-s','--show', help="Optionally print the results.", required=False, action='store_true')
+    parser.add_argument('--skipHtmlTags', help="Skip HTML tags.", required=False, action='store_true')
     parser.add_argument('-t','--take', type=int, default=0, help="Optionally subset to the first n input records.", required=False)
     args = parser.parse_args()
 
@@ -72,6 +73,7 @@ def main(argv=None):
     tok = crft.CrfTokenizer()
     tok.setGroupPunctuation(True)
     tok.setRecognizeHtmlTags(True)
+    tok.setSkipHtmlTags(args.skipHtmlTags)
     tok.setRecognizeHtmlEntities(True)
 
     sc = SparkContext()
