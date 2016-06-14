@@ -9,15 +9,9 @@ through to the output file, but the text and tokens will not.
 """
 
 import argparse
-import json
-import os
 import sys
-from pyspark import SparkContext, SparkFiles
-import applyCrf
-
-def sparkFilePathMapper(path):
-    """When Spark forwards files from the driver to worker nodes, it may be necessary to map the filename path on a per-worker node basis."""
-    return SparkFiles.get(os.path.basename(path))
+from pyspark import SparkContext
+import applyCrfSpark
 
 def main(argv=None):
     '''this is called if run from command line'''
@@ -52,19 +46,17 @@ def main(argv=None):
 
     # Open a Spark context and set up a CRF tagger object.
     sc = SparkContext()
-    tagger = applyCrf.ApplyCrf(args.featlist, args.model,
-                               inputPairs=args.inputPairs or args.pairs or args.inputSeq,
-                               inputKeyed=args.keyed, inputJustTokens=args.justTokens,
-                               extractFrom=args.extract, embedKey=args.embedKey,
-                               outputPairs=args.outputPairs or args.pairs or args.outputSeq,
-                               debug=args.debug, showStatistics=args.statistics)
+    tagger = applyCrfSpark.ApplyCrfSpark(args.featlist, args.model,
+                                         inputPairs=args.inputPairs or args.pairs or args.inputSeq,
+                                         inputKeyed=args.keyed, inputJustTokens=args.justTokens,
+                                         extractFrom=args.extract, embedKey=args.embedKey,
+                                         outputPairs=args.outputPairs or args.pairs or args.outputSeq,
+                                         debug=args.debug, showStatistics=args.statistics)
 
     if args.download:
         # Ask Spark to download the feature list and model files from the
-        # driver to the clients.  This request must take place in the driver.
-        sc.addFile(args.featlist)
-        sc.addFile(args.model)
-        tagger.setFilePathMapper(sparkFilePathMapper)
+        # driver to the clients.
+        tagger.requestSparkDownload(sc)
 
     minPartitions = args.partitions
     if minPartitions == 0:

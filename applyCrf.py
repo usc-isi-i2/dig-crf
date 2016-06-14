@@ -7,7 +7,7 @@ are provided for various types of input and output.
 Code Structure
 ==== =========
 
-class ApplyCr
+class ApplyCrf
     instantiates class CrfSentencesFromsonLinesSource (an iterator)
     extends class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines
         extends class ApplyCrfToSentencesYieldingTaggedPhraseTuples
@@ -24,8 +24,7 @@ ApplyCrfToSentencesYieldingTaggedPhraseTuples is a class that prepares the
 environment for applyCrfGenerator.  It is initialized with paths to the
 feature list file for crfFeatures and the trained model file for CRF++.  It
 creates instances of crfFeatures and the CRF++ tagger when needed, and starts
-applyCrfGenerator.  It provides a perform(...) method for use in Apache Spark
-scripts per USC/ISI's Dig project's conventions.
+applyCrfGenerator.
 
 ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines is a class that
 extends ApplyCrfToSentencesYieldingTaggedPhraseTuples.  It formats the output
@@ -44,17 +43,8 @@ lines (i.e., "key\ttaggedPhraseJsonLine").
 Data Flow
 ==== ====
 
-Data processed through ApplyCrf.perform(...)  (and the lower-level
-process(...) routines) is passed through an iterator/generator cascade.  The
-code processes a "sentence" at a time, instead of reading all the input before
-processing it, or buffering all output before releasing it.  Thus, if the data
-sources are also iterators/generators (as is the case for Apache Spark RDDs)
-and the data destinations are also prepared to process data with a minimum of
-excess buffering (as is the case with Apache Spark RDDs), then the data will
-be processed using a minimum of memory.
-
-Data records enter through the CrfSentencesFromJsonLinesSource iterator class (located in
-"cfr_sentences.py").
+Data records enter through the CrfSentencesFromJsonLinesSource iterator class
+(located in "cfr_sentences.py").
 
 The JSON-formatted "sentence" data is loaded into Python data structures,
 which are wrapped in a CrfSentence object. The primary purpose of CrfSentences
@@ -77,18 +67,18 @@ associated with the phrase.  Along with the sentence object, these form a
 input sentence.
 
 The tagged phrase tuples are formatted before they are emitted by
-applyCrfGenerator to whatever outsid ecode is prepared to consume it.
+applyCrfGenerator to whatever outside code is prepared to consume it.
 Formatting takes place with the resultFormatter(...) method.  Which
 resultFormatter(...) method(s) is/are used depends upon class inheritance.
 
 Depending on option settings, the results take the form of:
 
-1)      a pair RDD, which can be saved to a Sequence File.
+1)      (key, jsonLine) pairs, which can be saved to a Sequence File,
 
-2)      a JSON object, which can be saved as a JSON line in a text file.
+2)      a jsonLine (with internal key), which can be saved to a text file, or
 
-3)      a keyed JSON object, which can be saved as a keyed JSON line
-        in a text file <key> "\t" <taggedPhraseJsonLine>).
+3)      a keyed JSON line (<key> "\t" <jsonLine>), which can be saved to a
+        text file.
 
 Data Content
 ==== =======
@@ -104,12 +94,13 @@ other human language) word, a partial word, multiple words, one or more word
 fragments with embedded punctuation and/or HTML entities, or other
 irregularities.
 
-Spark Downloads
-===== =========
 
-This code has special support for downloading the feature list and model files
-to Apache Spark client nodes.  When enabled, the location of the files is
-resolved just before they are opened using:
+File Path Mapper
+==== ==== ======
+
+This code has special support for accessing the feature list and model files.
+When enabled, the location of the files is resolved just before they are
+opened using:
 
 path = self.filePathMapper(path)
 
@@ -117,62 +108,8 @@ where self.filePathMapper has been previously set with:
 
 self.setFilePathMapper(filePathMapper)
 
-You may ask, why couldn't that be done at a higher level, and passed into this
-code?  The reason is that calling SparkFiles.get(...) on the driver thread
-will not necessarily yield a valid value on worker threads running on other
-systems.  This constraint is not stated in the Spark documentation seen so
-far, but has been experimentally verified.  Due to the structure of
-applyCrfGenerator and perofm(...) methods defined below, it seems safest to
-make the call to filePathMapper(...) at a low level to ensure that each worker
-thread gets the proper file path.
-
-Usage
-=====
-
-        Here are code fragments that illustrate how the applyCrf code might be
-used in Apache Spark processing scripts, along with sample output when
-processed with the hair/eye CRF++ model and data from the
-"adjudicated_modeled_live_eyehair_100_03.json" dataset (which was preprocessed
-into keyed JSON Lines format).
-
-Example: keyed JSON Line RDD output
-
-import applyCrf
-
-sc = SparkContext()
-inputRDD = sc.textFile(args.input, args.partitions)
-tagger = applyCrf.ApplyCrf(args.featlist, args.model,
-                           debug=args.debug, statistics=args.statistics)
-resultsRDD = tagger.perform(inputRDD)
-resultsRDD.saveAsTextFile(args.output)
-
-Output:
-
-http://dig.isi.edu/sentence/253D8FF7A55A226FDBBC53939DBB90D763E77691    {"hairType": ["strawberry", "blond", "hair"]}
-http://dig.isi.edu/sentence/253D8FF7A55A226FDBBC53939DBB90D763E77691    {"eyeColor": ["blue", "eyes"]}
-http://dig.isi.edu/sentence/028269F87330E727ACE0A8A39855325C5DD60FF8    {"hairType": ["long", "blonde", "hair"]}
-http://dig.isi.edu/sentence/028269F87330E727ACE0A8A39855325C5DD60FF8    {"eyeColor": ["seductive", "blue", "eyes"]}
-
-
-Example: pair RDD output (SequenceFile)
-
-import applyCrf
-
-sc = SparkContext()
-inputLinesRDD = sc.textFile(args.input, args.partitions)
-inputPairsRDD = inputLinesRDD.map(lambda s: s.split('\t', 1))
-tagger = applyCrf.ApplyCrfPj(args.featlist, args.model,
-                             inputPairs=True, outputPairs=True,
-                             debug=args.debug, statistics=args.statistics)
-resultsRDD = tagger.perform(inputPairsRDD)
-resultsRDD.saveAsTextFile(args.output)
-
-Output:
-
-(u'http://dig.isi.edu/sentence/253D8FF7A55A226FDBBC53939DBB90D763E77691', '{"hairType": ["strawberry", "blond", "hair"]}')
-(u'http://dig.isi.edu/sentence/253D8FF7A55A226FDBBC53939DBB90D763E77691', '{"eyeColor": ["blue", "eyes"]}')
-(u'http://dig.isi.edu/sentence/028269F87330E727ACE0A8A39855325C5DD60FF8', '{"hairType": ["long", "blonde", "hair"]}')
-(u'http://dig.isi.edu/sentence/028269F87330E727ACE0A8A39855325C5DD60FF8', '{"eyeColor": ["seductive", "blue", "eyes"]}')
+Delaying this resolution until just befor ethe files are needed is important
+in some instances, specifically for use with Apache Spark.
 
 Performance
 ===========
@@ -443,14 +380,6 @@ count of output phrases, when done.
         return applyCrfGenerator(sentences, self.crfFeatures, self.tagger, self.resultFormatter,
                                  debug=self.debug, showStatistics=self.showStatistics)
 
-    # This is the only Spark-specific code.  I'm not very happy that it's here.
-    #
-    # TODO: Refactor this code.
-    def perform(self, sourceRDD):
-        """Apply the process routine in an Apache Spark context."""
-        return sourceRDD.mapPartitions(self.process)
-        
-
 class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentencesYieldingTaggedPhraseTuples):
     """Apply CRF++ to a source of sentences, returning a sequence of keys and
     tagged phrase structures.  The tagged phrase structures are encoded as JSON Lines.
@@ -511,4 +440,3 @@ multiple times to process multiple sources.
         """
         sentences = crfs.CrfSentencesFromJsonLinesSource(source, pairs=self.inputPairs, keyed=self.inputKeyed, justTokens=self.inputJustTokens, extractFrom=self.extractFrom)
         return super(ApplyCrf, self).process(sentences)
-
