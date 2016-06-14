@@ -114,11 +114,11 @@ class ApplyCrfSpark (applyCrf.ApplyCrf):
         # model file must have unique basenames.
         return SparkFiles.get(os.path.basename(path))
             
-    def requestSparkDownload(self, sc)
+    def requestSparkDownload(self, sc):
         """Ask Spark to download the feature list and model files from the driver to
         the clients.  This request must take place in the driver. However, the
         file names must be mapped in the clients for the clients to access
         them."""
-        sc.addFile(args.featlist)
-        sc.addFile(args.model)
+        sc.addFile(self.featureListFilePath)
+        sc.addFile(self.modelFilePath)
         self.setFilePathMapper(self.sparkFilePathMapper)

@@ -386,6 +386,11 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
 
     yields: (key, taggedPhraseJsonLine)
 
+    This class is separate from its parent to allow the easy
+    introduction of alternate resultFormatter(...) routines.  For
+    example, it may be desirable to carry embed the results in a more
+    complex data structure.
+
     """
     def __init__(self, featureListFilePath, modelFilePath, embedKey=None, debug=False, showStatistics=False):
         self.embedKey = embedKey
