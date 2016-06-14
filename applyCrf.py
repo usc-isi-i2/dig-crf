@@ -479,12 +479,19 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
     yields: (key, taggedPhraseJsonLine)
 
     """
+    def __init__(self, featureListFilePath, modelFilePath, embedKey=None, debug=False, showStatistics=False):
+        self.embedKey = embedKey
+        super(ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines, self).__init__(featureListFilePath, modelFilePath, debug, showStatistics)
+
     def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
         """Extract the tagged phrases and format the result as keys and tagged phrase Json Lines."""
         phrase = sentence.getTokens()[phraseFirstTokenIdx:(phraseFirstTokenIdx+phraseTokenCount)]
         taggedPhrase = { }
         taggedPhrase[tagName] = phrase
-        return sentence.getKey(), json.dumps(taggedPhrase, indent=None)
+        key = sentence.getKey()
+        if self.embedKey != None:
+            taggedPhrase[self.embedKey] = key
+        return key, json.dumps(taggedPhrase, indent=None)
 
 class ApplyCrf (ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines):
     """Apply CRF++ to a source of sentences in keyed, unkeyed, or paired JSON Lines format, returning
@@ -496,20 +503,23 @@ a sequence of tagged phrases in keyed JSON Lines format or paired JSON Lines for
     """
     def __init__ (self, featureListFilePath, modelFilePath,
                   inputPairs=False, inputKeyed=False, inputJustTokens=False, extractFrom=None,
-                  outputPairs=False,
+                  outputPairs=False, embedKey=None,
                   debug=False, showStatistics=False):
         self.inputPairs = inputPairs
         self.inputKeyed = inputKeyed
         self.inputJustTokens = inputJustTokens
         self.outputPairs = outputPairs
         self.extractFrom = extractFrom
-        super(ApplyCrf, self).__init__(featureListFilePath, modelFilePath, debug, showStatistics)
+        super(ApplyCrf, self).__init__(featureListFilePath, modelFilePath, embedKey, debug, showStatistics)
 
     def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
         """Format the result as keyed or paired Json Lines."""
         key, taggedPhraseJsonLine = super(ApplyCrf, self).resultFormatter(sentence, tagName, phraseFirstTokenIdx, phraseTokenCount)
+        # TODO: Optimize, why perform this test on each record?
         if self.outputPairs:
             return key, taggedPhraseJsonLine
+        elif self.embedKey != None:
+            return taggedPhraseJsonLine
         else:
             return key + '\t' + taggedPhraseJsonLine
 

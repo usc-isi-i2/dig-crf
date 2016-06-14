@@ -36,7 +36,7 @@ time spark-submit \
     --model ${MYHOME}/${MODEL} \
     --download \
     --input ${INFILE} --inputSeq --justTokens \
-    --output ${MYHOME}/${OUTDIR} --outputSeq \
+    --output ${MYHOME}/${OUTDIR} --outputSeq -embedKey url \
     --verbose
 
 
