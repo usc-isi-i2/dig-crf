@@ -32,6 +32,9 @@ def main(argv=None):
     data = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
     tagCounts = data.values().flatMap(getTokens).countByValue()
 
+    # So far, this code isn't useful.  The output fiile is written by the
+    # master node into an isolated folder, and I don't know of a way to
+    # retrieve it.
     if args.output != None:
         with codecs.open(args.output, 'wb', 'utf-8') as f:
             for k in sorted(tagCounts):
