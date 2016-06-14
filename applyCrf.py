@@ -7,15 +7,8 @@ are provided for various types of input and output.
 Code Structure
 ==== =========
 
-class ApplyCrfKj
-    instantiates class CrfSentencesFromKeyedJsonLinesSource (an iterator)
-    extends class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines
-        extends class ApplyCrfToSentencesYieldingTaggedPhraseTuples
-            instantiates crfFeatures and CRF++
-            wraps generator function applyCrfGenerator
-
-class ApplyCrfPj
-    instantiates class CrfSentencesFromKeyedJsonLinesPairSource (an iterator)
+class ApplyCr
+    instantiates class CrfSentencesFromsonLinesSource (an iterator)
     extends class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines
         extends class ApplyCrfToSentencesYieldingTaggedPhraseTuples
             instantiates crfFeatures and CRF++
@@ -40,40 +33,28 @@ tuples produced by the generator, applyCrfGenerator(...), into a form that it
 close to what is needed in Dig's Apache Spark scripts.  The new output format
 is a sequence of tuples of (key, taggedPhraseJsonLine).
 
-ApplyCrfKj extends ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines to
+ApplyCrf extends ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines to
 integrate with Dig's Apache Spark processing scripts.  It reads a sequence of
 keyed JSON lines, using an iterator in "crf_sentences.py" that converts the
 lines into a sequence of "sentence" objects.  It reformats the output provided
 by ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines into a sequence of
-keyed JSON lines (i.e., "key\ttaggedPhraseJsonLine").
-
-ApplyCrfPj also extends
-ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines to integrate with
-Dig's Apache Spark processing scripts.  It reads a sequence of (key,
-sentenceJsonLine) pairs, using an iterator in "crf_sentences.py" that converts
-the pairs into a sequence of "sentence" objects.  It does not need to
-reformate the output provided by its parent, which is already a (key,
-taggedPhraseJsonLine) pair.
+pairs (for a SequenceFile), JSON lines (with embedded key), or keyed JSON
+lines (i.e., "key\ttaggedPhraseJsonLine").
 
 Data Flow
 ==== ====
 
-Data processed through ApplyCrfKj.perform(...) and ApplyCrfPj.perform(...)
-(and the lower-level process(...) routines) is passed through an
-iterator/generator cascade.  The code processes a "sentence" at a time,
-instead of reading all the input before processing it, or buffering all output
-before releasing it.  Thus, if the data sources are also iterators/generators
-(as is the case for Apache Spark RDDs) and the data destinations are also
-prepared to process data with a minimum of excess buffering (as is the case
-with Apache Spark RDDs), then the data will be processed using a minimum of
-memory.
+Data processed through ApplyCrf.perform(...)  (and the lower-level
+process(...) routines) is passed through an iterator/generator cascade.  The
+code processes a "sentence" at a time, instead of reading all the input before
+processing it, or buffering all output before releasing it.  Thus, if the data
+sources are also iterators/generators (as is the case for Apache Spark RDDs)
+and the data destinations are also prepared to process data with a minimum of
+excess buffering (as is the case with Apache Spark RDDs), then the data will
+be processed using a minimum of memory.
 
-Data records enter through one of the following iterator classes (located in
-"cfr_sentences.py"):
-
-CrfSentencesFromKeyedJsonLinesSource       processes keyed JSON Lines.
-
-CrfSentencesFromKeyedJsonLinesPairSource   processes (key, jsonLines) pairs.
+Data records enter through the CrfSentencesFromJsonLinesSource iterator class (located in
+"cfr_sentences.py").
 
 The JSON-formatted "sentence" data is loaded into Python data structures,
 which are wrapped in a CrfSentence object. The primary purpose of CrfSentences
@@ -100,19 +81,14 @@ applyCrfGenerator to whatever outsid ecode is prepared to consume it.
 Formatting takes place with the resultFormatter(...) method.  Which
 resultFormatter(...) method(s) is/are used depends upon class inheritance.
 
-If the outermost object that caused applyCrfGenerator to be instantiated is of
-class ApplyCrfPj, then the resultFormatter(...) from class
-ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines converts the
-tagged phrase tuples into (key, taggedPhraseJsonLines) pairs, which can
-be loaded into Apache Spark pair RDDs.
+Depending on option settings, the results take the form of:
 
-If the outermost object that caused applyCrfGenerator to be instantiated is of
-class ApplyCrfKj, then the resultFormatter(...) from class
-ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines converts the tagged
-phrase tuples into (key, taggedPhraseJsonLine) pairs, which are the converted
-into keyed JSON Lines (<key> "\t" <taggedPhraseJsonLine>) by the
-resultFormatter(...) method from class ApplyCrfKj.  The result can be loaded
-into an ordinary Apache Spark RDD.
+1)      a pair RDD, which can be saved to a Sequence File.
+
+2)      a JSON object, which can be saved as a JSON line in a text file.
+
+3)      a keyed JSON object, which can be saved as a keyed JSON line
+        in a text file <key> "\t" <taggedPhraseJsonLine>).
 
 Data Content
 ==== =======
@@ -159,13 +135,14 @@ processed with the hair/eye CRF++ model and data from the
 "adjudicated_modeled_live_eyehair_100_03.json" dataset (which was preprocessed
 into keyed JSON Lines format).
 
-Example: ApplyCrfKj
+Example: keyed JSON Line RDD output
 
 import applyCrf
 
 sc = SparkContext()
 inputRDD = sc.textFile(args.input, args.partitions)
-tagger = applyCrf.ApplyCrfKj(args.featlist, args.model, args.debug, args.statistics)
+tagger = applyCrf.ApplyCrf(args.featlist, args.model,
+                           debug=args.debug, statistics=args.statistics)
 resultsRDD = tagger.perform(inputRDD)
 resultsRDD.saveAsTextFile(args.output)
 
@@ -177,14 +154,16 @@ http://dig.isi.edu/sentence/028269F87330E727ACE0A8A39855325C5DD60FF8    {"hairTy
 http://dig.isi.edu/sentence/028269F87330E727ACE0A8A39855325C5DD60FF8    {"eyeColor": ["seductive", "blue", "eyes"]}
 
 
-Example: ApplyCrfPj
+Example: pair RDD output (SequenceFile)
 
 import applyCrf
 
 sc = SparkContext()
 inputLinesRDD = sc.textFile(args.input, args.partitions)
 inputPairsRDD = inputLinesRDD.map(lambda s: s.split('\t', 1))
-tagger = applyCrf.ApplyCrfPj(args.featlist, args.model, args.debug, args.statistics)
+tagger = applyCrf.ApplyCrfPj(args.featlist, args.model,
+                             inputPairs=True, outputPairs=True,
+                             debug=args.debug, statistics=args.statistics)
 resultsRDD = tagger.perform(inputPairsRDD)
 resultsRDD.saveAsTextFile(args.output)
 
