@@ -7,7 +7,7 @@ MYHOME=hdfs:///user/crogers
 INFILE=${MYHOME}/hbase-dump-2015-10-01-2015-12-01-aman-hbase-title-and-text-tokens.seq
 FEATURES=features.name-ethnic
 MODEL=dig-name-ethnic-train.model
-OUTDIR=hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic-nourl.seq
+OUTFILE=${MYHOME}/hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic-nourl.seq
 
 PYTHON_EGG_CACHE=./python-eggs
 export PYTHON_EGG_CACHE
@@ -18,7 +18,7 @@ hadoop fs -rm -r -f ${OUTDIR}
 
 echo "Copying the feature control file and CRF model to Hadoop."
 hadoop fs -copyFromLocal -f data/config/$FEATURES $MYHOME/$FEATURES
-hadoop fs -copyFromLocal -f data/config/$MODEL $MYHOME/$MODEL
+hadoop fs -copyFromLocal -f data/config/$MODEL    $MYHOME/$MODEL
 
 echo "Creating the Python Egg cache folder: $PYTHON_EGG_CACHE"
 hadoop fs -mkdir -p $PYTHON_EGG_CACHE
@@ -33,10 +33,10 @@ time spark-submit \
     ./applyCrfSparkTest.py \
     -- \
     --featlist ${MYHOME}/${FEATURES} \
-    --model ${MYHOME}/${MODEL} \
+    --model    ${MYHOME}/${MODEL} \
     --download \
-    --input ${INFILE} --inputSeq --justTokens \
-    --output ${MYHOME}/${OUTDIR} --outputSeq \
+    --input  ${INFILE}  --inputSeq --justTokens \
+    --output ${OUTFILE} --outputSeq \
     --verbose
 
 
