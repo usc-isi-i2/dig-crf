@@ -1,0 +1,17 @@
+#! /bin/bash                                                                                           
+
+MYHOME=hdfs:///user/crogers
+
+INPUTFILE=${MYHOME}/hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic-nourl.seq
+# OUTPUTFILE=${MYHOME}/hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic-token-counts.txt
+#     --output ${OUTPUTFILE} \
+
+echo "Submitting the job to the Memex cluster."
+time spark-submit \
+    --master 'yarn-client' \
+    --num-executors 50 \
+    --driver-java-options -Dlog4j.configuration=file:quieter-log4j.properties \
+    ./countCrfResultTokens.py \
+    -- \
+    --input ${INPUTFILE} \
+    --printToLog
