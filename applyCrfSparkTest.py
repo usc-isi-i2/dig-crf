@@ -35,6 +35,7 @@ def main(argv=None):
     parser.add_argument('-j','--justTokens', help="The input JSON line data is just tokens.", required=False, action='store_true')
     parser.add_argument('-m','--model', help="Input model file.", required=True)
     parser.add_argument('-o','--output', help="Output file of phrases in keyed JSON Lines format.", required=True)
+    parser.add_argument('--outputCompressionClass', help="Compression class for text files.", required=False)
     parser.add_argument('--outputPairs', help="Test the paired output data processing path.", required=False, action='store_true')
     parser.add_argument('--outputSeq', help="Write output to a Hadooop SEQ data file.", required=False, action='store_true')
     parser.add_argument('--pairs', help="Test the paired data processing path.", required=False, action='store_true')
@@ -115,15 +116,18 @@ def main(argv=None):
             print args.output
             print "========================================"
         resultsRDD.saveAsNewAPIHadoopFile(args.output,
-                                          "org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat",
-                                          "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
+                                          outputFormatClass="org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat",
+                                          keyClass="org.apache.hadoop.io.Text",
+                                          valueClass="org.apache.hadoop.io.Text")
     else:
         if args.verbose:
             print "========================================"
             print "Saving data as a text file."
             print args.output
             print "========================================"
-        resultsRDD.saveAsTextFile(args.output) # Paired results will be converted automatically.
+        # Paired results will be converted automatically.
+        resultsRDD.saveAsTextFile(args.output,
+                                  compressionCodecClass=args.outputCompressionClass)
 
     if args.verbose:
         print "========================================"
