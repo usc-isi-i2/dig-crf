@@ -13,8 +13,8 @@ PYTHON_EGG_CACHE=./python-eggs
 export PYTHON_EGG_CACHE
 
 # Dangerous!
-echo "Clearing the output folder: ${OUTDIR}"
-hadoop fs -rm -r -f ${OUTDIR}
+echo "Clearing the output folder: ${OUTFILE}"
+hadoop fs -rm -r -f ${OUTFILE}
 
 echo "Copying the feature control file and CRF model to Hadoop."
 hadoop fs -copyFromLocal -f data/config/$FEATURES $MYHOME/$FEATURES
