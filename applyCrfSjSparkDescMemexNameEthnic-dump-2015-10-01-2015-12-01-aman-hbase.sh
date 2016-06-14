@@ -4,7 +4,7 @@
 
 MYHOME=hdfs:///user/crogers
 
-INFILE=${MYHOME}/hbase-dump-2015-10-01-2015-12-01-aman-hbase-descriptions-tokens.seq
+INFILE=${MYHOME}/hbase-dump-2015-10-01-2015-12-01-aman-hbase-title-and-text-tokens.seq
 FEATURES=features.name-ethnic
 MODEL=dig-name-ethnic-train.model
 OUTDIR=hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic.seq
