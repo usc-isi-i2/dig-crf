@@ -5,6 +5,14 @@ KEYS_TO_EXTRACT=extractions:title:results,extractions:text:results
 NEW_RDD_KEY_KEY=url
 OUTFILE=/user/crogers/hbase-dump-2015-10-01-2015-12-01-aman-hbase-title-and-text.seq
 
+FOUND=`fgrep tun0: /proc/net/dev`
+if  [ -n "$FOUND" ] ; then
+  echo "A tunnel is present, assuming it leads to the Memex cluster."
+else
+  echo "No tunnel found, exiting"
+  exit 1
+fi
+
 # Dangerous!
 echo "Clearing the output folder: ${OUTFILE}"
 hadoop fs -rm -r -f ${OUTFILE}
