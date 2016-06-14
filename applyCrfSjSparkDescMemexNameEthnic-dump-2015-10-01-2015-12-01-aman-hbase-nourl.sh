@@ -12,6 +12,14 @@ OUTFILE=${MYHOME}/hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic-no
 PYTHON_EGG_CACHE=./python-eggs
 export PYTHON_EGG_CACHE
 
+FOUND=`fgrep tun0: /proc/net/dev`
+if  [ -n "$FOUND" ] ; then
+  echo "A tunnel is present, assuming it leads to the Memex cluster."
+else
+  echo "No tunnel found, exiting"
+  exit 1
+fi
+
 # Dangerous!
 echo "Clearing the output folder: ${OUTFILE}"
 hadoop fs -rm -r -f ${OUTFILE}
