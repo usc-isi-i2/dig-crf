@@ -1,4 +1,3 @@
-121% cat hair_config.json
 {
   "eyeColor": {
     "type": "hybrid_jaccard",
@@ -9,7 +8,7 @@
     "references": [
 	"blue",
 	"green",
-	"brown"
+	"brown",
 	"hazel",
 	"gray:grey"
     ]
