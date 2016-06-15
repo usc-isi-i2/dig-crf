@@ -1,0 +1,35 @@
+121% cat hair_config.json
+{
+  "eyeColor": {
+    "type": "hybrid_jaccard",
+    "partial_method": "jaro",
+    "parameters": {
+      "threshold": "0.90"
+    },
+    "references": [
+	"blue",
+	"green",
+	"brown"
+	"hazel",
+	"gray:grey"
+    ]
+  },
+  "hairType": {
+    "type": "hybrid_jaccard",
+    "partial_method": "jaro",
+    "parameters": {
+      "threshold": "0.90"
+    },
+    "references": [
+	"long",
+	"curly",
+	"blonde: blond",
+	"brunette",
+	"brown: chestnut",
+	"black",
+	"red: redhead",
+	"auburn: reddish brown",
+	"pink"
+    ]
+  }
+}
