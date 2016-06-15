@@ -43,7 +43,7 @@ time spark-submit \
     -- \
     --featlist ${MYHOME}/${FEATURES} \
     --model ${MYHOME}/${MODEL} \
-    --hybridJaccardConfig $HYBRID_JACCARD \
+    --hybridJaccardConfig ${HYBRID_JACCARD} \
     --download \
     --input ${INFILE} --inputSeq --justTokens \
     --output ${MYHOME}/${OUTDIR} --outputSeq --embedKey url \
