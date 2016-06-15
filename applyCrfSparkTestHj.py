@@ -16,7 +16,8 @@ import applyCrfSpark
 import hybridJaccard
 
 def applyHybridJaccardToSequenceFile(taggedPhrases, hybridJaccardProcessors, embedKey):
-    for key, taggedPhrase in taggedPhrases:
+    for key, taggedPhraseJsonLine in taggedPhrases:
+        taggedPhrase = json.loads(taggedPhraseJsonLine)
         result = { }
         ok = False
         for tag in taggedPhrase:
@@ -32,7 +33,7 @@ def applyHybridJaccardToSequenceFile(taggedPhrases, hybridJaccardProcessors, emb
                     result[tag] = taggedPhrase[tag]
                     ok = True
         if ok:
-            yield result
+            yield key, json.dumps(result)
 
 def main(argv=None):
     '''this is called if run from command line'''
