@@ -25,7 +25,7 @@ def applyHybridJaccardToSequenceFile(taggedPhrases, hybridJaccardProcessors, emb
                 result[tag] = taggedPhrase[tag]
             else:
                 if tag in hybridJaccardProcessors:
-                    hjResult = hybridJaccardProcessors.findBestMatchWordsCached(taggedPhrase[firstTag])
+                    hjResult = hybridJaccardProcessors[tag].findBestMatchWordsCached(taggedPhrase[tag])
                     if hjResult is not None:
                         result[tag] = hjResult
                         ok = True
@@ -136,7 +136,7 @@ def main(argv=None):
         print "========================================"
         print "Performing hybrid Jaccard processing"
         print "========================================"
-        resultsRDD = resultsRDD.flatMap(lambda partitionRDD: applyHybridJaccardToSequenceFile(partitionRDD, hybridJaccardProcessors, args.embedKey))
+        resultsRDD = resultsRDD.mapPartitions(lambda partitionRDD: applyHybridJaccardToSequenceFile(partitionRDD, hybridJaccardProcessors, args.embedKey))
 
     # Which is better? coalescing before processing or after processing?
     if args.coalesceOutput > 0:
