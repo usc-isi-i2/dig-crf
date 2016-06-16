@@ -277,7 +277,7 @@ create their own classes.
                     if accept:
                         yield resultFormatter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
                         taggedPhraseCount += 1
-                        phraseTokenCount = 0
+                    phraseTokenCount = 0
                 currentTagName = tagName
 
             # Unless this token is untagged, append it to the current phrase.
@@ -300,9 +300,9 @@ create their own classes.
             if accept:
                 yield resultFormatter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
                 taggedPhraseCount += 1
-                # Don't need to do these as we're about to exit the loop:
-                # phraseTokenCount = 0
-            # currentTagName = UNTAGGED_TAG_NAME
+            # Don't need to do these as we're about to exit the loop:
+            # phraseTokenCount = 0
+        # currentTagName = UNTAGGED_TAG_NAME
 
     if statistics:
         statistics["sentenceCount"] += sentenceCount
