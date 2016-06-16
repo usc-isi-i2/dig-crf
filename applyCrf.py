@@ -439,9 +439,9 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
     """
     def __init__(self, featureListFilePath, modelFilePath, hybridJaccardConfigPath,
                  embedKey=None, debug=False, sumStatistics=False):
+        super(ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines, self).__init__(featureListFilePath, modelFilePath, debug, sumStatistics)
         self.embedKey = embedKey
         self.configureHybridJaccard(hybridJaccardConfigPath)
-        super(ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines, self).__init__(featureListFilePath, modelFilePath, debug, sumStatistics)
 
     def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
         """Extract the tagged phrases and format the result as keys and tagged phrase Json Lines."""
@@ -470,8 +470,8 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
         return hybridJaccardResultFilter
 
     def configureHybridJaccard(self, hybridJaccardConfigPath):
-        # Read the hybrid Jaccard configuration file.  For each tag type                                                                                             
-        # mentioned in the file, create a hybridJaccard tagger.                                                                                                      
+        # Read the hybrid Jaccard configuration file.  For each tag type
+        # mentioned in the file, create a hybridJaccard tagger.
         hybridJaccardProcessors = { }
         with open(hybridJaccardConfigPath) as hybridJaccardConfigFile:
             hybridJaccardConf = json.load(hybridJaccardConfigFile)
@@ -479,7 +479,7 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
                 hj = hybridJaccard.HybridJaccard(method_type=tagType)
                 hj.build_configuration(hybridJaccardConf)
                 hybridJaccardProcessors[tagType] = hj
-        # Tell the tagger to use hybrid Jaccard result filtering:                                                                                                    
+        # Tell the tagger to use hybrid Jaccard result filtering:
         self.setResultFilter(self.getHybridJaccardResultFilter(hybridJaccardProcessors))
 
 
@@ -495,12 +495,12 @@ a sequence of tagged phrases in keyed JSON Lines format or paired JSON Lines for
                   inputPairs=False, inputKeyed=False, inputJustTokens=False, extractFrom=None,
                   outputPairs=False, embedKey=None,
                   debug=False, sumStatistics=False):
+        super(ApplyCrf, self).__init__(featureListFilePath, modelFilePath, hybridJaccardConfigPath, embedKey, debug, sumStatistics)
         self.inputPairs = inputPairs
         self.inputKeyed = inputKeyed
         self.inputJustTokens = inputJustTokens
         self.outputPairs = outputPairs
         self.extractFrom = extractFrom
-        super(ApplyCrf, self).__init__(featureListFilePath, modelFilePath, hybridJaccardConfigPath, embedKey, debug, sumStatistics)
 
     def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
         """Format the result as keyed or paired Json Lines."""
