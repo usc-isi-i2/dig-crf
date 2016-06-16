@@ -360,8 +360,8 @@ count of output phrases, when done.
         else:
             self.statistics = { }
             self.statisticNames = ["sentenceCount", "sentenceTokenCount",
-                                   "filterAcceptCount", "filterRejectCount",
                                    "taggedPhraseCount", "taggedTokenCount",
+                                   "filterAcceptCount", "filterRejectCount",
                                    "formattedPhraseCount", "formattedTokenCount"]
             for statName in self.statisticNames:
                 self.statistics[statName] = 0
