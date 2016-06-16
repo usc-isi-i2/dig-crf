@@ -366,7 +366,7 @@ count of output phrases, when done.
             self.statisticNames = ["sentenceCount", "sentenceTokenCount",
                                    "filterInputCount", "filterAcceptCount", "filterRejectCount",
                                    "taggedPhraseCount", "taggedTokenCount"]
-            for statName in self.self.statisticNames:
+            for statName in self.statisticNames:
                 self.statistics[statName] = 0
 
     def getStatistics(self):
