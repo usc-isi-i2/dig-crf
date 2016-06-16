@@ -131,5 +131,5 @@ class ApplyCrfSpark (applyCrf.ApplyCrf):
 
     def showStatistics(self):
         if self.statistics:
-            for statName in self.statistics:
+            for statName in self.statisticNames:
                 print "%s = %d" % (statName, self.statistics[statName].value)

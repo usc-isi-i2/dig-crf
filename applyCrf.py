@@ -195,6 +195,7 @@ create their own classes.
     sentenceTokenCount = 0 # Number of input tokens -- words, punctuation, whatever
     taggedPhraseCount = 0 # Number of tagged output phrases
     taggedTokenCount = 0  # Number of tagged output tokens
+    filterInputCount = 0
     filterAcceptCount = 0
     filterRejectCount = 0
 
@@ -270,6 +271,7 @@ create their own classes.
                     if resultFilter is None:
                         accept = True
                     else:
+                        filterInputCount += 1
                         accept = resultFilter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
                         if accept:
                             filterAcceptCount += 1
@@ -293,6 +295,7 @@ create their own classes.
             if resultFilter is None:
                 accept = True
             else:
+                filterInputCount += 1
                 accept = resultFilter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
                 if accept:
                     filterAcceptCount += 1
@@ -310,6 +313,7 @@ create their own classes.
         statistics["sentenceTokenCount"] += sentenceTokenCount
         statistics["taggedPhraseCount"] += taggedPhraseCount
         statistics["taggedTokenCount"] += taggedTokenCount
+        statistics["filterInputCount"] += filterInputCount
         statistics["filterAcceptCount"] += filterAcceptCount
         statistics["filterRejectCount"] += filterRejectCount
 
@@ -359,8 +363,10 @@ count of output phrases, when done.
             self.statistics = None
         else:
             self.statistics = { }
-            for statName in ["sentenceCount", "sentenceTokenCount", "taggedPhraseCount", "taggedTokenCount",
-                             "filterAcceptCount", "filterRejectCount"]:
+            self.statisticNames = ["sentenceCount", "sentenceTokenCount",
+                                   "filterInputCount", "filterAcceptCount", "filterRejectCount",
+                                   "taggedPhraseCount", "taggedTokenCount"]
+            for statName in self.self.statisticNames:
                 self.statistics[statName] = 0
 
     def getStatistics(self):
@@ -424,6 +430,11 @@ count of output phrases, when done.
         return applyCrfGenerator(sentences, crfFeatures=self.crfFeatures, tagger=self.tagger,
                                  resultFilter=self.resultFilter, resultFormatter=self.resultFormatter,
                                  debug=self.debug, statistics=self.statistics)
+
+    def showStatistics(self):
+        if self.statistics:
+            for statName in self.statisticNames:
+                print "%s = %d" % (statName, self.statistics[statName])
 
 class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentencesYieldingTaggedPhraseTuples):
     """Apply CRF++ to a source of sentences, returning a sequence of keys and
@@ -522,8 +533,3 @@ multiple times to process multiple sources.
         """
         sentences = crfs.CrfSentencesFromJsonLinesSource(source, pairs=self.inputPairs, keyed=self.inputKeyed, justTokens=self.inputJustTokens, extractFrom=self.extractFrom)
         return super(ApplyCrf, self).process(sentences)
-
-    def showStatistics(self):
-        if self.statistics:
-            for statName in self.statistics:
-                print "%s = %d" % (statName, self.statistics[statName])
