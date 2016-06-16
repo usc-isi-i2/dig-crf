@@ -25,30 +25,22 @@ echo ./extractTitleAndTextAndSaveSeq-dump-2015-10-01-2015-12-01-aman-hbase.sh
 
 # Perform the critical analysis steps that should be part of the
 # production workflow.
-#
-# TODO: Choose -seq or -text as the desired output.
 echo ./tokenizeTitleAndTextAndSaveSeq-dump-2015-10-01-2015-12-01-aman-hbase.sh
 ./tokenizeTitleAndTextAndSaveSeq-dump-2015-10-01-2015-12-01-aman-hbase.sh \
 | tee tokenizeTitleAndTextAndSaveSeq-dump-2015-10-01-2015-12-01-aman-hbase.log
 
-echo ./applyCrfSjSparkDescMemexHairEyes-dump-2015-10-01-2015-12-01-aman-hbase-seq.sh
-./applyCrfSjSparkDescMemexHairEyes-dump-2015-10-01-2015-12-01-aman-hbase-seq.sh \
-| tee applyCrfSjSparkDescMemexHairEyes-dump-2015-10-01-2015-12-01-aman-hbase-seq.log
+echo ./applyCrfSjSparkDescMemexHairEyesHj-dump-2015-10-01-2015-12-01-aman-hbase-seq.sh
+./applyCrfSjSparkDescMemexHairEyesHj-dump-2015-10-01-2015-12-01-aman-hbase-seq.sh \
+| tee applyCrfSjSparkDescMemexHairEyesHj-dump-2015-10-01-2015-12-01-aman-hbase-seq.log
 
-echo ./applyCrfSjSparkDescMemexHairEyes-dump-2015-10-01-2015-12-01-aman-hbase-text.sh
-./applyCrfSjSparkDescMemexHairEyes-dump-2015-10-01-2015-12-01-aman-hbase-text.sh \
-| tee applyCrfSjSparkDescMemexHairEyes-dump-2015-10-01-2015-12-01-aman-hbase-text.log
-
-echo ./applyCrfSjSparkDescMemexNameEthnic-dump-2015-10-01-2015-12-01-aman-hbase-seq.sh
-./applyCrfSjSparkDescMemexNameEthnic-dump-2015-10-01-2015-12-01-aman-hbase-seq.sh \
-| tee applyCrfSjSparkDescMemexNameEthnic-dump-2015-10-01-2015-12-01-aman-hbase-seq.log
-
-echo ./applyCrfSjSparkDescMemexNameEthnic-dump-2015-10-01-2015-12-01-aman-hbase-text.sh
-./applyCrfSjSparkDescMemexNameEthnic-dump-2015-10-01-2015-12-01-aman-hbase-text.sh \
-| tee applyCrfSjSparkDescMemexNameEthnic-dump-2015-10-01-2015-12-01-aman-hbase-text.log
+echo ./applyCrfSjSparkDescMemexNameEthnicHj-dump-2015-10-01-2015-12-01-aman-hbase-seq.sh
+./applyCrfSjSparkDescMemexNameEthnicHj-dump-2015-10-01-2015-12-01-aman-hbase-seq.sh \
+| tee applyCrfSjSparkDescMemexNameEthnicHj-dump-2015-10-01-2015-12-01-aman-hbase-seq.log
 
 # Examine the output of the CRF analyses.  These steps may be omitted
 # from a production workflow.
+
+# Analyses without hybrid Jaccard processing:
 echo ./applyCrfSjSparkDescMemexHairEyes-dump-2015-10-01-2015-12-01-aman-hbase-nourl.sh
 ./applyCrfSjSparkDescMemexHairEyes-dump-2015-10-01-2015-12-01-aman-hbase-nourl.sh \
 | tee applyCrfSjSparkDescMemexHairEyes-dump-2015-10-01-2015-12-01-aman-hbase-nourl.log
@@ -80,3 +72,21 @@ echo ./countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-
 echo ./countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic.sh
 ./countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic.sh \
 | tee countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic.log
+
+# Analyses with hybrid Jaccard processing:
+echo ./applyCrfSjSparkDescMemexHairEyesHj-dump-2015-10-01-2015-12-01-aman-hbase-nourl.sh
+./applyCrfSjSparkDescMemexHairEyesHj-dump-2015-10-01-2015-12-01-aman-hbase-nourl.sh \
+| tee applyCrfSjSparkDescMemexHairEyesHj-dump-2015-10-01-2015-12-01-aman-hbase-nourl.log
+
+echo ./applyCrfSjSparkDescMemexNameEthnicHj-dump-2015-10-01-2015-12-01-aman-hbase-nourl.sh
+./applyCrfSjSparkDescMemexNameEthnicHj-dump-2015-10-01-2015-12-01-aman-hbase-nourl.sh \
+| tee applyCrfSjSparkDescMemexNameEthnicHj-dump-2015-10-01-2015-12-01-aman-hbase-nourl.log
+
+echo ./countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes-hj.sh
+./countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes-hj.sh \
+| tee countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes-hj.log
+
+echo ./countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic-hj.sh
+./countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic-hj.sh \
+| tee countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic-hj.log
+
