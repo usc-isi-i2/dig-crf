@@ -195,7 +195,6 @@ create their own classes.
     sentenceTokenCount = 0 # Number of input tokens -- words, punctuation, whatever
     taggedPhraseCount = 0 # Number of tagged output phrases
     taggedTokenCount = 0  # Number of tagged output tokens
-    filterInputCount = 0
     filterAcceptCount = 0
     filterRejectCount = 0
 
@@ -268,10 +267,10 @@ create their own classes.
             # If we are changing tag names, write out any queued tagged phrase:
             if tagName != currentTagName:
                 if phraseTokenCount > 0:
+                    taggedPhraseCount += 1
                     if resultFilter is None:
                         accept = True
                     else:
-                        filterInputCount += 1
                         accept = resultFilter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
                         if accept:
                             filterAcceptCount += 1
@@ -279,7 +278,6 @@ create their own classes.
                             filterRejectCount += 1
                     if accept:
                         yield resultFormatter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
-                        taggedPhraseCount += 1
                     phraseTokenCount = 0
                 currentTagName = tagName
 
@@ -292,10 +290,10 @@ create their own classes.
 
         # Write out any remaining phrase (boundary case):
         if phraseTokenCount > 0:
+            taggedPhraseCount += 1
             if resultFilter is None:
                 accept = True
             else:
-                filterInputCount += 1
                 accept = resultFilter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
                 if accept:
                     filterAcceptCount += 1
@@ -303,7 +301,6 @@ create their own classes.
                     filterRejectCount += 1
             if accept:
                 yield resultFormatter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
-                taggedPhraseCount += 1
             # Don't need to do these as we're about to exit the loop:
             # phraseTokenCount = 0
         # currentTagName = UNTAGGED_TAG_NAME
@@ -313,7 +310,6 @@ create their own classes.
         statistics["sentenceTokenCount"] += sentenceTokenCount
         statistics["taggedPhraseCount"] += taggedPhraseCount
         statistics["taggedTokenCount"] += taggedTokenCount
-        statistics["filterInputCount"] += filterInputCount
         statistics["filterAcceptCount"] += filterAcceptCount
         statistics["filterRejectCount"] += filterRejectCount
 
@@ -364,8 +360,9 @@ count of output phrases, when done.
         else:
             self.statistics = { }
             self.statisticNames = ["sentenceCount", "sentenceTokenCount",
-                                   "filterInputCount", "filterAcceptCount", "filterRejectCount",
-                                   "taggedPhraseCount", "taggedTokenCount"]
+                                   "filterAcceptCount", "filterRejectCount",
+                                   "taggedPhraseCount", "taggedTokenCount",
+                                   "formattedPhraseCount", "formattedTokenCount"]
             for statName in self.statisticNames:
                 self.statistics[statName] = 0
 
@@ -459,6 +456,9 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
         phrase = sentence.getFilteredPhrase()
         if not phrase:
             phrase = sentence.getTokens()[phraseFirstTokenIdx:(phraseFirstTokenIdx+phraseTokenCount)]
+        if self.statistics:
+            self.statistics["formattedPhraseCount"] += 1
+            self.statistics["formattedTokenCount"] += len(phrase)
         taggedPhrase = { }
         taggedPhrase[tagName] = phrase
         key = sentence.getKey()
