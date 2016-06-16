@@ -13,26 +13,21 @@ import json
 import sys
 from pyspark import SparkContext
 import applyCrfSpark
-import hybridJaccard
+from hybridJaccard import hybridJaccard
 
-def applyHybridJaccardToSequenceFile(taggedPhrases, hybridJaccardProcessors, embedKey):
-    for key, taggedPhrase in taggedPhrases:
-        result = { }
-        ok = False
-        for tag in taggedPhrase:
-            if tag == embedKey:
-                result[tag] = taggedPhrase[tag]
-            else:
-                if tag in hybridJaccardProcessors:
-                    hjResult = hybridJaccardProcessors.findBestMatchWordsCached(taggedPhrase[firstTag])
-                    if hjResult is not None:
-                        result[tag] = hjResult
-                        ok = True
-                else:
-                    result[tag] = taggedPhrase[tag]
-                    ok = True
-        if ok:
-            yield result
+def getHybridJaccardResultFilter(hybridJaccardProcessors):
+    """Return a hybrid Jaccard resultFilter with access to hybridJaccardProcessors."""
+    def hybridJaccardResultFilter(sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
+        """Apply hybrid Jaccard filtering if a filter has been defined for the current
+        tag.  Return True if HJ succeeds or is not applied, else return False."""
+        if tagName in hybridJaccardProcessors:
+            phrase = sentence.getTokens()[phraseFirstTokenIdx:(phraseFirstTokenIdx+phraseTokenCount)]
+            hjResult = hybridJaccardProcessors[tagName].findBestMatchWordsCached(phrase)
+            if hjResult is None:
+                return False
+            sentence.setFilteredPhrase(hjResult)
+        return True
+    return hybridJaccardResultFilter
 
 def main(argv=None):
     '''this is called if run from command line'''
@@ -44,7 +39,7 @@ def main(argv=None):
     parser.add_argument('-e','--embedKey', help="Embed the key in the output.", required=False)
     parser.add_argument('-f','--featlist', help="Input file with features to be extracted, one feature entry per line.", required=True)
     parser.add_argument('-k','--keyed', help="The input lines are keyed.", required=False, action='store_true')
-    parser.add_argument('-h','--hybridJaccardConfig', help="Configuration file for hybrid Jaccard processing.", required=False)
+    parser.add_argument('--hybridJaccardConfig', help="Configuration file for hybrid Jaccard processing.", required=False)
     parser.add_argument('-i','--input', help="Input file with Web scraping sentences in keyed JSON Lines format.", required=True)
     parser.add_argument('--inputPairs', help="Test the paired input data processing path.", required=False, action='store_true')
     parser.add_argument('--inputSeq', help="Read input from a Hadooop SEQ data file.", required=False, action='store_true')
@@ -66,33 +61,18 @@ def main(argv=None):
         print "Starting applyCrfSparkTest."
         print "========================================"
 
-    # Perform for hybrid Jaccard processing?
-    hybridJaccardProcessors = { }
-    if args.hybridJaccardConfig:
-        if not args.outputSeq:
-            print "Error: hybrid Jaccard processing is currently available only on output sequence files."
-            return
-
-        print "========================================"
-        print "Preparing for hybrid Jaccard processing"
-        with open(args.hybridJaccardConfig) as hybridJaccardConfigFile:
-            hybridJaccardConf = json.loads(hybridJaccardConfigFile)
-            for tagType in hybridJaccardConf:
-                print "    %s" % tagType
-                hj = hybridJaccard.HybridJaccard(method_type=tagType)
-                hj.buildConfiguration(hybridJaccardConf)
-                hybridJaccardProcessors[tagType] = hj
-        print "========================================"
-        
-
-    # Open a Spark context and set up a CRF tagger object.
+    # Open a Spark context and set up a CRF tagger object:
     sc = SparkContext()
     tagger = applyCrfSpark.ApplyCrfSpark(args.featlist, args.model,
                                          inputPairs=args.inputPairs or args.pairs or args.inputSeq,
                                          inputKeyed=args.keyed, inputJustTokens=args.justTokens,
                                          extractFrom=args.extract, embedKey=args.embedKey,
                                          outputPairs=args.outputPairs or args.pairs or args.outputSeq,
-                                         debug=args.debug, showStatistics=args.statistics)
+                                         debug=args.debug, sumStatistics=args.statistics)
+
+    if args.statistics:
+        # Convert statistics to Spark accumulators:
+        tagger.initializeSparkStatistics(sc)
 
     if args.download:
         # Ask Spark to download the feature list and model files from the
@@ -103,6 +83,27 @@ def main(argv=None):
     if minPartitions == 0:
         minPartitions = None
 
+    # Request hybrid Jaccard processing?
+    if args.hybridJaccardConfig:
+        if args.verbose:
+            print "========================================"
+            print "Preparing for hybrid Jaccard processing"
+        # Read the hybrid Jaccard configuration file.  For each tag type
+        # mentioned in the file, create a hybridJaccard processor.
+        hybridJaccardProcessors = { }
+        with open(args.hybridJaccardConfig) as hybridJaccardConfigFile:
+            hybridJaccardConf = json.load(hybridJaccardConfigFile)
+            for tagType in hybridJaccardConf:
+                if args.verbose:
+                    print "    %s" % tagType
+                hj = hybridJaccard.HybridJaccard(method_type=tagType)
+                hj.build_configuration(hybridJaccardConf)
+                hybridJaccardProcessors[tagType] = hj
+        # Tell the tagger to use hybrid Jaccard result filtering:
+        tagger.setResultFilter(getHybridJaccardResultFilter(hybridJaccardProcessors))
+        if args.verbose:
+            print "========================================"
+        
     # We'll accept three types of input files: a Sequence file, a text file
     # with tab-separated key and JSON Lines data, or a text file of JSON Lines
     # data (with the output field embedded as an entry in the top-level
@@ -122,28 +123,23 @@ def main(argv=None):
     if args.coalesceInput > 0:
         numPartitions = inputRDD.getNumPartitions()
         if args.coalesceInput < numPartitions:
-            print "========================================"
-            print "Coalescing %d ==> %d input partitions" % (numPartitions, args.coalesceInput)
-            print "========================================"
+            if args.verbose:
+                print "========================================"
+                print "Coalescing %d ==> %d input partitions" % (numPartitions, args.coalesceInput)
+                print "========================================"
             inputRDD = inputRDD.coalesce(args.coalesceInput)
 
     # Perform the main RDD processing.
     resultsRDD = tagger.perform(inputRDD)
 
-    # Perform hybrid Jaccard processing.
-    if hybridJaccardProcessors:
-        print "========================================"
-        print "Performing hybrid Jaccard processing"
-        print "========================================"
-        resultsRDD = resultsRDD.flatMap(lambda partitionRDD: applyHybridJaccardToSequenceFile(partitionRDD, hybridJaccardProcessors, args.embedKey))
-
     # Which is better? coalescing before processing or after processing?
     if args.coalesceOutput > 0:
         numPartitions = resultsRDD.getNumPartitions()
         if args.coalesceOutput < numPartitions:
-            print "========================================"
-            print "Coalescing %d ==> %d output partitions" % (numPartitions, args.coalesceOutput)
-            print "========================================"
+            if args.verbose:
+                print "========================================"
+                print "Coalescing %d ==> %d output partitions" % (numPartitions, args.coalesceOutput)
+                print "========================================"
             resultsRDD = resultsRDD.coalesce(args.coalesceOutput)
 
     # The output will either be a Sequence file or a text file.  If it's a
@@ -169,6 +165,11 @@ def main(argv=None):
         # Paired results will be converted automatically.
         resultsRDD.saveAsTextFile(args.output,
                                   compressionCodecClass=args.outputCompressionClass)
+
+    if args.statistics:
+        print "========================================"
+        tagger.showStatistics()
+        print "========================================"
 
     if args.verbose:
         print "========================================"

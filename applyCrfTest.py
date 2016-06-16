@@ -43,7 +43,7 @@ def main(argv=None):
                                   inputPairs=args.pairs, inputKeyed=args.keyed,
                                   inputJustTokens=args.justTokens, extractFrom=args.extract,
                                   outputPairs=args.pairs, embedKey=args.embedKey,
-                                  debug=args.debug, showStatistics=args.statistics)
+                                  debug=args.debug, sumStatistics=args.statistics)
 
     # Read the Web scrapings as keyed JSON Lines, optionally converting them
     # to pairs, handling justTokens, etc.:
@@ -59,6 +59,9 @@ def main(argv=None):
 
     if args.output != None:
         outfile.close()
+
+    if args.statistics:
+        processor.showStatistics()
 
 # call main() if this is run as standalone
 if __name__ == "__main__":

@@ -122,3 +122,14 @@ class ApplyCrfSpark (applyCrf.ApplyCrf):
         sc.addFile(self.featureListFilePath)
         sc.addFile(self.modelFilePath)
         self.setFilePathMapper(self.sparkFilePathMapper)
+
+    def initializeSparkStatistics(self, sc):
+        """Replace the statistics counters with Spark accumulators."""
+        if self.statistics:
+            for statName in self.statistics:
+                self.statistics[statName] = sc.accumulator(0)
+
+    def showStatistics(self):
+        if self.statistics:
+            for statName in self.statistics:
+                print "%s = %d" % (statName, self.statistics[statName].value)

@@ -127,7 +127,8 @@ import crf_sentences as crfs
 import crf_features as crff
 import CRFPP
 
-def applyCrfGenerator(sentences, crfFeatures, tagger, resultFilter, resultFormatter, debug=False, showStatistics=False):
+def applyCrfGenerator(sentences, crfFeatures, tagger, resultFilter, resultFormatter,
+                      debug=False, statistics=None):
     """Apply CRF++ to a sequence of "sentences", generating tagged phrases
 as output.  0 to N tagged phrases will generated as output for each input
 sentence.
@@ -161,9 +162,7 @@ the desired format.
 debug, when True, causes the code to emit helpful debugging information on
 standard output.
 
-showStatistics: when True, print a count of input sentences and tokens, and a
-count of output phrases, when done.  Statistics are always computed internally,
-the switch just determines whether or not to print them.
+statistics: When not None, accumulate statistics into this dict when done.
 
 CRF++ is written in C++ code, which is accessed by a Python wrapper.  The
 CRF++ code must be installed in the Python interpreter.  If Spark is used to
@@ -190,11 +189,13 @@ create their own classes.
     # of a token+features string.
     MAX_TF_LEN = 8140
 
-    # Clear the statistics counters:
+    # Clear the local statistics counters:
     sentenceCount = 0     # Number of input "sentences" -- e.g., ads
-    tokenCount = 0        # Number of input tokens -- words, punctuation, whatever
+    sentenceTokenCount = 0 # Number of input tokens -- words, punctuation, whatever
     taggedPhraseCount = 0 # Number of tagged output phrases
     taggedTokenCount = 0  # Number of tagged output tokens
+    filterAcceptCount = 0
+    filterRejectCount = 0
 
     for sentence in sentences:
         sentenceCount += 1
@@ -210,7 +211,7 @@ create their own classes.
         if len(tokens) == 0:
             continue
 
-        tokenCount += len(tokens)
+        sentenceTokenCount += len(tokens)
         if debug:
             print "len(tokens)=%d" % len(tokens)
             
@@ -269,6 +270,10 @@ create their own classes.
                         accept = True
                     else:
                         accept = resultFilter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
+                        if accept:
+                            filterAcceptCount += 1
+                        else:
+                            filterRejectCount += 1
                     if accept:
                         yield resultFormatter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
                         taggedPhraseCount += 1
@@ -288,6 +293,10 @@ create their own classes.
                 accept = True
             else:
                 accept = resultFilter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
+                if accept:
+                    filterAcceptCount += 1
+                else:
+                    filterRejectCount += 1
             if accept:
                 yield resultFormatter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
                 taggedPhraseCount += 1
@@ -295,14 +304,13 @@ create their own classes.
                 # phraseTokenCount = 0
             # currentTagName = UNTAGGED_TAG_NAME
 
-    # This code doesn't work properly under Spark.  The output gets lost. It would be
-    # better to sum the statistics up through an accumulator and display it from the master
-    # process.
-    #
-    # TODO: Refactor this code.
-    if showStatistics:
-        print "input:  %d sentences, %d tokens" % (sentenceCount, tokenCount)
-        print "output: %d phrases, %d tokens" % (taggedPhraseCount, taggedTokenCount)
+    if statistics:
+        statistics["sentenceCount"] += sentenceCount
+        statistics["sentenceTokenCount"] += sentenceTokenCount
+        statistics["taggedPhraseCount"] += taggedPhraseCount
+        statistics["taggedTokenCount"] += taggedTokenCount
+        statistics["filterAcceptCount"] += filterAcceptCount
+        statistics["filterRejectCount"] += filterRejectCount
 
 class ApplyCrfToSentencesYieldingTaggedPhraseTuples(object):
     """Apply CRF++ to a source of sentences, returning a sequence of tagged phrase
@@ -313,7 +321,7 @@ class ApplyCrfToSentencesYieldingTaggedPhraseTuples(object):
 
     """
 
-    def __init__(self, featureListFilePath, modelFilePath, debug=False, showStatistics=False):
+    def __init__(self, featureListFilePath, modelFilePath, debug=False, sumStatistics=False):
         """Initialize the ApplyCrfToSentencesYieldingTaggedPhraseTuples object.
 
 featureListFilePath is the path to the word and phrase-list control file used
@@ -332,7 +340,7 @@ count of output phrases, when done.
         self.featureListFilePath = featureListFilePath
         self.modelFilePath = modelFilePath
         self.debug = debug
-        self.showStatistics = showStatistics
+        self.sumStatistics = sumStatistics
 
         # Defer creating these objects.  The benefit is better operation with
         # Spark (deferring creating the tagger may be necessary with Spark).
@@ -343,11 +351,25 @@ count of output phrases, when done.
         self.filePathMapper = None
         self.resultFilter = None
 
+        self.initializeStatistics()
+
+    def initializeStatistics(self):
+        if not self.sumStatistics:
+            self.statistics = None
+        else:
+            self.statistics = { }
+            for statName in ["sentenceCount", "sentenceTokenCount", "taggedPhraseCount", "taggedTokenCount",
+                             "filterAcceptCount", "filterRejectCount"]:
+                self.statistics[statName] = 0
+
+    def getStatistics(self):
+        return self.statistics
+
     def setFilePathMapper(self, filePathMapper):
         self.filePathMapper = filePathMapper
 
     def setResultFilter(self, resultFilter):
-        self.resultFIlter = resultFilter
+        self.resultFilter = resultFilter
 
     def setupCrfFeatures(self):
         """Create the CRF Features object, if it hasn't been created yet."""
@@ -398,8 +420,9 @@ count of output phrases, when done.
     def process(self, sentences):
         """Return a generator to process the sentences from the source.  This method may be called multiple times to process multiple sources."""
         self.setup() # Create the CRF Features and Tagger objects if necessary.
-        return applyCrfGenerator(sentences, self.crfFeatures, self.tagger, self.resultFilter, self.resultFormatter,
-                                 debug=self.debug, showStatistics=self.showStatistics)
+        return applyCrfGenerator(sentences, crfFeatures=self.crfFeatures, tagger=self.tagger,
+                                 resultFilter=self.resultFilter, resultFormatter=self.resultFormatter,
+                                 debug=self.debug, statistics=self.statistics)
 
 class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentencesYieldingTaggedPhraseTuples):
     """Apply CRF++ to a source of sentences, returning a sequence of keys and
@@ -413,19 +436,19 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
     complex data structure.
 
     """
-    def __init__(self, featureListFilePath, modelFilePath, embedKey=None, debug=False, showStatistics=False):
+    def __init__(self, featureListFilePath, modelFilePath, embedKey=None, debug=False, sumStatistics=False):
         self.embedKey = embedKey
-        super(ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines, self).__init__(featureListFilePath, modelFilePath, debug, showStatistics)
+        super(ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines, self).__init__(featureListFilePath, modelFilePath, debug, sumStatistics)
 
     def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
         """Extract the tagged phrases and format the result as keys and tagged phrase Json Lines."""
         phrase = sentence.getFilteredPhrase()
-        if phrase is None:
+        if not phrase:
             phrase = sentence.getTokens()[phraseFirstTokenIdx:(phraseFirstTokenIdx+phraseTokenCount)]
         taggedPhrase = { }
         taggedPhrase[tagName] = phrase
         key = sentence.getKey()
-        if self.embedKey != None:
+        if self.embedKey:
             taggedPhrase[self.embedKey] = key
         return key, json.dumps(taggedPhrase, indent=None)
 
@@ -440,13 +463,13 @@ a sequence of tagged phrases in keyed JSON Lines format or paired JSON Lines for
     def __init__ (self, featureListFilePath, modelFilePath,
                   inputPairs=False, inputKeyed=False, inputJustTokens=False, extractFrom=None,
                   outputPairs=False, embedKey=None,
-                  debug=False, showStatistics=False):
+                  debug=False, sumStatistics=False):
         self.inputPairs = inputPairs
         self.inputKeyed = inputKeyed
         self.inputJustTokens = inputJustTokens
         self.outputPairs = outputPairs
         self.extractFrom = extractFrom
-        super(ApplyCrf, self).__init__(featureListFilePath, modelFilePath, embedKey, debug, showStatistics)
+        super(ApplyCrf, self).__init__(featureListFilePath, modelFilePath, embedKey, debug, sumStatistics)
 
     def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
         """Format the result as keyed or paired Json Lines."""
@@ -468,3 +491,8 @@ multiple times to process multiple sources.
         """
         sentences = crfs.CrfSentencesFromJsonLinesSource(source, pairs=self.inputPairs, keyed=self.inputKeyed, justTokens=self.inputJustTokens, extractFrom=self.extractFrom)
         return super(ApplyCrf, self).process(sentences)
+
+    def showStatistics(self):
+        if self.statistics:
+            for statName in self.statistics:
+                print "%s = %d" % (statName, self.statistics[statName])

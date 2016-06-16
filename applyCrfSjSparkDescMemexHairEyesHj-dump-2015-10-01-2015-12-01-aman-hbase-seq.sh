@@ -46,7 +46,7 @@ time spark-submit \
     --py-files CRF++-0.58/python/dist/mecab_python-0.0.0-py2.7-linux-x86_64.egg,pythonFiles.zip \
     --conf "spark.executorEnv.PYTHON_EGG_CACHE=${PYTHON_EGG_CACHE}" \
     --driver-java-options -Dlog4j.configuration=file:quieter-log4j.properties \
-    ./applyCrfSparkTestHj.py \
+    ./applyCrfSparkTest.py \
     -- \
     --featlist ${MYHOME}/${FEATURES} \
     --model ${MYHOME}/${MODEL} \
@@ -54,6 +54,6 @@ time spark-submit \
     --download \
     --input ${INFILE} --inputSeq --justTokens \
     --output ${MYHOME}/${OUTDIR} --outputSeq --embedKey url \
-    --verbose
+    --verbose --statistics
 
 
