@@ -126,6 +126,7 @@ import json
 import crf_sentences as crfs
 import crf_features as crff
 import CRFPP
+from hybridJaccard import hybridJaccard
 
 def applyCrfGenerator(sentences, crfFeatures, tagger, resultFilter, resultFormatter,
                       debug=False, statistics=None):
@@ -436,8 +437,10 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
     complex data structure.
 
     """
-    def __init__(self, featureListFilePath, modelFilePath, embedKey=None, debug=False, sumStatistics=False):
+    def __init__(self, featureListFilePath, modelFilePath, hybridJaccardConfigPath,
+                 embedKey=None, debug=False, sumStatistics=False):
         self.embedKey = embedKey
+        self.configureHybridJaccard(hybridJaccardConfigPath)
         super(ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines, self).__init__(featureListFilePath, modelFilePath, debug, sumStatistics)
 
     def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
@@ -452,6 +455,34 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
             taggedPhrase[self.embedKey] = key
         return key, json.dumps(taggedPhrase, indent=None)
 
+    def getHybridJaccardResultFilter(self, hybridJaccardProcessors):
+        """Return a hybrid Jaccard resultFilter with access to hybridJaccardProcessors."""
+        def hybridJaccardResultFilter(sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
+            """Apply hybrid Jaccard filtering if a filter has been defined for the current
+            tag.  Return True if HJ succeeds or is not applied, else return False."""
+            if tagName in hybridJaccardProcessors:
+                phrase = sentence.getTokens()[phraseFirstTokenIdx:(phraseFirstTokenIdx+phraseTokenCount)]
+                hjResult = hybridJaccardProcessors[tagName].findBestMatchWordsCached(phrase)
+                if hjResult is None:
+                    return False
+                sentence.setFilteredPhrase(hjResult)
+            return True
+        return hybridJaccardResultFilter
+
+    def configureHybridJaccard(self, hybridJaccardConfigPath):
+        # Read the hybrid Jaccard configuration file.  For each tag type                                                                                             
+        # mentioned in the file, create a hybridJaccard tagger.                                                                                                      
+        hybridJaccardProcessors = { }
+        with open(hybridJaccardConfigPath) as hybridJaccardConfigFile:
+            hybridJaccardConf = json.load(hybridJaccardConfigFile)
+            for tagType in hybridJaccardConf:
+                hj = hybridJaccard.HybridJaccard(method_type=tagType)
+                hj.build_configuration(hybridJaccardConf)
+                hybridJaccardProcessors[tagType] = hj
+        # Tell the tagger to use hybrid Jaccard result filtering:                                                                                                    
+        self.setResultFilter(self.getHybridJaccardResultFilter(hybridJaccardProcessors))
+
+
 class ApplyCrf (ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines):
     """Apply CRF++ to a source of sentences in keyed, unkeyed, or paired JSON Lines format, returning
 a sequence of tagged phrases in keyed JSON Lines format or paired JSON Lines format.
@@ -460,7 +491,7 @@ a sequence of tagged phrases in keyed JSON Lines format or paired JSON Lines for
         or: (key, taggedPhraseJsonLine)
 
     """
-    def __init__ (self, featureListFilePath, modelFilePath,
+    def __init__ (self, featureListFilePath, modelFilePath, hybridJaccardConfigPath,
                   inputPairs=False, inputKeyed=False, inputJustTokens=False, extractFrom=None,
                   outputPairs=False, embedKey=None,
                   debug=False, sumStatistics=False):
@@ -469,7 +500,7 @@ a sequence of tagged phrases in keyed JSON Lines format or paired JSON Lines for
         self.inputJustTokens = inputJustTokens
         self.outputPairs = outputPairs
         self.extractFrom = extractFrom
-        super(ApplyCrf, self).__init__(featureListFilePath, modelFilePath, embedKey, debug, sumStatistics)
+        super(ApplyCrf, self).__init__(featureListFilePath, modelFilePath, hybridJaccardConfigPath, embedKey, debug, sumStatistics)
 
     def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
         """Format the result as keyed or paired Json Lines."""

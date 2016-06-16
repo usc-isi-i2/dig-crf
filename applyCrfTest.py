@@ -19,21 +19,6 @@ import json
 import sys
 import applyCrf
 import crf_sentences as crfs
-from hybridJaccard import hybridJaccard
-
-def getHybridJaccardResultFilter(hybridJaccardProcessors):
-    """Return a hybrid Jaccard resultFilter with access to hybridJaccardProcessors."""
-    def hybridJaccardResultFilter(sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
-        """Apply hybrid Jaccard filtering if a filter has been defined for the current
-        tag.  Return True if HJ succeeds or is not applied, else return False."""
-        if tagName in hybridJaccardProcessors:
-            phrase = sentence.getTokens()[phraseFirstTokenIdx:(phraseFirstTokenIdx+phraseTokenCount)]
-            hjResult = hybridJaccardProcessors[tagName].findBestMatchWordsCached(phrase)
-            if hjResult is None:
-                return False
-            sentence.setFilteredPhrase(hjResult)
-        return True
-    return hybridJaccardResultFilter
 
 def main(argv=None):
     '''this is called if run from command line'''
@@ -57,33 +42,12 @@ def main(argv=None):
     if args.output != None:
         outfile = codecs.open(args.output, 'wb', 'utf-8')
 
-    tagger = applyCrf.ApplyCrf(args.featlist, args.model,
+    tagger = applyCrf.ApplyCrf(args.featlist, args.model, args.hybridJaccardConfig,
                                inputPairs=args.pairs, inputKeyed=args.keyed,
                                inputJustTokens=args.justTokens, extractFrom=args.extract,
                                outputPairs=args.pairs, embedKey=args.embedKey,
                                debug=args.debug, sumStatistics=args.statistics)
 
-    # Request hybrid Jaccard processing?
-    if args.hybridJaccardConfig:
-        if args.verbose:
-            print "========================================"
-            print "Preparing for hybrid Jaccard processing"
-        # Read the hybrid Jaccard configuration file.  For each tag type
-        # mentioned in the file, create a hybridJaccard tagger.
-        hybridJaccardProcessors = { }
-        with open(args.hybridJaccardConfig) as hybridJaccardConfigFile:
-            hybridJaccardConf = json.load(hybridJaccardConfigFile)
-            for tagType in hybridJaccardConf:
-                if args.verbose:
-                    print "    %s" % tagType
-                hj = hybridJaccard.HybridJaccard(method_type=tagType)
-                hj.build_configuration(hybridJaccardConf)
-                hybridJaccardProcessors[tagType] = hj
-        # Tell the tagger to use hybrid Jaccard result filtering:
-        tagger.setResultFilter(getHybridJaccardResultFilter(hybridJaccardProcessors))
-        if args.verbose:
-            print "========================================"
-        
     # Read the Web scrapings as keyed JSON Lines, optionally converting them
     # to pairs, handling justTokens, etc.:
     if args.pairs:
