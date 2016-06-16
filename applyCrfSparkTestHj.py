@@ -13,27 +13,21 @@ import json
 import sys
 from pyspark import SparkContext
 import applyCrfSpark
-import hybridJaccard
+from hybridJaccard import hybridJaccard
 
-def applyHybridJaccardToSequenceFile(taggedPhrases, hybridJaccardProcessors, embedKey):
-    for key, taggedPhraseJsonLine in taggedPhrases:
-        taggedPhrase = json.loads(taggedPhraseJsonLine)
-        result = { }
-        ok = False
-        for tag in taggedPhrase:
-            if tag == embedKey:
-                result[tag] = taggedPhrase[tag]
-            else:
-                if tag in hybridJaccardProcessors:
-                    hjResult = hybridJaccardProcessors[tag].findBestMatchWordsCached(taggedPhrase[tag])
-                    if hjResult is not None:
-                        result[tag] = hjResult
-                        ok = True
-                else:
-                    result[tag] = taggedPhrase[tag]
-                    ok = True
-        if ok:
-            yield key, json.dumps(result)
+def getHybridJaccardResultFilter(hybridJaccardProcessors):
+    """Return a hybrid Jaccard resultFilter with access to hybridJaccardProcessors."""
+    def hybridJaccardResultFilter(sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
+        """Apply hibrid Jaccard filtering if a filter has been defined for the current
+        tag.  Return true if HJ succeeds or is not applied, else return False."""
+        if tagName in hybridJaccardProcessors:
+            phrase = sentence.getTokens()[phraseFirstTokenIdx:(phraseFirstTokenIdx+phraseTokenCount)]
+            hjResult = hybridJaccardProcessors[tagName].findBestMatchWordsCached(phrase)
+            if hjResult is None:
+                return False
+            sentence.setFilteredPhrase(hjResult)
+        return True
+    return hybridJaccardResultFilter
 
 def main(argv=None):
     '''this is called if run from command line'''
@@ -67,15 +61,23 @@ def main(argv=None):
         print "Starting applyCrfSparkTest."
         print "========================================"
 
-    # Perform for hybrid Jaccard processing?
-    hybridJaccardProcessors = { }
-    if args.hybridJaccardConfig:
-        if not args.outputSeq:
-            print "Error: hybrid Jaccard processing is currently available only on output sequence files."
-            return
+    # Open a Spark context and set up a CRF tagger object.
+    sc = SparkContext()
+    tagger = applyCrfSpark.ApplyCrfSpark(args.featlist, args.model,
 
+                                         inputPairs=args.inputPairs or args.pairs or args.inputSeq,
+                                         inputKeyed=args.keyed, inputJustTokens=args.justTokens,
+                                         extractFrom=args.extract, embedKey=args.embedKey,
+                                         outputPairs=args.outputPairs or args.pairs or args.outputSeq,
+                                         debug=args.debug, showStatistics=args.statistics)
+
+    # Request hybrid Jaccard processing?
+    if args.hybridJaccardConfig:
         print "========================================"
         print "Preparing for hybrid Jaccard processing"
+        # Read the hybrid Jaccard configuration file.  For each tag type
+        # mentioned in the file, create a hybridJaccard processor.
+        hybridJaccardProcessors = { }
         with open(args.hybridJaccardConfig) as hybridJaccardConfigFile:
             hybridJaccardConf = json.load(hybridJaccardConfigFile)
             for tagType in hybridJaccardConf:
@@ -83,17 +85,10 @@ def main(argv=None):
                 hj = hybridJaccard.HybridJaccard(method_type=tagType)
                 hj.build_configuration(hybridJaccardConf)
                 hybridJaccardProcessors[tagType] = hj
+        # Tell the tagger to use hybrid Jaccard result filtering:
+        tagger.setResultFilter(getHybridJaccardResultFilter(hybridJaccardProcessors))
         print "========================================"
         
-
-    # Open a Spark context and set up a CRF tagger object.
-    sc = SparkContext()
-    tagger = applyCrfSpark.ApplyCrfSpark(args.featlist, args.model,
-                                         inputPairs=args.inputPairs or args.pairs or args.inputSeq,
-                                         inputKeyed=args.keyed, inputJustTokens=args.justTokens,
-                                         extractFrom=args.extract, embedKey=args.embedKey,
-                                         outputPairs=args.outputPairs or args.pairs or args.outputSeq,
-                                         debug=args.debug, showStatistics=args.statistics)
 
     if args.download:
         # Ask Spark to download the feature list and model files from the
@@ -130,13 +125,6 @@ def main(argv=None):
 
     # Perform the main RDD processing.
     resultsRDD = tagger.perform(inputRDD)
-
-    # Perform hybrid Jaccard processing.
-    if hybridJaccardProcessors:
-        print "========================================"
-        print "Performing hybrid Jaccard processing"
-        print "========================================"
-        resultsRDD = resultsRDD.mapPartitions(lambda partitionRDD: applyHybridJaccardToSequenceFile(partitionRDD, hybridJaccardProcessors, args.embedKey))
 
     # Which is better? coalescing before processing or after processing?
     if args.coalesceOutput > 0:

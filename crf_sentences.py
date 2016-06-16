@@ -33,6 +33,7 @@ class CrfSentence:
         self.sentence = sentence
         self.key = key
         self.tokens = None
+        self.filteredPhrase = None
 
     def getText (self):
         """Get the text for a sentence."""
@@ -64,6 +65,12 @@ class CrfSentence:
             return self.tokens
         else:
             return self.getAllTokens()
+
+    def setFilteredPhrase (self, filteredPhrase):
+        self.filteredPhrase = filteredPhrase
+
+    def getFilteredPhrase (self):
+        return self.filteredPhrase
 
 class CrfSentencesFromJsonFile:
     """Load a Web scrapings file in JSON format, assuming UTF-8 encoding. The

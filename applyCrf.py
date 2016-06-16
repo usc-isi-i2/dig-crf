@@ -127,7 +127,7 @@ import crf_sentences as crfs
 import crf_features as crff
 import CRFPP
 
-def applyCrfGenerator(sentences, crfFeatures, tagger, resultFormatter, debug=False, showStatistics=False):
+def applyCrfGenerator(sentences, crfFeatures, tagger, resultFilter, resultFormatter, debug=False, showStatistics=False):
     """Apply CRF++ to a sequence of "sentences", generating tagged phrases
 as output.  0 to N tagged phrases will generated as output for each input
 sentence.
@@ -144,6 +144,13 @@ resultFormatter(...).
 featureListFilePath is a crf_features object.
 
 tagger is a CRF++ instance with a trained CRF++ model.
+
+resultFilter(sentence, tagName, phraseFirstTokenIdx, phraseTokenCount)
+provides an additional level of filtering (and perhaps data transformation) on
+the tagged phrase tuples.  If resultFilter is not None, it will be called.  If
+it returns False, the tagged tuples will be discarded.  CrfSentence provides
+setFilteredPhrase(...) and getFilteredPhrase(...) as a convenient method for
+passing data transformations between resultFilter and resultFormatter.
 
 resultFormatter(sentence, tagName, phraseFirstTokenIdx, phraseTokenCount)
 converts tagged phrase tuples into the desired output format.
@@ -258,9 +265,14 @@ create their own classes.
             # If we are changing tag names, write out any queued tagged phrase:
             if tagName != currentTagName:
                 if phraseTokenCount > 0:
-                    yield resultFormatter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
-                    taggedPhraseCount += 1
-                    phraseTokenCount = 0
+                    if resultFilter is None:
+                        accept = True
+                    else:
+                        accept = resultFilter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
+                    if accept:
+                        yield resultFormatter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
+                        taggedPhraseCount += 1
+                        phraseTokenCount = 0
                 currentTagName = tagName
 
             # Unless this token is untagged, append it to the current phrase.
@@ -272,10 +284,15 @@ create their own classes.
 
         # Write out any remaining phrase (boundary case):
         if phraseTokenCount > 0:
-            yield resultFormatter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
-            taggedPhraseCount += 1
-            # Don't need to do these as we're about to exit the loop:
-            # phraseTokenCount = 0
+            if resultFilter is None:
+                accept = True
+            else:
+                accept = resultFilter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
+            if accept:
+                yield resultFormatter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
+                taggedPhraseCount += 1
+                # Don't need to do these as we're about to exit the loop:
+                # phraseTokenCount = 0
             # currentTagName = UNTAGGED_TAG_NAME
 
     # This code doesn't work properly under Spark.  The output gets lost. It would be
@@ -324,9 +341,13 @@ count of output phrases, when done.
         self.crfFeatures = None
         self.tagger = None
         self.filePathMapper = None
+        self.resultFilter = None
 
     def setFilePathMapper(self, filePathMapper):
         self.filePathMapper = filePathMapper
+
+    def setResultFilter(self, resultFilter):
+        self.resultFIlter = resultFilter
 
     def setupCrfFeatures(self):
         """Create the CRF Features object, if it hasn't been created yet."""
@@ -377,7 +398,7 @@ count of output phrases, when done.
     def process(self, sentences):
         """Return a generator to process the sentences from the source.  This method may be called multiple times to process multiple sources."""
         self.setup() # Create the CRF Features and Tagger objects if necessary.
-        return applyCrfGenerator(sentences, self.crfFeatures, self.tagger, self.resultFormatter,
+        return applyCrfGenerator(sentences, self.crfFeatures, self.tagger, self.resultFilter, self.resultFormatter,
                                  debug=self.debug, showStatistics=self.showStatistics)
 
 class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentencesYieldingTaggedPhraseTuples):
@@ -398,7 +419,9 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
 
     def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
         """Extract the tagged phrases and format the result as keys and tagged phrase Json Lines."""
-        phrase = sentence.getTokens()[phraseFirstTokenIdx:(phraseFirstTokenIdx+phraseTokenCount)]
+        phrase = sentence.getFilteredPhrase()
+        if phrase is None:
+            phrase = sentence.getTokens()[phraseFirstTokenIdx:(phraseFirstTokenIdx+phraseTokenCount)]
         taggedPhrase = { }
         taggedPhrase[tagName] = phrase
         key = sentence.getKey()
