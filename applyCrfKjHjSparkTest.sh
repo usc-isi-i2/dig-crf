@@ -2,7 +2,7 @@
 
 # This script assumes that "spark-submit" is available on $PATH.
 
-OUTDIR=data/sample/adjudicated_modeled_live_eyehair_100_03-tags.spark
+OUTDIR=data/sample/adjudicated_modeled_live_eyehair_100_03-tags-hj.spark
 
 # Dangerous!
 rm -rf ${OUTDIR}
