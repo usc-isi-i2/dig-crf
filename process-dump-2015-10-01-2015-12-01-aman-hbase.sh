@@ -40,15 +40,25 @@ echo ./applyCrfSjSparkDescMemexNameEthnicHj-dump-2015-10-01-2015-12-01-aman-hbas
 # Examine the output of the CRF analyses.  These steps may be omitted
 # from a production workflow.
 
-# Analyses without hybrid Jaccard processing:
-echo ./applyCrfSjSparkDescMemexHairEyes-dump-2015-10-01-2015-12-01-aman-hbase-nourl.sh
-./applyCrfSjSparkDescMemexHairEyes-dump-2015-10-01-2015-12-01-aman-hbase-nourl.sh \
-| tee applyCrfSjSparkDescMemexHairEyes-dump-2015-10-01-2015-12-01-aman-hbase-nourl.log
+# Analyses with hybrid Jaccard processing:
+echo ./countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes-hj.sh
+./countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes-hj.sh \
+| tee countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes-hj.log
 
-echo ./applyCrfSjSparkDescMemexNameEthnic-dump-2015-10-01-2015-12-01-aman-hbase-nourl.sh
-./applyCrfSjSparkDescMemexNameEthnic-dump-2015-10-01-2015-12-01-aman-hbase-nourl.sh \
-| tee applyCrfSjSparkDescMemexNameEthnic-dump-2015-10-01-2015-12-01-aman-hbase-nourl.log
+echo ./countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic-hj.sh
+./countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic-hj.sh \
+| tee countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic-hj.log
 
+# Analyses without hybrid Jaccard processing.  Start by running CRF again:
+echo ./applyCrfSjSparkDescMemexHairEyes-dump-2015-10-01-2015-12-01-aman-hbase-seq.sh
+./applyCrfSjSparkDescMemexHairEyes-dump-2015-10-01-2015-12-01-aman-hbase-seq.sh \
+| tee applyCrfSjSparkDescMemexHairEyes-dump-2015-10-01-2015-12-01-aman-hbase-seq.log
+
+echo ./applyCrfSjSparkDescMemexNameEthnic-dump-2015-10-01-2015-12-01-aman-hbase-seq.sh
+./applyCrfSjSparkDescMemexNameEthnic-dump-2015-10-01-2015-12-01-aman-hbase-seq.sh \
+| tee applyCrfSjSparkDescMemexNameEthnic-dump-2015-10-01-2015-12-01-aman-hbase-seq.log
+
+# Run the analyses:
 echo ./countGoodKeys-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes.sh
 ./countGoodKeys-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes.sh \
 | tee countGoodKeys-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes.log
@@ -72,21 +82,3 @@ echo ./countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-
 echo ./countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic.sh
 ./countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic.sh \
 | tee countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic.log
-
-# Analyses with hybrid Jaccard processing:
-echo ./applyCrfSjSparkDescMemexHairEyesHj-dump-2015-10-01-2015-12-01-aman-hbase-nourl.sh
-./applyCrfSjSparkDescMemexHairEyesHj-dump-2015-10-01-2015-12-01-aman-hbase-nourl.sh \
-| tee applyCrfSjSparkDescMemexHairEyesHj-dump-2015-10-01-2015-12-01-aman-hbase-nourl.log
-
-echo ./applyCrfSjSparkDescMemexNameEthnicHj-dump-2015-10-01-2015-12-01-aman-hbase-nourl.sh
-./applyCrfSjSparkDescMemexNameEthnicHj-dump-2015-10-01-2015-12-01-aman-hbase-nourl.sh \
-| tee applyCrfSjSparkDescMemexNameEthnicHj-dump-2015-10-01-2015-12-01-aman-hbase-nourl.log
-
-echo ./countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes-hj.sh
-./countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes-hj.sh \
-| tee countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes-hj.log
-
-echo ./countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic-hj.sh
-./countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic-hj.sh \
-| tee countCrfResultTokensFancy-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic-hj.log
-

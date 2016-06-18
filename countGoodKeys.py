@@ -31,6 +31,7 @@ def main(argv=None):
     badJsonRecords = sc.accumulator(0)
     data = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
     keyCounts = data.values().flatMap(getKeys).countByValue()
+    sc.stop()
 
     print "========================================"
     print "goodJsonRecords = %d" % goodJsonRecords.value

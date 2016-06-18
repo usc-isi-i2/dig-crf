@@ -16,34 +16,67 @@ class Token:
     def __repr__(self):
         return repr((self.value, self.count, self.cumulativeCount))
 
-def getTokens(value):
-    global goodJsonRecords, badJsonRecords
-    try:
-        d = json.loads(value)
-        goodJsonRecords += 1
-        return (tag + ':' + token for tag in d.keys() for token in d[tag])
-    except:
-        badJsonRecords += 1
-        return iter([])
+def getTokensMaker(includeArg, excludeArg):
+    includeTags = None
+    if includeArg:
+        # TODO: Would a dictionary be more efficient later?  Depends on the length.
+        includeTags = includeArg.split(",")
+    excludeTags = None
+    if excludeArg:
+        # TODO: Would a dictionary be more efficient later?  Depends on the length.
+        excludeTags = excludeArg.split(",")
+    def getTokens(value):
+        global goodJsonRecords, badJsonRecords, excludedTagCount, includedTagCount, tokenCount
+        try:
+            d = json.loads(value)
+            goodJsonRecords += 1
+        except:
+            badJsonRecords += 1
+            return iter([])
+
+        results = []
+        for tag in d.keys():
+            if (includeTags and tag not in includeTags) or (excludeTags and tag in excludeTags):
+                excludedTagCount += 1
+                continue;
+            includedTagCount += 1
+            tokenCount += len(d[tag])
+            results.extend([tag + ': ' + token for token in d[tag]])
+        return iter(results)
+    return getTokens
 
 def main(argv=None):
     '''this is called if run from command line'''
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('-e','--excludeTags', help="Comma-separated list of tags to exclude.", required=False)
+    parser.add_argument(     '--includeTags', help="Comma-separated list of tags to include.", required=False)
     parser.add_argument('-i','--input', help="Seq input file on cluster.", required=True)
     args = parser.parse_args()
 
+    if args.excludeTags and args.includeTags:
+        print "Pick either --excludeTags or --includeTags, not both."
+        return 1
+
     sc = SparkContext()
-    global goodJsonRecords, badJsonRecords
+
+    global goodJsonRecords, badJsonRecords, excludedTagCount, includedTagCount, tokenCount
     goodJsonRecords = sc.accumulator(0)
     badJsonRecords = sc.accumulator(0)
+    excludedTagCount = sc.accumulator(0)
+    includedTagCount = sc.accumulator(0)
+    tokenCount = sc.accumulator(0)
+
     data = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
-    tagTokenCounts = data.values().flatMap(getTokens).countByValue()
+    tagTokenCounts = data.values().flatMap(getTokensMaker(args.includeTags, args.excludeTags)).countByValue()
     sc.stop()
 
     print "========================================"
     print "goodJsonRecords = %d" % goodJsonRecords.value
     print "badJsonRecords = %d" % badJsonRecords.value
+    print "excludedTagCount = %d" % excludedTagCount.value
+    print "includedTagCount = %d" % includedTagCount.value
+    print "tokenCount = %d" % tokenCount.value
     print "========================================"
 
     # Restructure the data, grouping by tag (token type indicator):
@@ -73,16 +106,18 @@ def main(argv=None):
         # floating point division is used:
         floatTotalTokens = float(totalTokens)
 
-        # Print the sorted tokens with cumulative counts, fraction of
-        # total (cunumative distribution function), and index
-        # (enumerate the tokens per tag, starting with 1).
+        # Print the sorted tokens with counts, fraction of total,
+        # cumulative counts, cumulative distribution function, and
+        # index (enumerate the tokens per tag, starting with 1).
         print "========================================"
         tokenIndex = 0
         for token in sortedTokenList:
             tokenIndex += 1
-            fractionOfTotal = token.cumulativeCount / floatTotalTokens
-            print("{0:8d} {1:50} {2:10d} {3:10d} {4:.5f}".format(tokenIndex, json.dumps(tag + ": " + token.value),
-                                                                 token.count, token.cumulativeCount, fractionOfTotal))
+            fractionOfTotal = token.count / floatTotalTokens
+            cumulativeFractionOfTotal = token.cumulativeCount / floatTotalTokens
+            print("{0:8d} {1:50} {2:10d} {3:.5f} {4:10d} {5:.5f}".format(tokenIndex, json.dumps(tag + ": " + token.value),
+                                                                         token.count, fractionOfTotal,
+                                                                         token.cumulativeCount, cumulativeFractionOfTotal))
         print "========================================"
 
 # call main() if this is run as standalone                                                             

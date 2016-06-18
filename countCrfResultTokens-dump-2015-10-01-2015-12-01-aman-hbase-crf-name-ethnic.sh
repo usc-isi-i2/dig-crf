@@ -2,7 +2,7 @@
 
 MYHOME=hdfs:///user/crogers
 
-INPUTFILE=${MYHOME}/hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic-nourl.seq
+INPUTFILE=${MYHOME}/hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic.seq
 # OUTPUTFILE=${MYHOME}/hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic-token-counts.txt
 #     --output ${OUTPUTFILE} \
 
@@ -22,4 +22,5 @@ time spark-submit \
     ./countCrfResultTokens.py \
     -- \
     --input ${INPUTFILE} \
+    --excludeTags url \
     --printToLog

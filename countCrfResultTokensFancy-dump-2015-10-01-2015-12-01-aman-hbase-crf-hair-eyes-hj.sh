@@ -2,7 +2,7 @@
 
 MYHOME=hdfs:///user/crogers
 
-INPUTFILE=${MYHOME}/hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes-hj-nourl.seq
+INPUTFILE=${MYHOME}/hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes-hj.seq
 
 FOUND=`fgrep tun0: /proc/net/dev`
 if  [ -n "$FOUND" ] ; then
@@ -19,4 +19,5 @@ time spark-submit \
     --driver-java-options -Dlog4j.configuration=file:quieter-log4j.properties \
     ./countCrfResultTokensFancy.py \
     -- \
-    --input ${INPUTFILE}
+    --input ${INPUTFILE} \
+    --excludeTags url

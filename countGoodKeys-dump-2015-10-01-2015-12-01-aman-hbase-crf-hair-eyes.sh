@@ -1,6 +1,6 @@
 #! /bin/bash                                                                                           
 
-INPUTFILE=/user/crogers/hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes-nourl.seq
+INPUTFILE=/user/crogers/hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes.seq
 
 FOUND=`fgrep tun0: /proc/net/dev`
 if  [ -n "$FOUND" ] ; then

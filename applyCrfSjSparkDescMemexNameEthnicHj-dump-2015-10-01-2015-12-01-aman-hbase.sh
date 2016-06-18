@@ -1,16 +1,17 @@
 #! /bin/bash
 
-# This script assumes that "spark-submit" is available on $PATH.
+# This script assumes that "spark-submit" is available on $PATH.  The
+# envar MEMEX_MAX_EXECUTORS may be used to limit the number of
+# executors used in this script.
 
 MYHOME=hdfs:///user/crogers
 
 INFILE=${MYHOME}/hbase-dump-2015-10-01-2015-12-01-aman-hbase-title-and-text-tokens.seq
 FEATURES=features.name-ethnic
 MODEL=dig-name-ethnic-train.model
-OUTFILE=${MYHOME}/hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic-nourl.seq
+HYBRID_JACCARD=hybrid_jaccard_config.json
+OUTDIR=hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic-hj.seq
 NUM_EXECUTORS=350
-
-# Use the envar MEMEX_MAX_EXECUTORS to limit the number of executors.
 if [ ${NUM_EXECUTORS} -gt ${MEMEX_MAX_EXECUTORS:-${NUM_EXECUTORS}} ]
   then
     NUM_EXECUTORS=${MEMEX_MAX_EXECUTORS}
@@ -36,12 +37,12 @@ zip -r pythonFiles.zip \
      hybridJaccard
 
 # Dangerous!
-echo "Clearing the output folder: ${OUTFILE}"
-hadoop fs -rm -r -f ${OUTFILE}
+echo "Clearing the output folder: ${OUTDIR}"
+hadoop fs -rm -r -f ${OUTDIR}
 
 echo "Copying the feature control file and CRF model to Hadoop."
 hadoop fs -copyFromLocal -f data/config/$FEATURES $MYHOME/$FEATURES
-hadoop fs -copyFromLocal -f data/config/$MODEL    $MYHOME/$MODEL
+hadoop fs -copyFromLocal -f data/config/$MODEL $MYHOME/$MODEL
 
 echo "Creating the Python Egg cache folder: $PYTHON_EGG_CACHE"
 hadoop fs -mkdir -p $PYTHON_EGG_CACHE
@@ -56,10 +57,11 @@ time spark-submit \
     ./applyCrfSparkTest.py \
     -- \
     --featlist ${MYHOME}/${FEATURES} \
-    --model    ${MYHOME}/${MODEL} \
+    --model ${MYHOME}/${MODEL} \
+    --hybridJaccardConfig ${HYBRID_JACCARD} \
     --download \
-    --input  ${INFILE}  --inputSeq --justTokens \
-    --output ${OUTFILE} --outputSeq \
-    --verbose
+    --input ${INFILE} --inputSeq --justTokens \
+    --output ${MYHOME}/${OUTDIR} --outputSeq --embedKey url \
+    --verbose --statistics
 
 
