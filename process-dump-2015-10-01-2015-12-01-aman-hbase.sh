@@ -29,13 +29,13 @@ echo ./tokenizeTitleAndTextAndSaveSeq-dump-2015-10-01-2015-12-01-aman-hbase.sh
 ./tokenizeTitleAndTextAndSaveSeq-dump-2015-10-01-2015-12-01-aman-hbase.sh \
 | tee tokenizeTitleAndTextAndSaveSeq-dump-2015-10-01-2015-12-01-aman-hbase.log
 
-echo ./applyCrfSjSparkDescMemexHairEyesHj-dump-2015-10-01-2015-12-01-aman-hbase-seq.sh
-./applyCrfSjSparkDescMemexHairEyesHj-dump-2015-10-01-2015-12-01-aman-hbase-seq.sh \
-| tee applyCrfSjSparkDescMemexHairEyesHj-dump-2015-10-01-2015-12-01-aman-hbase-seq.log
+echo ./applyCrfSjSparkDescMemexHairEyesHj-dump-2015-10-01-2015-12-01-aman-hbase.sh
+./applyCrfSjSparkDescMemexHairEyesHj-dump-2015-10-01-2015-12-01-aman-hbase.sh \
+| tee applyCrfSjSparkDescMemexHairEyesHj-dump-2015-10-01-2015-12-01-aman-hbase.log
 
-echo ./applyCrfSjSparkDescMemexNameEthnicHj-dump-2015-10-01-2015-12-01-aman-hbase-seq.sh
-./applyCrfSjSparkDescMemexNameEthnicHj-dump-2015-10-01-2015-12-01-aman-hbase-seq.sh \
-| tee applyCrfSjSparkDescMemexNameEthnicHj-dump-2015-10-01-2015-12-01-aman-hbase-seq.log
+echo ./applyCrfSjSparkDescMemexNameEthnicHj-dump-2015-10-01-2015-12-01-aman-hbase.sh
+./applyCrfSjSparkDescMemexNameEthnicHj-dump-2015-10-01-2015-12-01-aman-hbase.sh \
+| tee applyCrfSjSparkDescMemexNameEthnicHj-dump-2015-10-01-2015-12-01-aman-hbase.log
 
 # Examine the output of the CRF analyses.  These steps may be omitted
 # from a production workflow.
