@@ -20,4 +20,5 @@ time spark-submit \
     ./countCrfResultPhrases.py \
     -- \
     --input ${INPUTFILE} \
+    --printToLog \
     --excludeTags url
