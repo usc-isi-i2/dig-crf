@@ -35,7 +35,7 @@ def getPhrasesMaker(includeArg, excludeArg):
 
             includedTagCount += 1
             tokenCount += len(d[tag])
-            results.append(tag + ': ' + " ".join(d[tag])
+            results.append(tag + ': ' + " ".join(d[tag]))
         return iter(results)
     return getPhrases
 
