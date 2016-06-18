@@ -128,8 +128,8 @@ import crf_features as crff
 import CRFPP
 from hybridJaccard import hybridJaccard
 
-def applyCrfGenerator(sentences, crfFeatures, tagger, tagMap=None,
-                      resultFilter=None, resultFormatter,
+def applyCrfGenerator(sentences, crfFeatures, tagger, resultFormatter,
+                      tagMap=None, resultFilter=None,
                       debug=False, statistics=None):
     """Apply CRF++ to a sequence of "sentences", generating tagged phrases
 as output.  0 to N tagged phrases will generated as output for each input
@@ -440,6 +440,7 @@ count of output phrases, when done.
                 self.tagMap[tagName] = tagNewName
         else:
             # TODO: really ought to complain here.
+            pass
 
     def setupCrfFeatures(self):
 
