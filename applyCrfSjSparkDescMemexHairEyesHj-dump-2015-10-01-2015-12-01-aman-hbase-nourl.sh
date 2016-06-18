@@ -10,6 +10,8 @@ MODEL=dig-hair-eye-train.model
 HYBRID_JACCARD=hybrid_jaccard_config.json
 OUTDIR=hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes-hj-nourl.seq
 NUM_EXECUTORS=350
+
+# Use the envar MEMEX_MAX_EXECUTORS to limit the number of executors.
 if [ ${NUM_EXECUTORS} -gt ${MEMEX_MAX_EXECUTORS:-${NUM_EXECUTORS}} ]
   then
     NUM_EXECUTORS=${MEMEX_MAX_EXECUTORS}
