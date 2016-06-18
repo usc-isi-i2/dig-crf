@@ -64,7 +64,7 @@ def main(argv=None):
     tokenCount = sc.accumulator(0)
 
     data = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
-    tagTokenCounts = data.values().flatMap(getPhrasesMaker(args.includeTags, args.excludeTags)).countByValue()
+    tagPhraseCounts = data.values().flatMap(getPhrasesMaker(args.includeTags, args.excludeTags)).countByValue()
     sc.stop()
 
     # So far, this code isn't useful.  The output fiile is written by the
@@ -72,8 +72,8 @@ def main(argv=None):
     # retrieve it.
     if args.output != None:
         with codecs.open(args.output, 'wb', 'utf-8') as f:
-            for k in sorted(tagTokenCounts):
-                f.write(k + " " + str(tagTokenCounts[k]) + "\n")
+            for k in sorted(tagPhraseCounts):
+                f.write(k + " " + str(tagPhraseCounts[k]) + "\n")
 
     print "========================================"
     print "goodJsonRecords = %d" % goodJsonRecords.value
@@ -82,8 +82,8 @@ def main(argv=None):
     print "includedTagCount = %d" % includedTagCount.value
     print "tokenCount = %d" % tokenCount.value
     if args.printToLog:
-        for k in sorted(tagTokenCounts):
-            print json.dumps(k), tagTokenCounts[k]
+        for k in sorted(tagPhraseCounts):
+            print json.dumps(k), tagPhraseCounts[k]
     print "========================================"
 
 # call main() if this is run as standalone                                                             
