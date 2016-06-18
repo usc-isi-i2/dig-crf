@@ -34,6 +34,7 @@ def main(argv=None):
     parser.add_argument('-o','--output', help="Output file of phrases in keyed JSON Lines format.", required=False)
     parser.add_argument('-p','--pairs', help="Test the paired data processing path.", required=False, action='store_true')
     parser.add_argument('-s','--statistics', help="Report use statistics.", required=False, action='store_true')
+    parser.add_argument('-t','--tags', help="Restrict the set of tags and optionally rename them: tagName,tagName:newTagName,...", required=False)
     parser.add_argument('-v','--verbose', help="Report progress.", required=False, action='store_true')
     parser.add_argument('-x','--extract', help="Name the field with text or tokens.", required=False)
     args = parser.parse_args()
@@ -45,7 +46,7 @@ def main(argv=None):
     tagger = applyCrf.ApplyCrf(args.featlist, args.model, args.hybridJaccardConfig,
                                inputPairs=args.pairs, inputKeyed=args.keyed,
                                inputJustTokens=args.justTokens, extractFrom=args.extract,
-                               outputPairs=args.pairs, embedKey=args.embedKey,
+                               outputPairs=args.pairs, tagMap=args.tags, embedKey=args.embedKey,
                                debug=args.debug, sumStatistics=args.statistics)
 
     # Read the Web scrapings as keyed JSON Lines, optionally converting them

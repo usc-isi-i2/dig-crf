@@ -108,7 +108,7 @@ where self.filePathMapper has been previously set with:
 
 self.setFilePathMapper(filePathMapper)
 
-Delaying this resolution until just befor ethe files are needed is important
+Delaying file path mapping until just before the files are opened is important
 in some instances, specifically for use with Apache Spark.
 
 Performance
@@ -128,7 +128,8 @@ import crf_features as crff
 import CRFPP
 from hybridJaccard import hybridJaccard
 
-def applyCrfGenerator(sentences, crfFeatures, tagger, resultFilter, resultFormatter,
+def applyCrfGenerator(sentences, crfFeatures, tagger, tagMap=None,
+                      resultFilter=None, resultFormatter,
                       debug=False, statistics=None):
     """Apply CRF++ to a sequence of "sentences", generating tagged phrases
 as output.  0 to N tagged phrases will generated as output for each input
@@ -146,6 +147,14 @@ resultFormatter(...).
 featureListFilePath is a crf_features object.
 
 tagger is a CRF++ instance with a trained CRF++ model.
+
+tagMap, when supplied, is a dictionary with entries for the tags to be
+extracted.  Tags that do not appear in the dictionary are ignored, although
+they do serve as delimeters between phrases of other tags.  Additionally,
+if the value for a tag is nonempty, the tag name will be mapped to the new
+value.  Multiple tags may map to the same new tag name, but phrase length
+will be determined by the original tag (we may wish to reconsider this
+behavior).
 
 resultFilter(sentence, tagName, phraseFirstTokenIdx, phraseTokenCount)
 provides an additional level of filtering (and perhaps data transformation) on
@@ -195,8 +204,11 @@ create their own classes.
     sentenceTokenCount = 0 # Number of input tokens -- words, punctuation, whatever
     taggedPhraseCount = 0 # Number of tagged output phrases
     taggedTokenCount = 0  # Number of tagged output tokens
-    filterAcceptCount = 0
-    filterRejectCount = 0
+    tagMapKeepCount = 0   # Number of tagged output phrases retained under the same name after tag mapping.
+    tagMapRenameCount = 0 # Number of tagged output phrases retained under a new name after tag mapping.
+    tagMapDropCount = 0   # Number of tagged output phrases dropped by tag mapping.
+    filterAcceptCount = 0 # Number of tagged output phrases accepted by the result filter.
+    filterRejectCount = 0 # Number of tagged output phrases rejected by the result filter.
 
     for sentence in sentences:
         sentenceCount += 1
@@ -268,9 +280,19 @@ create their own classes.
             if tagName != currentTagName:
                 if phraseTokenCount > 0:
                     taggedPhraseCount += 1
-                    if resultFilter is None:
-                        accept = True
-                    else:
+                    accept = True
+                    if tagMap is not None:
+                        if currentTagName in tagMap:
+                            newTagName = tagMap[currentTagName]
+                            if newTagName:
+                                currentTagName = newTagName
+                                tagMapRenameCount += 1
+                            else:
+                                tagMapKeepCount += 1
+                        else:
+                            tagMapDropCount += 1
+                            accept = False
+                    if accept and resultFilter is not None:
                         accept = resultFilter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
                         if accept:
                             filterAcceptCount += 1
@@ -291,9 +313,19 @@ create their own classes.
         # Write out any remaining phrase (boundary case):
         if phraseTokenCount > 0:
             taggedPhraseCount += 1
-            if resultFilter is None:
-                accept = True
-            else:
+            accept = True
+            if tagMap is not None:
+                if currentTagName in tagMap:
+                    newTagName = tagMap[currentTagName]
+                    if newTagName:
+                        currentTagName = newTagName
+                        tagMapRenameCount += 1
+                    else:
+                        tagMapKeepCount += 1
+                else:
+                    tagMapDropCount += 1
+                    accept = False
+            if accept and resultFilter is not None:
                 accept = resultFilter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
                 if accept:
                     filterAcceptCount += 1
@@ -310,6 +342,9 @@ create their own classes.
         statistics["sentenceTokenCount"] += sentenceTokenCount
         statistics["taggedPhraseCount"] += taggedPhraseCount
         statistics["taggedTokenCount"] += taggedTokenCount
+        statistics["tagMapKeepCount"] += tagMapKeepCount
+        statistics["tagMapRenameCount"] += tagMapRenameCount
+        statistics["tagMapDropCount"] += tagMapDropCount
         statistics["filterAcceptCount"] += filterAcceptCount
         statistics["filterRejectCount"] += filterRejectCount
 
@@ -322,7 +357,7 @@ class ApplyCrfToSentencesYieldingTaggedPhraseTuples(object):
 
     """
 
-    def __init__(self, featureListFilePath, modelFilePath, debug=False, sumStatistics=False):
+    def __init__(self, featureListFilePath, modelFilePath, tagMap=None, debug=False, sumStatistics=False):
         """Initialize the ApplyCrfToSentencesYieldingTaggedPhraseTuples object.
 
 featureListFilePath is the path to the word and phrase-list control file used
@@ -330,16 +365,19 @@ by crf_features.
 
 modelFilePath is the path to a trained CRF++ model.
 
+tagMap, when supplied, can limit the set of tag names that are reported and
+can rename tags.
+
 debug, when True, causes the code to emit helpful debugging information on
 standard output.
 
 statistics, when True, emits a count of input sentences and tokens, and a
 count of output phrases, when done.
-
         """
 
         self.featureListFilePath = featureListFilePath
         self.modelFilePath = modelFilePath
+        self.setTagMap(tagMap)
         self.debug = debug
         self.sumStatistics = sumStatistics
 
@@ -361,6 +399,7 @@ count of output phrases, when done.
             self.statistics = { }
             self.statisticNames = ["sentenceCount", "sentenceTokenCount",
                                    "taggedPhraseCount", "taggedTokenCount",
+                                   "tagMapKeepCount", "tagMapRenameCount", "tagMapDropCount",
                                    "filterAcceptCount", "filterRejectCount",
                                    "formattedPhraseCount", "formattedTokenCount"]
             for statName in self.statisticNames:
@@ -375,7 +414,35 @@ count of output phrases, when done.
     def setResultFilter(self, resultFilter):
         self.resultFilter = resultFilter
 
+    def setTagMap(self, tagMap):
+        """If the supplied tagMap is a dict, copy it.  If it is a list, use the elements as tag names. If it is a string, pasrse it as
+        tag1:newTag1,tag2:newTag2,... with the :newTag optional."""
+        if tagMap is None:
+            self.tagMap = None
+        elif isinstance(tagMap, dict):
+            # Clean the map:
+            self.map = { tagName.strip(): (None if newTagName is None else newTagName.strip()) for tagName, newTagName in tagMap.items() if tagName.strip() }
+        elif isinstance(tagMap, list):
+            self.tagMap = { tagName.strip(): None for tagName in tagMap if tagName.strip() }
+        elif isinstance(tagMap, basestring):
+            # The following code could be replaced with a nested
+            # comprehension, but it wouldn't be as comprehensible.
+            self.tagMap = {}
+            for tagMapEntry in tagMap.split(","):
+                tagNameCombo = tagMapEntry.split(":", 2)
+                tagName = tagNameCombo[0].strip()
+                if len(tagName) == 0:
+                    continue # TODO: complain??
+                if len(tagNameCombo) == 1:
+                    tagNewName = None
+                else:
+                    tagNewName = tagNameCombo[1].strip()
+                self.tagMap[tagName] = tagNewName
+        else:
+            # TODO: really ought to complain here.
+
     def setupCrfFeatures(self):
+
         """Create the CRF Features object, if it hasn't been created yet."""
         if self.crfFeatures == None:
             path = self.featureListFilePath
@@ -424,7 +491,7 @@ count of output phrases, when done.
     def process(self, sentences):
         """Return a generator to process the sentences from the source.  This method may be called multiple times to process multiple sources."""
         self.setup() # Create the CRF Features and Tagger objects if necessary.
-        return applyCrfGenerator(sentences, crfFeatures=self.crfFeatures, tagger=self.tagger,
+        return applyCrfGenerator(sentences, crfFeatures=self.crfFeatures, tagger=self.tagger, tagMap = self.tagMap,
                                  resultFilter=self.resultFilter, resultFormatter=self.resultFormatter,
                                  debug=self.debug, statistics=self.statistics)
 
@@ -445,9 +512,9 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
     complex data structure.
 
     """
-    def __init__(self, featureListFilePath, modelFilePath, hybridJaccardConfigPath,
+    def __init__(self, featureListFilePath, modelFilePath, hybridJaccardConfigPath=None, tagMap=None,
                  embedKey=None, debug=False, sumStatistics=False):
-        super(ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines, self).__init__(featureListFilePath, modelFilePath, debug, sumStatistics)
+        super(ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines, self).__init__(featureListFilePath, modelFilePath, tagMap, debug, sumStatistics)
         self.embedKey = embedKey
         self.configureHybridJaccard(hybridJaccardConfigPath)
 
@@ -504,9 +571,9 @@ a sequence of tagged phrases in keyed JSON Lines format or paired JSON Lines for
     """
     def __init__ (self, featureListFilePath, modelFilePath, hybridJaccardConfigPath,
                   inputPairs=False, inputKeyed=False, inputJustTokens=False, extractFrom=None,
-                  outputPairs=False, embedKey=None,
+                  outputPairs=False, tagMap=None, embedKey=None,
                   debug=False, sumStatistics=False):
-        super(ApplyCrf, self).__init__(featureListFilePath, modelFilePath, hybridJaccardConfigPath, embedKey, debug, sumStatistics)
+        super(ApplyCrf, self).__init__(featureListFilePath, modelFilePath, hybridJaccardConfigPath, tagMap, embedKey, debug, sumStatistics)
         self.inputPairs = inputPairs
         self.inputKeyed = inputKeyed
         self.inputJustTokens = inputJustTokens

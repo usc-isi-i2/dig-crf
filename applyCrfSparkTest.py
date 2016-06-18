@@ -37,6 +37,7 @@ def main(argv=None):
     parser.add_argument('--pairs', help="Test the paired data processing path.", required=False, action='store_true')
     parser.add_argument('-p', '--partitions', help="Number of partitions.", required=False, type=int, default=1)
     parser.add_argument('-s','--statistics', help="Report use statistics.", required=False, action='store_true')
+    parser.add_argument('-t','--tags', help="Restrict the set of tags and optionally rename them: tagName,tagName:newTagName,...", required=False)
     parser.add_argument('-v','--verbose', help="Report progress.", required=False, action='store_true')
     parser.add_argument('-x','--extract', help="Name the field with text or tokens.", required=False)
     args = parser.parse_args()
@@ -51,7 +52,7 @@ def main(argv=None):
     tagger = applyCrfSpark.ApplyCrfSpark(args.featlist, args.model, args.hybridJaccardConfig,
                                          inputPairs=args.inputPairs or args.pairs or args.inputSeq,
                                          inputKeyed=args.keyed, inputJustTokens=args.justTokens,
-                                         extractFrom=args.extract, embedKey=args.embedKey,
+                                         extractFrom=args.extract, tagMap=args.tags, embedKey=args.embedKey,
                                          outputPairs=args.outputPairs or args.pairs or args.outputSeq,
                                          debug=args.debug, sumStatistics=args.statistics)
 
