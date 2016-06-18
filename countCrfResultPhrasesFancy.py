@@ -77,7 +77,7 @@ def main(argv=None):
     print "badJsonRecords = %d" % badJsonRecords.value
     print "excludedTagCount = %d" % excludedTagCount.value
     print "includedTagCount = %d" % includedTagCount.value
-    print "tokenTagCount = %d" % tokenTagCount.value
+    print "tokenCount = %d" % tokenCount.value
     print "========================================"
 
     # Restructure the data, grouping by tag (phrase type indicator):
