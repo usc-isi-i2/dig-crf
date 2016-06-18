@@ -32,26 +32,7 @@
       "white"
     ]
   },
-  "B_ethnic": {
-    "type": "hybrid_jaccard",
-    "partial_method": "jaro",
-    "parameters": {
-      "threshold": "0.90"
-    },
-    "references": [
-      "caribbean: bahamas, bahamian, bajan, barbadian, belezian, belizan, belizean, belizian, caribbean, caribian, creole, guyana, guyanese, haiti, haitian, jamaica, jamaican, trini, trinidad, trinidadian, west indian",
-      "biracial: blacanese, blasian, blazian, caramel, mix, mixed, mixed race, mulatto",
-      "middle eastern: arabia, arabian, arabic, armenia, armenian, chaldean, egypt, egyptian, iran, iranian, israel, israeli, lebanese, lebanon, moroccan, morocco, palestine, palestinian, persian, syria, syrian",
-      "pacific islander: chamorro, fiji, fijian, filipina, filipino, guamanian, hawaii, hawaiian, hawwian, micronesian, philipina, philippian, philippines, polynesian, samoa, samoan, tahiti, tahitian",
-      "hispanic: argentine, argentinian, bolivia, bolivian, boricua, borinqueño, borinquén, boriquén, brazil, brazilian, chicana, chicano, colombian, colombiana, columbian, costa, costa rican, costarican, cuban, cubana, dominican, ecuadorean, ecuadorian, españa, español, euromexican, guatemala, guatemalan, honduran, honduras, latin, latin american, latina, latino, mami, mammie, mayan, mestizo, mexican, mexicana, mezcla, nicaragua, nicaraguan, panama, panamanian, peru, peruvian, puerto rican, puertorican, rica, rican, salvadorean, salvadorian, south american, spain, spanish, venezuela, venezuelan, venezuelana",
-      "asian: afghan, asiana, bangladesh, cambodia, cambodian, cantonese, china, chinese, eurasian, hong kong, hongkong, indonesian, japan, japanese, korea, korean, laos, laotian, malaysia, malaysian, mongolian, orient, oriental, singapore, singaporean, taiwan, taiwanese, thai, thailand, viet namese, vietnam, vietnamese",
-      "african american: AA, african, afro, afro-american, black, chocolate, ebonie, ebony, eritrea, eritrean, ethiopian, ethopian, newbian, nigeria, nigerian, nubian, redbone, somali, somalian, zambian, zimbabwean",
-      "south asian: asian indian, east indian, india, indian, kashmiran, maldivian, pakistan, pakistan, punjabi, tamil",
-      "caucasian: all-american, american, aussie, australia, australian, austria, austrian, belarus, belarusian, belgian, belgium, bermudian, britain, british, briton, bulgaria, bulgarian, cajun, canada, canadian, canadien, christian, croatia, czech, czechoslovakian, danish, denmark, english, estonian, euro, europe, european, france, french, french canadian, german, germany, grecian, greece, greek, hungarian, hungary, ireland, irish, italian, italy, jewish, kazakhstan, mediterranean, norway, norwegian, poland, polish, portugal, portuguese, romania, romanian, rumania, rumanian, russia, russian, scandinavia, scandinavian, scots, scottish, siberia, sicilian, sicily, slovakian, southern, sweden, swedish, ukraine, ukrainian, uzbekistan, white, yugoslavia, yugoslavian",
-      "native american: cherokee, native"
-    ]
-  },
-  "I_ethnic": {
+  "ethnicityType": {
     "type": "hybrid_jaccard",
     "partial_method": "jaro",
     "parameters": {
