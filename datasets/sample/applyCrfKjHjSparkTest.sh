@@ -2,18 +2,18 @@
 
 # This script assumes that "spark-submit" is available on $PATH.
 
-OUTDIR=data/sample/adjudicated_modeled_live_eyehair_100_03-tags-hj.spark
+OUTDIR=${DIG_CRF_HOME}/data/sample/adjudicated_modeled_live_eyehair_100_03-tags-hj.spark
 
 # Dangerous!
 rm -rf ${OUTDIR}
 
 spark-submit \
     --master 'local[8]' \
-    ./applyCrfSparkTest.py --keyed \
-    --input data/sample/adjudicated_modeled_live_eyehair_100_03.kjsonl \
+    ${DIG_CRF_HOME}/src/applyCrf/applyCrfSparkTest.py --keyed \
+    --input ${DIG_CRF_HOME}/data/sample/adjudicated_modeled_live_eyehair_100_03.kjsonl \
     --output ${OUTDIR} \
-    --featlist data/config/features.hair-eye \
-    --model data/config/dig-hair-eye-train.model \
-    --hybridJaccardConfig hybrid_jaccard_config.json \
+    --featlist ${DIG_CRF_HOME}/data/config/features.hair-eye \
+    --model ${DIG_CRF_HOME}/data/config/dig-hair-eye-train.model \
+    --hybridJaccardConfig ${DIG_CRF_HOME}/data/config/hybrid_jaccard_config.json \
     --partitions 8 \
     --verbose --statistics

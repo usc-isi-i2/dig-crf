@@ -1,4 +1,4 @@
 #! /bin/bash
 
 python ./loadSample.py \
-       --input data/sample/adjudicated_modeled_live_eyehair_100_03.json
+       --input ${DIG_CRF_HOME}/data/sample/adjudicated_modeled_live_eyehair_100_03.json

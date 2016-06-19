@@ -6,6 +6,6 @@ echo "Submitting the job to the Memex cluster."
 time spark-submit \
     --master 'yarn-client' \
     --num-executors 50 \
-    ./countGoodJson.py \
+    ${DIG_CRF_HOME}/src/count/countGoodJson.py \
     -- \
     --input ${DUMP6FILE}

@@ -29,19 +29,19 @@ else
 fi
 
 # Create a zip file of all the Python files.
-rm -f pythonFiles.zip
-zip -r pythonFiles.zip \
+rm -f ${DIG_CRF_HOME}/pythonFiles.zip
+(cd ${DIG_CRF_HOME}/src/applyCrf && zip -r ${DIG_CRF_HOME}/pythonFiles.zip \
      crf_features.py crf_sentences.py crf_tokenizer.py \
      applyCrf.py applyCrfSpark.py \
-     hybridJaccard
+     hybridJaccard)
 
 # Dangerous!
 echo "Clearing the output folder: ${OUTDIR}"
 hadoop fs -rm -r -f ${OUTDIR}
 
 echo "Copying the feature control file and CRF model to Hadoop."
-hadoop fs -copyFromLocal -f data/config/$FEATURES $MYHOME/$FEATURES
-hadoop fs -copyFromLocal -f data/config/$MODEL $MYHOME/$MODEL
+hadoop fs -copyFromLocal -f ${DIG_CRF_HOME}/data/config/$FEATURES $MYHOME/$FEATURES
+hadoop fs -copyFromLocal -f ${DIG_CRF_HOME}/data/config/$MODEL $MYHOME/$MODEL
 
 echo "Creating the Python Egg cache folder: $PYTHON_EGG_CACHE"
 hadoop fs -mkdir -p $PYTHON_EGG_CACHE
@@ -50,10 +50,10 @@ echo "Submitting the job to the Memex cluster."
 time spark-submit \
     --master 'yarn-client' \
     --num-executors ${NUM_EXECUTORS} \
-    --py-files CRF++-0.58/python/dist/mecab_python-0.0.0-py2.7-linux-x86_64.egg,pythonFiles.zip \
+    --py-files ${DIG_CRF_HOME}/CRF++-0.58/python/dist/mecab_python-0.0.0-py2.7-linux-x86_64.egg,${DIG_CRF_HOME}/pythonFiles.zip \
     --conf "spark.executorEnv.PYTHON_EGG_CACHE=${PYTHON_EGG_CACHE}" \
-    --driver-java-options -Dlog4j.configuration=file:quieter-log4j.properties \
-    ./applyCrfSparkTest.py \
+    --driver-java-options -Dlog4j.configuration=file:${DIG_CRF_HOME}-log4j.properties \
+    ${DIG_CRF_HOME}/src/applyCrf/applyCrfSparkTest.py \
     -- \
     --featlist ${MYHOME}/${FEATURES} \
     --model ${MYHOME}/${MODEL} \

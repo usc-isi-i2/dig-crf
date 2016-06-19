@@ -1,8 +1,8 @@
 #! /bin/bash
 
-time python ./applyCrfTest.py --keyed --justTokens \
-    --input data/sample/adjudicated_modeled_live_eyehair_100_03-justTokens-x100.kjsonl \
-    --output data/sample/adjudicated_modeled_live_eyehair_100_03-justTokens-x100-tags.kjsonl \
-    --featlist data/config/features.hair-eye \
-    --model data/config/dig-hair-eye-train.model \
+time python ${DIG_CRF_HOME}/src/applyCrf/applyCrfTest.py --keyed --justTokens \
+    --input ${DIG_CRF_HOME}/data/sample/adjudicated_modeled_live_eyehair_100_03-justTokens-x100.kjsonl \
+    --output ${DIG_CRF_HOME}/data/sample/adjudicated_modeled_live_eyehair_100_03-justTokens-x100-tags.kjsonl \
+    --featlist ${DIG_CRF_HOME}/data/config/features.hair-eye \
+    --model ${DIG_CRF_HOME}/data/config/dig-hair-eye-train.model \
     --statistics
