@@ -53,7 +53,7 @@ time spark-submit \
     --num-executors ${NUM_EXECUTORS} \
     --py-files ${DIG_CRF_HOME}/CRF++-0.58/python/dist/mecab_python-0.0.0-py2.7-linux-x86_64.egg,${DIG_CRF_HOME}/pythonFiles.zip \
     --conf "spark.executorEnv.PYTHON_EGG_CACHE=${PYTHON_EGG_CACHE}" \
-    --driver-java-options -Dlog4j.configuration=file:${DIG_CRF_HOME}-log4j.properties \
+    --driver-java-options -Dlog4j.configuration=file:${DIG_CRF_HOME}/quieter-log4j.properties \
     ${DIG_CRF_HOME}/src/applyCrf/applyCrfSparkTest.py \
     -- \
     --featlist ${MYHOME}/${FEATURES} \

@@ -22,7 +22,7 @@ time spark-submit \
     --master 'yarn-client' \
     --num-executors 350 \
     --py-files ${DIG_CRF_HOME}/crf_tokenizer \
-    --driver-java-options -Dlog4j.configuration=file:${DIG_CRF_HOME}-log4j.properties \
+    --driver-java-options -Dlog4j.configuration=file:${DIG_CRF_HOME}/quieter-log4j.properties \
     ${DIG_CRF_HOME}/src/extract/extractAndTokenizeField.py \
     -- \
     --input ${INPUTFILE} \
