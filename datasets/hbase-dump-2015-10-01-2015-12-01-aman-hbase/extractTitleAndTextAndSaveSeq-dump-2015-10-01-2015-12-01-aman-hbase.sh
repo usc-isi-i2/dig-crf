@@ -21,7 +21,7 @@ echo "Submitting the job to the Memex cluster."
 time spark-submit \
     --master 'yarn-client' \
     --num-executors 350 \
-    --py-files ${DIG_CRF_HOME}/crf_tokenizer \
+    --py-files ${DIG_CRF_HOME}/src/applyCrf/crf_tokenizer \
     --driver-java-options -Dlog4j.configuration=file:${DIG_CRF_HOME}/data/config/quieter-log4j.properties \
     ${DIG_CRF_HOME}/src/extract/extractAndTokenizeField.py \
     -- \
