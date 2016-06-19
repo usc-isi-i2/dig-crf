@@ -292,7 +292,7 @@ create their own classes.
                         else:
                             tagMapDropCount += 1
                             accept = False
-                    if accept and resultFilter is not None:
+                    if accept and resultFilter:
                         accept = resultFilter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
                         if accept:
                             filterAcceptCount += 1
@@ -325,7 +325,7 @@ create their own classes.
                 else:
                     tagMapDropCount += 1
                     accept = False
-            if accept and resultFilter is not None:
+            if accept and resultFilter:
                 accept = resultFilter(sentence, currentTagName, phraseFirstTokenIdx, phraseTokenCount)
                 if accept:
                     filterAcceptCount += 1
@@ -549,6 +549,10 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
         return hybridJaccardResultFilter
 
     def configureHybridJaccard(self, hybridJaccardConfigPath):
+        if not hybridJaccardConfigPath:
+            self.setResultFilter(None)
+            return
+
         # Read the hybrid Jaccard configuration file.  For each tag type
         # mentioned in the file, create a hybridJaccard tagger.
         hybridJaccardProcessors = { }
