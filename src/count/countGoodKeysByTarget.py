@@ -9,7 +9,7 @@ import sys
 from pyspark import SparkContext
 
 def getKeys(value):
-    global goodJsonRecords, badJsonRecords, noExtractionsCount, noTitleCount, noTitleAttribsCount, noTitleAttribsTargetCount, noUrlCOunt
+    global goodJsonRecords, badJsonRecords, noExtractionsCount, noTitleCount, noTitleAttribsCount, noTitleAttribsTargetCount, noUrlCount
     try:
         d = json.loads(value)
         goodJsonRecords += 1
@@ -45,7 +45,7 @@ def getKeys(value):
             url = d["url"]
             httpPart, emptyPart, domainName, remainder = url.split("/", 3)
             if domainName:
-                targetName = url + " " + targetName                
+                targetName = domainName + " " + targetName                
 
     results = [ json.dumps(targetName + ": " + key) for key in d.keys() ]
     if extractions:
@@ -62,14 +62,14 @@ def main(argv=None):
 
     sc = SparkContext()
 
-    global goodJsonRecords, badJsonRecords, noExtractionsCount, noTitleCount, noTitleAttribsCount, noTitleAttribsTargetCount, noUrlCOunt
+    global goodJsonRecords, badJsonRecords, noExtractionsCount, noTitleCount, noTitleAttribsCount, noTitleAttribsTargetCount, noUrlCount
     goodJsonRecords = sc.accumulator(0)
     badJsonRecords = sc.accumulator(0)
     noExtractionsCount = sc.accumulator(0)
     noTitleCount = sc.accumulator(0)
     noTitleAttribsCount = sc.accumulator(0)
     noTitleAttribsTargetCount  = sc.accumulator(0)
-    noUrlCOunt = sc.accumulator(0)
+    noUrlCount = sc.accumulator(0)
 
     data = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
     keyCounts = data.values().flatMap(getKeys).countByValue()
