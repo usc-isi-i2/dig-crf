@@ -43,7 +43,7 @@ def getKeys(value):
         else:
             # Go for URL:
             url = d["url"]
-            httpPart, emptyPart, domainName, remainder = url.split("/", 4)
+            httpPart, emptyPart, domainName, remainder = url.split("/", 3)
             if domainName:
                 targetName = url + " " + targetName                
 
