@@ -10,30 +10,12 @@ MODEL=dig-hair-eye-train.model
 OUTDIR=hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes.seq
 NUM_EXECUTORS=350
 
-# Use the envar MEMEX_MAX_EXECUTORS to limit the number of executors.
-if [ ${NUM_EXECUTORS} -gt ${MEMEX_MAX_EXECUTORS:-${NUM_EXECUTORS}} ]
-  then
-    NUM_EXECUTORS=${MEMEX_MAX_EXECUTORS}
-fi
-echo "Requesting ${NUM_EXECUTORS} executors."
+${DIG_CRF_HOME}/checkMemexConnection.sh
+${DIG_CRF_HOME}/buildPythonFiles.sh
+source ${DIG_CRF_HOME}/limitMemexExecutors.sh
 
 PYTHON_EGG_CACHE=./python-eggs
 export PYTHON_EGG_CACHE
-
-FOUND=`fgrep tun0: /proc/net/dev`
-if  [ -n "$FOUND" ] ; then
-  echo "A tunnel is present, assuming it leads to the Memex cluster."
-else
-  echo "No tunnel found, exiting"
-  exit 1
-fi
-
-# Create a zip file of all the Python files.
-rm -f ${DIG_CRF_HOME}/pythonFiles.zip
-(cd ${DIG_CRF_HOME}/src/applyCrf && zip -r ${DIG_CRF_HOME}/pythonFiles.zip \
-     crf_features.py crf_sentences.py crf_tokenizer.py \
-     applyCrf.py applyCrfSpark.py \
-     hybridJaccard)
 
 # Dangerous!
 echo "Clearing the output folder: ${OUTDIR}"
