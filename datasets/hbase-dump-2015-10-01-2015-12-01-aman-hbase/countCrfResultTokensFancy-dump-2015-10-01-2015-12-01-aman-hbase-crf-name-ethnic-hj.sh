@@ -3,19 +3,15 @@
 MYHOME=hdfs:///user/crogers
 
 INPUTFILE=${MYHOME}/hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic-hj.seq
+NUM_EXECUTORS=50
 
-FOUND=`fgrep tun0: /proc/net/dev`
-if  [ -n "$FOUND" ] ; then
-  echo "A tunnel is present, assuming it leads to the Memex cluster."
-else
-  echo "No tunnel found, exiting"
-  exit 1
-fi
+${DIG_CRF_HOME}/checkMemexConnection.sh
+source ${DIG_CRF_HOME}/limitMemexExecutors.sh
 
 echo "Submitting the job to the Memex cluster."
 time spark-submit \
     --master 'yarn-client' \
-    --num-executors 50 \
+    --num-executors ${NUM_EXECUTORS} \
     --driver-java-options -Dlog4j.configuration=file:${DIG_CRF_HOME}/data/config/quieter-log4j.properties \
     ${DIG_CRF_HOME}/src/count/countCrfResultTokensFancy.py \
     -- \
