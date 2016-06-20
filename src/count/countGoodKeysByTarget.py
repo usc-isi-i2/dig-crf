@@ -9,7 +9,7 @@ import sys
 from pyspark import SparkContext
 
 def getKeys(value):
-    global goodJsonRecords, badJsonRecords, noExtractionsCount, noTitleCount, noTitleAttribsCount, noTitleAttribsTargetCount
+    global goodJsonRecords, badJsonRecords, noExtractionsCount, noTitleCount, noTitleAttribsCount, noTitleAttribsTargetCount, noUrlCOunt
     try:
         d = json.loads(value)
         goodJsonRecords += 1
@@ -17,6 +17,7 @@ def getKeys(value):
         badJsonRecords += 1
         return iter([])
 
+    goodTargetName = False
     if "extractions" not in d:
         targetName = "(No extractions)"
         noExtractionsCount += 1
@@ -34,6 +35,17 @@ def getKeys(value):
             noTitleAttribsTargetCount += 1
         else:
             targetName = extractions["title"]["attribs"]["target"]
+            goodTargetName = True
+
+    if not goodTargetName:
+        if "url" not in d:
+            noUrlCount =+ 1
+        else:
+            # Go for URL:
+            url = d["url"]
+            httpPart, emptyPart, domainName, remainder = url.split("/", 4)
+            if domainName:
+                targetName = url + " " + targetName                
 
     results = [ json.dumps(targetName + ": " + key) for key in d.keys() ]
     if extractions:
@@ -50,13 +62,14 @@ def main(argv=None):
 
     sc = SparkContext()
 
-    global goodJsonRecords, badJsonRecords, noExtractionsCount, noTitleCount, noTitleAttribsCount, noTitleAttribsTargetCount
+    global goodJsonRecords, badJsonRecords, noExtractionsCount, noTitleCount, noTitleAttribsCount, noTitleAttribsTargetCount, noUrlCOunt
     goodJsonRecords = sc.accumulator(0)
     badJsonRecords = sc.accumulator(0)
     noExtractionsCount = sc.accumulator(0)
     noTitleCount = sc.accumulator(0)
     noTitleAttribsCount = sc.accumulator(0)
     noTitleAttribsTargetCount  = sc.accumulator(0)
+    noUrlCOunt = sc.accumulator(0)
 
     data = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
     keyCounts = data.values().flatMap(getKeys).countByValue()
@@ -68,6 +81,7 @@ def main(argv=None):
     print "noTitleCount = %d" % noTitleCount.value
     print "noTitleAttribsCount = %d" % noTitleAttribsCount.value
     print "noTitleAttribsTargetCount = %d" % noTitleAttribsTargetCount.value
+    print "noUrlCount = %d" % noUrlCount.value
     print "========================================"
 
     for k in sorted(keyCounts):
