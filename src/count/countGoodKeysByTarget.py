@@ -8,7 +8,7 @@ import json
 import sys
 from pyspark import SparkContext
 
-def getKeys(value):
+def getKeysByTarget(value):
     global goodJsonRecords, badJsonRecords, noExtractionsCount, noTitleCount, noTitleAttribsCount, noTitleAttribsTargetCount, noUrlCount
     try:
         d = json.loads(value)
@@ -53,35 +53,72 @@ def getKeys(value):
 
     return iter(results)
 
+def getKeysByDomainName(value):
+    global goodJsonRecords, badJsonRecords, noExtractionsCount, noUrlCount, noDomainNameCount
+    try:
+        d = json.loads(value)
+        goodJsonRecords += 1
+    except:
+        badJsonRecords += 1
+        return iter([])
+
+    if "url" not in d:
+        domainName = "(no url)"
+        noUrlCount =+ 1
+    else:
+        url = d["url"]
+        httpPart, emptyPart, domainName, remainder = url.split("/", 3)
+        if not domainName:
+            domainName="(no domain name)"
+
+    if "extractions" not in d:
+        targetName = "(No extractions)"
+        noExtractionsCount += 1
+        extractions = None
+    else:
+        extractions = d["extractions"]
+
+    results = [ json.dumps(domainName + ": " + key) for key in d.keys() ]
+    if extractions:
+        results.extend([ json.dumps(domainName + ": extractions: " + key) for key in extractions.keys() ])
+
+    return iter(results)
+
 def main(argv=None):
     '''this is called if run from command line'''
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i','--input', help="Required Seq input file on cluster.", required=True)
+    parser.add_argument('-i','--input', help="Seq input file on cluster.", required=True)
+    parser.add_argument('-u','--byUrl', help="Group by URL domain name.", required=False, action='store_true')
     args = parser.parse_args()
 
     sc = SparkContext()
 
-    global goodJsonRecords, badJsonRecords, noExtractionsCount, noTitleCount, noTitleAttribsCount, noTitleAttribsTargetCount, noUrlCount
+    global goodJsonRecords, badJsonRecords, noExtractionsCount, noTitleCount, noTitleAttribsCount, noTitleAttribsTargetCount, noUrlCount, noDomainNameCount
     goodJsonRecords = sc.accumulator(0)
     badJsonRecords = sc.accumulator(0)
+    noUrlCount = sc.accumulator(0)
+    noDomainNameCount = sc.accumulator(0)
     noExtractionsCount = sc.accumulator(0)
     noTitleCount = sc.accumulator(0)
     noTitleAttribsCount = sc.accumulator(0)
     noTitleAttribsTargetCount  = sc.accumulator(0)
-    noUrlCount = sc.accumulator(0)
 
     data = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
-    keyCounts = data.values().flatMap(getKeys).countByValue()
+    if args.byUrl:
+        keyCounts = data.values().flatMap(getKeysByDomainName).countByValue()
+    else:
+        keyCounts = data.values().flatMap(getKeysByTarget).countByValue()
 
     print "========================================"
     print "goodJsonRecords = %d" % goodJsonRecords.value
     print "badJsonRecords = %d" % badJsonRecords.value
+    print "noUrlCount = %d" % noUrlCount.value
+    print "noComainNameCount = %d" % noDomainNameCount.value
     print "noExtractionsCount = %d" % noExtractionsCount.value
     print "noTitleCount = %d" % noTitleCount.value
     print "noTitleAttribsCount = %d" % noTitleAttribsCount.value
     print "noTitleAttribsTargetCount = %d" % noTitleAttribsTargetCount.value
-    print "noUrlCount = %d" % noUrlCount.value
     print "========================================"
 
     for k in sorted(keyCounts):
@@ -93,4 +130,3 @@ def main(argv=None):
 # call main() if this is run as standalone                                                             
 if __name__ == "__main__":
     sys.exit(main())
-
