@@ -17,6 +17,6 @@ time spark-submit \
     --master 'yarn-client' \
     --num-executors 300\
     --driver-java-options -Dlog4j.configuration=file:${DIG_CRF_HOME}/data/config/quieter-log4j.properties \
-    ${DIG_CRF_HOME}/src/count/countGoodKeysByPublisher.py \
+    ${DIG_CRF_HOME}/src/count/countGoodKeysByTarget.py \
     -- \
     --input ${INPUTFILE}
