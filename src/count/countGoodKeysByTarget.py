@@ -67,12 +67,23 @@ def getKeysByDomainName(value):
         noUrlCount =+ 1
     else:
         url = d["url"]
-        httpPart, emptyPart, domainName, remainder = url.split("/", 3)
-        if not domainName:
-            domainName="(no domain name)"
+        splitUrl = url.split("/")
+        if len(splitUrl) < 3:
+            domainName="(bad url)"
+        else:
+            httpPart, emptyPart, domainName = splitUrl[:3]
+            if not domainName:
+                domainName="(no domain name)"
+
+            # Reduce the domain name in an ad-hoc way:
+            components = domainName.split(".")
+            if len(components) >= 2:
+                if components[-2] in ["com"] and len(components) >= 3:
+                    domainName = ".".join(components[-3:])
+                else:
+                    domainName = ".".join(components[-2:])
 
     if "extractions" not in d:
-        targetName = "(No extractions)"
         noExtractionsCount += 1
         extractions = None
     else:
