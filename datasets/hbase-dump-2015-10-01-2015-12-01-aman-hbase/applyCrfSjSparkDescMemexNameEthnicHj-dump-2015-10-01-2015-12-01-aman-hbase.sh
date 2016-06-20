@@ -9,7 +9,7 @@ MYHOME=hdfs:///user/crogers
 INFILE=${MYHOME}/hbase-dump-2015-10-01-2015-12-01-aman-hbase-title-and-text-tokens.seq
 FEATURES=features.name-ethnic
 MODEL=dig-name-ethnic-train.model
-HYBRID_JACCARD=hybrid_jaccard_config.json
+HYBRID_JACCARD=${DIG_CRF_HOME}/data/config/hybrid_jaccard_config.json
 OUTDIR=hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic-hj.seq
 NUM_EXECUTORS=350
 
