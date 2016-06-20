@@ -14,10 +14,9 @@ echo ./countGoodKeys-dump-2015-10-01-2015-12-01-aman-hbase.sh
 ./countGoodKeys-dump-2015-10-01-2015-12-01-aman-hbase.sh \
 | tee countGoodKeys-dump-2015-10-01-2015-12-01-aman-hbase.log
 
-# TODO: Fix this script and its program, they don't work on this dataset.
-# echo ./countGoodKeysByPublisher-dump-2015-10-01-2015-12-01-aman-hbase.sh
-# ./countGoodKeysByPublisher-dump-2015-10-01-2015-12-01-aman-hbase.sh \
-# | tee countGoodKeysByPublisher-dump-2015-10-01-2015-12-01-aman-hbase.log
+echo ./countGoodKeysByTarget-dump-2015-10-01-2015-12-01-aman-hbase.sh
+./countGoodKeysByTarget-dump-2015-10-01-2015-12-01-aman-hbase.sh \
+| tee countGoodKeysByTarget-dump-2015-10-01-2015-12-01-aman-hbase.log
 
 echo ./extractTitleAndTextAndSaveSeq-dump-2015-10-01-2015-12-01-aman-hbase.sh
 ./extractTitleAndTextAndSaveSeq-dump-2015-10-01-2015-12-01-aman-hbase.sh \
