@@ -45,7 +45,7 @@ def getKeys(value):
             url = d["url"]
             httpPart, emptyPart, domainName, remainder = url.split("/", 3)
             if domainName:
-                targetName = url + " " + targetName                
+                targetName = domainName + " " + targetName                
 
     results = [ json.dumps(targetName + ": " + key) for key in d.keys() ]
     if extractions:
