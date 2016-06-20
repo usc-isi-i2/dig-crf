@@ -18,23 +18,28 @@ def getKeys(value):
         return iter([])
 
     if "extractions" not in d:
+        targetName = "(No extractions)"
         noExtractionsCount += 1
-        return iter([])
-    extractions = d["extractions"]
-
-    if "title" not in extractions:
-        targetName = "(No Title)"
-        noTitleCount += 1
-    elif "attribs" not in extractions["title"]:
-        targetName = "(No title attribs)"
-        noTitleAttribsCount += 1
-    elif "target" not in extractions["title"]["attribs"]:
-        targetName = "(No title attribs target)"
-        noTitleAttribsTargetCount += 1
+        extractions = None
     else:
-        targetName = extractions["title"]["attribs"]["target"]
+        extractions = d["extractions"]
+        if "title" not in extractions:
+            targetName = "(No title)"
+            noTitleCount += 1
+        elif "attribs" not in extractions["title"]:
+            targetName = "(No title attribs)"
+            noTitleAttribsCount += 1
+        elif "target" not in extractions["title"]["attribs"]:
+            targetName = "(No title attribs target)"
+            noTitleAttribsTargetCount += 1
+        else:
+            targetName = extractions["title"]["attribs"]["target"]
 
-    return (json.dumps(targetName + ": " + key) for key in d.keys())
+    results = [ json.dumps(targetName + ": " + key) for key in d.keys() ]
+    if extractions:
+        results.extend([ json.dumps(targetName + ": extractions: " + key) for key in extractions.keys() ])
+
+    return iter(results)
 
 def main(argv=None):
     '''this is called if run from command line'''
