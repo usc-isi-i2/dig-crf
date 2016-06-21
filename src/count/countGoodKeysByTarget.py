@@ -78,7 +78,7 @@ def getKeysByDomainName(value):
             # Reduce the domain name in an ad-hoc way:
             components = domainName.split(".")
             if len(components) >= 2:
-                if components[-2] in ["com"] and len(components) >= 3:
+                if components[-2] in ["com", "co"] and len(components) >= 3:
                     domainName = ".".join(components[-3:])
                 else:
                     domainName = ".".join(components[-2:])
