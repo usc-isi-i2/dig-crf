@@ -1,0 +1,42 @@
+#! /bin/bash
+
+# This script assumes that "spark-submit" is available on $PATH.
+source config.sh
+
+NUM_EXECUTORS=350
+
+source ${DIG_CRF_SCRIPT}/checkMemexConnection.sh
+${DIG_CRF_SCRIPT}/buildPythonFiles.sh
+source ${DIG_CRF_SCRIPT}/limitMemexExecutors.sh
+
+# Dangerous!
+echo "Clearing the output folder: ${WORKING_HAIR_EYES_HJ_FILE}"
+hadoop fs -rm -r -f ${WORKING_HAIR_EYES_HJ_FILE}
+
+echo "Copying the feature control file and CRF model to Hadoop."
+hadoop fs -copyFromLocal -f ${DIG_CRF_DATA_CONFIG_DIR}/${HAIR_EYE_FEATURES_CONFIG_FILE} \
+                            ${HDFS_WORK_DIR}/${HAIR_EYE_FEATURES_CONFIG_FILE}
+hadoop fs -copyFromLocal -f ${DIG_CRF_DATA_CONFIG_DIR}/${HAIR_EYE_CRF_MODEL_FILE} \
+                            ${HDFS_WORK_DIR}/${HAIR_EYE_CRF_MODEL_FILE}
+
+echo "Creating the Python Egg cache folder: $PYTHON_EGG_CACHE"
+hadoop fs -mkdir -p $PYTHON_EGG_CACHE
+
+echo "Submitting the job to the Memex cluster."
+time spark-submit \
+    --master 'yarn-client' \
+    --num-executors ${NUM_EXECUTORS} \
+    --py-files ${DIG_EGG_FILE},${DIG_CRF_PYTHON_ZIP_FILE} \
+    --conf "spark.executorEnv.PYTHON_EGG_CACHE=${PYTHON_EGG_CACHE}" \
+    --driver-java-options -Dlog4j.configuration=file:${DIG_CRF_DATA_CONFIG_DIR}${QUIETER_LOG4J_PROPERTIES_FILE} \
+    ${DIG_CRF_APPLY}/applyCrfSparkTest.py \
+    -- \
+    --featlist ${HDFS_WORK_DIR}/${HAIR_EYE_FEATURES_CONFIG_FILE} \
+    --model ${HDFS_WORK_DIR}/${HAIR_EYE_CRF_MODEL_FILE} \
+    --hybridJaccardConfig ${DIG_CRF_DATA_CONFIG_DIR}/${HYBRID_JACCARD_CONFIG_FILE} \
+    --download \
+    --input ${WORKING_TITLE_AND_TEXT_TOKENS_FILE} --inputSeq --justTokens \
+    --output ${WORKING_HAIR_EYES_HJ_FILE} --outputSeq --embedKey url \
+    --verbose --statistics
+
+
