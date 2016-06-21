@@ -1,10 +1,10 @@
 #! /bin/bash
 
 # This script assumes that "spark-submit" is available on $PATH.
-source config.sh
 
 NUM_EXECUTORS=350
 
+source config.sh
 source ${DIG_CRF_SCRIPT}/checkMemexConnection.sh
 ${DIG_CRF_SCRIPT}/buildPythonFiles.sh
 source ${DIG_CRF_SCRIPT}/limitMemexExecutors.sh
@@ -28,7 +28,7 @@ time spark-submit \
     --num-executors ${NUM_EXECUTORS} \
     --py-files ${DIG_EGG_FILE},${DIG_CRF_PYTHON_ZIP_FILE} \
     --conf "spark.executorEnv.PYTHON_EGG_CACHE=${PYTHON_EGG_CACHE}" \
-    --driver-java-options -Dlog4j.configuration=file:${DIG_CRF_DATA_CONFIG_DIR}${QUIETER_LOG4J_PROPERTIES_FILE} \
+    ${DRIVER_JAVA_OPTIONS} \
     ${DIG_CRF_APPLY}/applyCrfSparkTest.py \
     -- \
     --featlist ${HDFS_WORK_DIR}/${NAME_ETHNIC_FEATURES_CONFIG_FILE} \

@@ -5,12 +5,14 @@
 DATASET_NAME=hbase-dump-2016-06-15
 
 DIG_CRF_APPLY=${DIG_CRF_HOME}/src/applyCrf
+DIG_CRF_COUNT=${DIG_CRF_HOME}/src/count
 DIG_CRF_EXTRACT=${DIG_CRF_HOME}/src/extract
 DIG_CRF_SCRIPT=${DIG_CRF_HOME}
 
 QUIETER_LOG4J_PROPERTIES_FILE=quieter-log4j.properties
-HYBRID_JACCARD_CONFIG_FILE=hybrid_jaccard_config.json
+DRIVER_JAVA_OPTIONS="--driver-java-options -Dlog4j.configuration=file:${DIG_CRF_DATA_CONFIG_DIR}${QUIETER_LOG4J_PROPERTIES_FILE}"
 
+HYBRID_JACCARD_CONFIG_FILE=hybrid_jaccard_config.json
 HAIR_EYE_FEATURES_CONFIG_FILE=features.hair-eye
 HAIR_EYE_CRF_MODEL_FILE=dig-hair-eye-train.model
 
