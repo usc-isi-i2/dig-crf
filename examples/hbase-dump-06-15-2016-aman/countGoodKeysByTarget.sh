@@ -1,6 +1,6 @@
 #! /bin/bash
 
-INPUTFILE=/user/worker/hbase-dump-06-15-2016-aman
+INPUTFILE='/user/worker/hbase-dump-06-15-2016-aman/201*/*'
 NUM_EXECUTORS=350
 
 source ${DIG_CRF_HOME}/checkMemexConnection.sh
