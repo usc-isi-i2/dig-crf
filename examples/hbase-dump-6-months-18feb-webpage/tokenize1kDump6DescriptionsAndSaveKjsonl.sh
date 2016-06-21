@@ -4,7 +4,7 @@ DUMP6FILE=/user/worker/hbase-dump-6-months-18feb/webpage
 KEY_TO_EXTRACT=description
 OUTFILE=/user/crogers/hbase-dump-6-months-18feb-webpage-first1k-descriptions.kjsonl
 
-${DIG_CRF_HOME}/checkMemexConnection.sh
+source ${DIG_CRF_HOME}/checkMemexConnection.sh
 ${DIG_CRF_HOME}/buildPythonFiles.sh
 
 # Dangerous!

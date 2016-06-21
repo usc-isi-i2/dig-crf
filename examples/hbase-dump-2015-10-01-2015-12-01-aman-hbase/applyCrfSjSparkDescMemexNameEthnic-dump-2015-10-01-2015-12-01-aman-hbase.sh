@@ -10,7 +10,7 @@ MODEL=dig-name-ethnic-train.model
 OUTDIR=hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic.seq
 NUM_EXECUTORS=350
 
-${DIG_CRF_HOME}/checkMemexConnection.sh
+source ${DIG_CRF_HOME}/checkMemexConnection.sh
 ${DIG_CRF_HOME}/buildPythonFiles.sh
 source ${DIG_CRF_HOME}/limitMemexExecutors.sh
 

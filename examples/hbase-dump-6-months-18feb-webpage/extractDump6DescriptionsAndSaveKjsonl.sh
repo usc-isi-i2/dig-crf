@@ -5,7 +5,7 @@ KEY_TO_EXTRACT=description
 OUTFILE=/user/crogers/hbase-dump-6-months-18feb-webpage-descriptions.kjsonl
 NUM_EXECUTORS=50
 
-${DIG_CRF_HOME}/checkMemexConnection.sh
+source ${DIG_CRF_HOME}/checkMemexConnection.sh
 ${DIG_CRF_HOME}/buildPythonFiles.sh
 source ${DIG_CRF_HOME}/limitMemexExecutors.sh
 

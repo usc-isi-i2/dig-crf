@@ -3,7 +3,7 @@
 INPUTFILE=/user/crogers/hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes.seq
 NUM_EXECUTORS=50
 
-${DIG_CRF_HOME}/checkMemexConnection.sh
+source ${DIG_CRF_HOME}/checkMemexConnection.sh
 source ${DIG_CRF_HOME}/limitMemexExecutors.sh
 
 echo "Submitting the job to the Memex cluster."
