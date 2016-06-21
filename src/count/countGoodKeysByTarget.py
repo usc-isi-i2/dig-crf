@@ -125,11 +125,12 @@ def main(argv=None):
     print "goodJsonRecords = %d" % goodJsonRecords.value
     print "badJsonRecords = %d" % badJsonRecords.value
     print "noUrlCount = %d" % noUrlCount.value
-    print "noComainNameCount = %d" % noDomainNameCount.value
+    print "noDomainNameCount = %d" % noDomainNameCount.value
     print "noExtractionsCount = %d" % noExtractionsCount.value
-    print "noTitleCount = %d" % noTitleCount.value
-    print "noTitleAttribsCount = %d" % noTitleAttribsCount.value
-    print "noTitleAttribsTargetCount = %d" % noTitleAttribsTargetCount.value
+    if not args.byUrl:
+        print "noTitleCount = %d" % noTitleCount.value
+        print "noTitleAttribsCount = %d" % noTitleAttribsCount.value
+        print "noTitleAttribsTargetCount = %d" % noTitleAttribsTargetCount.value
     print "========================================"
 
     for k in sorted(keyCounts):
