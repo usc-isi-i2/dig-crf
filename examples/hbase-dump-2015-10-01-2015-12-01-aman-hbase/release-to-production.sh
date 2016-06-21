@@ -1,11 +1,9 @@
 #! /bin/bash
 
-# Copy the CRF/hybridJaccard output files from the work area
-# to the production area ("/user/worker"). The script tries
-# to do the right thing by copying the files, but that takes
-# a very long time.
-#
-# TODO: Copy to a temporary area, then do quick renames.
+# Copy the CRF/hybridJaccard output files from the work area to the
+# production area ("/user/worker"). The script tried to do the right
+# thing by copying the files, but that took a very long time.  SO, we
+# will copy to a temporary area, then do quick renames.
 #
 # TODO: Use a simple program to parallel load and write
 # the data.
@@ -17,6 +15,9 @@ NAME_ETHNIC_INPUTFILE=${INPUTFOLDER}/hbase-dump-2015-10-01-2015-12-01-aman-hbase
 OUTPUTFOLDER=/user/worker/hbase-dump-2015-10-01-2015-12-01-aman/crf
 HAIR_EYES_OUTPUTFILE=${OUTPUTFOLDER}/hair-eyes
 NAME_ETHNIC_OUTPUTFILE=${OUTPUTFOLDER}/name-ethnic
+TEMPSUFFIX=.TEMP
+HAIR_EYES_TEMPFILE=${HAIR_EYES_OUTPUTFILE}${TEMPSUFFIX}
+NAME_ETHNIC_TEMPFILE=${NAME_ETHNIC_OUTPUTFILE}${TEMPSUFFIX}
 
 source ${DIG_CRF_HOME}/checkMemexConnection.sh
 
@@ -38,6 +39,66 @@ fi
 echo "New data files:"
 hdfs dfs -ls -d ${HAIR_EYES_INPUTFILE}
 hdfs dfs -ls -d ${NAME_ETHNIC_INPUTFILE}
+
+echo "Checking for existing temporary files, and removing any found."
+hdfs dfs -test -e ${HAIR_EYES_TEMPFILE}
+if [ $? -eq 0 ]
+  then
+    hdfs dfs -rm -r ${HAIR_EYES_TEMPFILE}
+    hdfs dfs -test -e ${HAIR_EYES_TEMPFILE}
+    if [ $? -eq 0 ]
+      then
+        echo "Unable to remove ${HAIR_EYES_TEMPFILE}"
+        exit 1
+    fi
+fi
+hdfs dfs -test -e ${NAME_ETHNIC_TEMPFILE}
+if [ $? -eq 0 ]
+  then
+    hdfs dfs -rm -r ${NAME_ETHNIC_TEMPFILE}
+    hdfs dfs -test -e ${NAME_ETHNIC_TEMPFILE}
+    if [ $? -eq 0 ]
+      then
+        echo "Unable to remove ${NAME_ETHNIC_TEMPFILE}"
+        exit 1
+    fi
+fi
+
+echo "Copying new data files to temporary files."
+hdfs dfs -test -d ${HAIR_EYES_INPUTFILE}
+if [ $? -eq 0 ]
+  then
+    echo hdfs dfs -mkdir ${HAIR_EYES_TEMPFILE}
+    hdfs dfs -mkdir ${HAIR_EYES_TEMPFILE}
+    echo hdfs dfs -cp ${HAIR_EYES_INPUTFILE}/'*' ${HAIR_EYES_TEMPFILE}/
+    hdfs dfs -cp ${HAIR_EYES_INPUTFILE}/'*' ${HAIR_EYES_TEMPFILE}/
+  else
+    hdfs dfs -cp ${HAIR_EYES_INPUTFILE} ${HAIR_EYES_TEMPFILE}
+fi
+hdfs dfs -test -d ${NAME_ETHNIC_INPUTFILE}
+if [ $? -eq 0 ]
+  then
+    echo hdfs dfs -mkdir ${NAME_ETHNIC_TEMPFILE}
+    hdfs dfs -mkdir ${NAME_ETHNIC_TEMPFILE}
+    echo hdfs dfs -cp ${NAME_ETHNIC_INPUTFILE}/'*' ${NAME_ETHNIC_TEMPFILE}
+    hdfs dfs -cp ${NAME_ETHNIC_INPUTFILE}/'*' ${NAME_ETHNIC_TEMPFILE}
+  else
+    hdfs dfs -cp ${NAME_ETHNIC_INPUTFILE} ${NAME_ETHNIC_TEMPFILE}/
+fi
+
+echo "Checking for new temporary files."
+hdfs dfs -test -e ${HAIR_EYES_TEMPFILE}
+if [ $? -ne 0 ]
+  then
+    echo "Copy failed to create ${HAIR_EYES_TEMPFILE}."
+    exit 1
+fi
+hdfs dfs -test -e ${NAME_ETHNIC_TEMPFILE}
+if [ $? -ne 0 ]
+  then
+    echo "Copy failed to create ${NAME_ETHNIC_TEMPFILE}."
+    exit 1
+fi
 
 echo "Checking for existing production files, and removing any found."
 hdfs dfs -test -e ${HAIR_EYES_OUTPUTFILE}
@@ -63,42 +124,24 @@ if [ $? -eq 0 ]
     fi
 fi
 
-echo "Installing the new data files."
-hdfs dfs -test -d ${HAIR_EYES_INPUTFILE}
-if [ $? -eq 0 ]
-  then
-    echo hdfs dfs -mkdir ${HAIR_EYES_OUTPUTFILE}
-    hdfs dfs -mkdir ${HAIR_EYES_OUTPUTFILE}
-    echo hdfs dfs -cp ${HAIR_EYES_INPUTFILE}/'*' ${HAIR_EYES_OUTPUTFILE}/
-    hdfs dfs -cp ${HAIR_EYES_INPUTFILE}/'*' ${HAIR_EYES_OUTPUTFILE}/
-  else
-    hdfs dfs -cp ${HAIR_EYES_INPUTFILE} ${HAIR_EYES_OUTPUTFILE}
-fi
-hdfs dfs -test -d ${NAME_ETHNIC_INPUTFILE}
-if [ $? -eq 0 ]
-  then
-    echo hdfs dfs -mkdir ${NAME_ETHNIC_OUTPUTFILE}
-    hdfs dfs -mkdir ${NAME_ETHNIC_OUTPUTFILE}
-    echo hdfs dfs -cp ${NAME_ETHNIC_INPUTFILE}/'*' ${NAME_ETHNIC_OUTPUTFILE}
-    hdfs dfs -cp ${NAME_ETHNIC_INPUTFILE}/'*' ${NAME_ETHNIC_OUTPUTFILE}
-  else
-    hdfs dfs -cp ${NAME_ETHNIC_INPUTFILE} ${NAME_ETHNIC_OUTPUTFILE}/
-fi
+echo "Renaming temporary files to new production files."
+hdfs dfs -mv ${HAIR_EYES_TEMPFILE}   ${HAIR_EYES_OUTPUTFILE}
+hdfs dfs -mv ${NAME_ETHNIC_TEMPFILE} ${NAME_ETHNIC_OUTPUTFILE}
 
 echo "Checking for new production files."
 hdfs dfs -test -e ${HAIR_EYES_OUTPUTFILE}
 if [ $? -ne 0 ]
   then
-    echo "Copy failed for ${HAIR_EYES_OUTPUTFILE}."
+    echo "Failed to install ${HAIR_EYES_OUTPUTFILE}."
     exit 1
 fi
 hdfs dfs -test -e ${NAME_ETHNIC_OUTPUTFILE}
 if [ $? -ne 0 ]
   then
-    echo "Copy failed for ${NAME_ETHNIC_OUTPUTFILE}."
+    echo "Failed to install ${NAME_ETHNIC_OUTPUTFILE}."
     exit 1
 fi
 
-echo "Copied data files:"
+echo "New production data files:"
 hdfs dfs -ls -d ${HAIR_EYES_OUTPUTFILE}
 hdfs dfs -ls -d ${NAME_ETHNIC_OUTPUTFILE}
