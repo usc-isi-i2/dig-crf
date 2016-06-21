@@ -1,5 +1,15 @@
 #! /bin/bash
 
+# Copy the CRF/hybridJaccard output files from the work area
+# to the production area ("/user/worker"). The script tries
+# to do the right thing by copying the files, but that takes
+# a very long time.
+#
+# TODO: Copy to a temporary area, then do quick renames.
+#
+# TODO: Use a simple program to parallel load and write
+# the data.
+
 INPUTFOLDER=/user/crogers
 HAIR_EYES_INPUTFILE=${INPUTFOLDER}/hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-hair-eyes.seq
 NAME_ETHNIC_INPUTFILE=${INPUTFOLDER}/hbase-dump-2015-10-01-2015-12-01-aman-hbase-crf-name-ethnic.seq
