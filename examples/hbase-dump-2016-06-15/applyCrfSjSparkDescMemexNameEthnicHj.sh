@@ -17,12 +17,14 @@ NUM_PARTITIONS=350
 
 source config.sh
 source ${DIG_CRF_SCRIPT}/checkMemexConnection.sh
-${DIG_CRF_SCRIPT}/buildPythonFiles.sh
 source ${DIG_CRF_SCRIPT}/limitMemexExecutors.sh
+${DIG_CRF_SCRIPT}/buildPythonFiles.sh
+
+OUTPUTFILE=${WORKING_NAME_ETHNIC_HJ_FILE}
 
 # Dangerous!
-echo "Clearing the output folder: ${WORKING_NAME_ETHNIC_HJ_FILE}"
-hadoop fs -rm -r -f ${WORKING_NAME_ETHNIC_HJ_FILE}
+echo "Clearing the output folder: ${OUTPUTFILE}"
+hadoop fs -rm -r -f ${OUTPUTFILE}
 
 echo "Copying the feature control file and CRF model to Hadoop."
 hadoop fs -copyFromLocal -f ${DIG_CRF_DATA_CONFIG_DIR}/${NAME_ETHNIC_FEATURES_CONFIG_FILE} \
@@ -49,7 +51,7 @@ time spark-submit \
     --tags B_ethnic:ethnicityType,I_ethnic:ethnicityType,B_workingname:,I_workingname: \
     --download \
     --input ${WORKING_TITLE_AND_TEXT_TOKENS_FILE} --inputSeq --justTokens \
-    --output ${WORKING_NAME_ETHNIC_HJ_FILE} --outputSeq --embedKey url \
+    --output ${OUTPUTFILE} --outputSeq --embedKey url \
     --verbose --statistics
 
 

@@ -37,7 +37,6 @@ time spark-submit \
     --coalesceOutput ${NUM_PARTITIONS} \
     --featlist ${HDFS_WORK_DIR}/${HAIR_EYE_FEATURES_CONFIG_FILE} \
     --model ${HDFS_WORK_DIR}/${HAIR_EYE_CRF_MODEL_FILE} \
-    --hybridJaccardConfig ${DIG_CRF_DATA_CONFIG_DIR}/${HYBRID_JACCARD_CONFIG_FILE} \
     --download \
     --input ${WORKING_TITLE_AND_TEXT_TOKENS_FILE} --inputSeq --justTokens \
     --output ${OUTPUTFILE} --outputSeq --embedKey url \

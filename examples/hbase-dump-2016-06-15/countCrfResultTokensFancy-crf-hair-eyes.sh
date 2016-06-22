@@ -1,6 +1,6 @@
 #! /bin/bash
 
-NUM_EXECUTORS=350
+NUM_EXECUTORS=50
 
 source config.sh
 source ${DIG_CRF_SCRIPT}/checkMemexConnection.sh
@@ -11,7 +11,7 @@ time spark-submit \
     --master 'yarn-client' \
     --num-executors ${NUM_EXECUTORS} \
     ${DRIVER_JAVA_OPTIONS} \
-    ${DIG_CRF_COUNT}/countGoodKeysByTarget.py \
+    ${DIG_CRF_COUNT}/countCrfResultTokensFancy.py \
     -- \
-    --byUrl \
-    --input ${HDFS_INPUT_DATA_DIR}
+    --input ${WORKING_HAIR_EYES_FILE} \
+    --excludeTags url
