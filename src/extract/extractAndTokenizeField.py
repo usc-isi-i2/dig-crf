@@ -78,7 +78,9 @@ def main(argv=None):
 
     sc = SparkContext()
 
-    global valueCount, noValueCount, emptyValueCount, exceptionNoValueCount, exceptionEmptyValueCount, extractionKeyPathHitCounts
+    global recordCount, valueCount, noValueCount, emptyValueCount
+    global exceptionNoValueCount, exceptionEmptyValueCount, extractionKeyPathHitCounts
+    recordCount = sc.accumulator(0)
     valueCount = sc.accumulator(0)
     noValueCount = sc.accumulator(0)
     emptyValueCount = sc.accumulator(0)
@@ -92,13 +94,14 @@ def main(argv=None):
         extractionKeyPathComponents.append(extractionKeyPath.split(":"))
         extractionKeyPathHitCounts.append(sc.accumulator(0))
 
-    def extractStringValues(jsonData):
+    def extractStringValues(jsonDataString):
         """Extract one or more string fields from the JSON-encoded data. Returns an iterator for flatMapValues(...), so pruning can cause a record to be skipped."""
-        global valueCount, noValueCount, emptyValueCount, exceptionNoValueCount, exceptionEmptyValueCount, extractionKeyPathHitCounts
+        global recordCount, valueCount, noValueCount, emptyValueCount, exceptionNoValueCount, exceptionEmptyValueCount, extractionKeyPathHitCounts
         try:
+            recordCount += 1
             gotResult = False
             result = ""
-            jsonData = json.loads(jsonData)
+            jsonData = json.loads(jsonDataString)
             keyPathIndex = 0
             for keyComponents in extractionKeyPathComponents:
                 value = jsonData
@@ -150,13 +153,14 @@ def main(argv=None):
                 exceptionEmptyValueCount += 1
                 return iter([""])
 
-    def extractTokenValues(jsonData):
+    def extractTokenValues(jsonDataString):
         """Extract one or more string fields from the JSON-encoded data and tokenize.  Returns an iterator for flatMapValues(...), so pruning can cause a record to be skipped."""
-        global valueCount, noValueCount, emptyValueCount, exceptionNoValueCount, exceptionEmptyValueCount, extractionKeyPathHitCounts
+        global recordCount, valueCount, noValueCount, emptyValueCount, exceptionNoValueCount, exceptionEmptyValueCount, extractionKeyPathHitCounts
         try:
+            recordCount += 1
             gotResult = False
             result = []
-            jsonData = json.loads(jsonData)
+            jsonData = json.loads(jsonDataString)
             keyPathIndex = 0
             for keyComponents in extractionKeyPathComponents:
                 value = jsonData
@@ -305,6 +309,7 @@ def main(argv=None):
             keyValueTextRDD.saveAsTextFile(args.output)
 
     print "========================================"
+    print "recordCount = %d" % recordCount.value
     if newRddKeyKey != None:
         print "newRddCount = %d" % newRddCount.value
         print "noNewRddCount = %d" % noNewRddCount.value

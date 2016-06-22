@@ -21,7 +21,7 @@ time spark-submit \
     --master 'yarn-client' \
     --num-executors ${NUM_EXECUTORS} \
     --py-files ${DIG_CRF_PYTHON_ZIP_FILE} \
-    --driver-java-options -Dlog4j.configuration=file:${DIG_CRF_DATA_CONFIG_DIR}${QUIETER_LOG4J_PROPERTIES_FILE} \
+    ${DRIVER_JAVA_OPTIONS} \
     ${DIG_CRF_EXTRACT}/extractAndTokenizeField.py \
     -- \
     --input ${HDFS_INPUT_DATA_DIR} \
