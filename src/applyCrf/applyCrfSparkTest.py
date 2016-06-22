@@ -19,6 +19,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('--coalesceInput', type=int, default=0, help="Reduce the number of partitions on input.", required=False)
     parser.add_argument('--coalesceOutput', type=int, default=0, help="Reduce the number of partitions on output.", required=False)
+    parser.add_argument('--count', help="Count the records before applying CRF.", required=False, action='store_true')
     parser.add_argument('-d','--debug', help="Give debugging feedback.", required=False, action='store_true')
     parser.add_argument('--download', help="Ask Spark to download the feature list and model files to the clients.", required=False, action='store_true')
     parser.add_argument('-e','--embedKey', help="Embed the key in the output.", required=False)
@@ -93,6 +94,13 @@ def main(argv=None):
                 print "Coalescing %d ==> %d input partitions" % (numPartitions, args.coalesceInput)
                 print "========================================"
             inputRDD = inputRDD.coalesce(args.coalesceInput)
+
+    if args.count:
+        print "(Counting records)"
+        localRecordCount = inputRDD.count()
+        print "========================================"
+        print "Record count: %d" % localRecordCount
+        print "========================================"
 
     # Perform the main RDD processing.
     resultsRDD = tagger.perform(inputRDD)
