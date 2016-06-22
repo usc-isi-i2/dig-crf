@@ -96,6 +96,7 @@ def main(argv=None):
             inputRDD = inputRDD.coalesce(args.coalesceInput)
 
     if args.count:
+        print "========================================"
         print "(Counting records)"
         localRecordCount = inputRDD.count()
         print "========================================"
