@@ -27,13 +27,13 @@ echo "Submitting the job to the Memex cluster."
 time spark-submit \
     --master 'yarn-client' \
     --num-executors ${NUM_EXECUTORS} \
-    --count \
-    --coalesceOutput ${NUM_PARTITIONS} \
     --py-files ${DIG_EGG_FILE},${DIG_CRF_PYTHON_ZIP_FILE} \
     --conf "spark.executorEnv.PYTHON_EGG_CACHE=${PYTHON_EGG_CACHE}" \
     ${DRIVER_JAVA_OPTIONS} \
     ${DIG_CRF_APPLY}/applyCrfSparkTest.py \
     -- \
+    --count \
+    --coalesceOutput ${NUM_PARTITIONS} \
     --featlist ${HDFS_WORK_DIR}/${HAIR_EYE_FEATURES_CONFIG_FILE} \
     --model ${HDFS_WORK_DIR}/${HAIR_EYE_CRF_MODEL_FILE} \
     --hybridJaccardConfig ${DIG_CRF_DATA_CONFIG_DIR}/${HYBRID_JACCARD_CONFIG_FILE} \
