@@ -10,7 +10,7 @@ echo "Submitting the job to the Memex cluster."
 time spark-submit \
     --master 'yarn-client' \
     --num-executors ${NUM_EXECUTORS} \
-    --driver-java-options -Dlog4j.configuration=file:${DIG_CRF_DATA_CONFIG_DIR}${QUIETER_LOG4J_PROPERTIES_FILE} \
+    ${DRIVER_JAVA_OPTIONS} \
     ${DIG_CRF_COUNT}/countCrfResultPhrases.py \
     -- \
     --input ${WORKING_NAME_ETHNIC_HJ_FILE} \
