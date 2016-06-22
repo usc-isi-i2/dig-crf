@@ -32,7 +32,6 @@ time spark-submit \
     ${DRIVER_JAVA_OPTIONS} \
     ${DIG_CRF_APPLY}/applyCrfSparkTest.py \
     -- \
-    --count \
     --coalesceOutput ${NUM_PARTITIONS} \
     --featlist ${HDFS_WORK_DIR}/${HAIR_EYE_FEATURES_CONFIG_FILE} \
     --model ${HDFS_WORK_DIR}/${HAIR_EYE_CRF_MODEL_FILE} \

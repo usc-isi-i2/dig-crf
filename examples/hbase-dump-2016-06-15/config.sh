@@ -45,5 +45,7 @@ WORKING_NAME_ETHNIC_FILE=${DATASET_WORK_DIR}/${NAME_ETHNIC_FILE}
 # These are the files we'll deliver:
 HAIR_EYES_HJ_FILE=hair-eyes-hj.seq
 WORKING_HAIR_EYES_HJ_FILE=${DATASET_WORK_DIR}/${HAIR_EYES_HJ_FILE}
-NAME_ETHNIC_HJ_FILE=name-ethnic-hj.seq
+# 22-Jun-2016:  Workingname extraction has been disabled.
+# The old definition was: NAME_ETHNIC_HJ_FILE=name-ethnic-hj.seq
+NAME_ETHNIC_HJ_FILE=ethnic-hj.seq
 WORKING_NAME_ETHNIC_HJ_FILE=${DATASET_WORK_DIR}/${NAME_ETHNIC_HJ_FILE}
