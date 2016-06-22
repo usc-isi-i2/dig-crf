@@ -27,7 +27,7 @@ echo "Submitting the job to the Memex cluster."
 time spark-submit \
     --master 'yarn-client' \
     --num-executors ${NUM_EXECUTORS} \
-    --py-files ${DIG_EGG_FILE},${DIG_CRF_PYTHON_ZIP_FILE} \
+    --py-files ${DIG_CRF_EGG_FILE},${DIG_CRF_PYTHON_ZIP_FILE} \
     --conf "spark.executorEnv.PYTHON_EGG_CACHE=${PYTHON_EGG_CACHE}" \
     ${DRIVER_JAVA_OPTIONS} \
     ${DIG_CRF_APPLY}/applyCrfSparkTest.py \
