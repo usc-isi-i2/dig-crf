@@ -278,9 +278,9 @@ def main(argv=None):
 
     if args.count:
         print "(Counting records)"
-        recordCount = extractedValuePairs.count()
+        localRecordCount = extractedValuePairs.count()
         print "========================================"
-        print "Record count: %d" % recordCount
+        print "Record count: %d" % localRecordCount
         print "========================================"
 
     if args.show:
@@ -333,4 +333,3 @@ def main(argv=None):
 # call main() if this is run as standalone                                                             
 if __name__ == "__main__":
     sys.exit(main())
-
