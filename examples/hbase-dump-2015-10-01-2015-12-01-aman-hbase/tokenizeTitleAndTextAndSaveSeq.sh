@@ -38,7 +38,7 @@ source config.sh
 KEYS_TO_EXTRACT=extractions:title:results,extractions:text:results
 NEW_RDD_KEY_KEY=url
 NUM_EXECUTORS=350
-NUM_PARTITIONS=1400
+NUM_PARTITIONS=350
 
 source ${DIG_CRF_SCRIPT}/checkMemexConnection.sh
 ${DIG_CRF_SCRIPT}/buildPythonFiles.sh

@@ -14,13 +14,13 @@
 # "countGoodKeysByTarget.sh", but I'm keeping them around in case
 # "countGoodKeysByTarget.sh" fails.
 #
-{ time countRecords.sh; } \
+{ time ./countRecords.sh; } \
 |& tee countRecords.log
 
-{ time countGoodJson.sh; } \
+{ time ./countGoodJson.sh; } \
 |& tee countGoodJson.log
 
-{ time countGoodKeys.sh; } \
+{ time ./countGoodKeys.sh; } \
 |& tee countGoodKeys.log
 
 # Extractions and analyses without hybrid Jaccard processing.
