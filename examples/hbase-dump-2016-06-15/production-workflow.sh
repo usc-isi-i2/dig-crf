@@ -12,12 +12,12 @@
 
 # Pre-extraction analysis.
 
-{ time countGoodKeysByTarget.sh; } \
+{ time ./countGoodKeysByTarget.sh; } \
 |& tee countGoodKeysByTarget.log
 
 # Extract title and text results, tokenize, and save.  This is a critical step
 # in the production workflow.
-{ time tokenizeTitleAndTextAndSaveSeq.sh; } \
+{ time ./tokenizeTitleAndTextAndSaveSeq.sh; } \
 |& tee tokenizeTitleAndTextAndSaveSeq.log
 
 # Apply the hair and eyes CRF extraction, with hybrid Jaccard filtering. Run

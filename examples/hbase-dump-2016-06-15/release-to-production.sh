@@ -4,23 +4,21 @@
 # production area ("/user/worker"). The script tried to do the right
 # thing by copying the files, but that took a very long time.  SO, we
 # will copy to a temporary area, then do quick renames.
-#
-# TODO: Use a simple program to parallel load and write
-# the data.
+
+NUM_EXECUTORS=50
 
 source config.sh
+source ${DIG_CRF_SCRIPT}/checkMemexConnection.sh
+source ${DIG_CRF_SCRIPT}/limitMemexExecutors.sh
 
 HAIR_EYES_INPUTFILE=${WORKING_HAIR_EYES_HJ_FILE}
 NAME_ETHNIC_INPUTFILE=${WORKING_NAME_ETHNIC_HJ_FILE}
 
-OUTPUTFOLDER=${HDFS_CRF_DATA_DIR}
-HAIR_EYES_OUTPUTFILE=${OUTPUTFOLDER}/${HAIR_EYES_FILE}
-NAME_ETHNIC_OUTPUTFILE=${OUTPUTFOLDER}/${NAME_ETHNIC_FILE}
+HAIR_EYES_OUTPUTFILE=${PRODUCTION_HAIR_EYES_FILE}
+NAME_ETHNIC_OUTPUTFILE=${PRODUCTION_NAME_ETHNIC_FILE}
 TEMPSUFFIX=.TEMP
 HAIR_EYES_TEMPFILE=${HAIR_EYES_OUTPUTFILE}${TEMPSUFFIX}
 NAME_ETHNIC_TEMPFILE=${NAME_ETHNIC_OUTPUTFILE}${TEMPSUFFIX}
-
-source ${DIG_CRF_SCRIPT}/checkMemexConnection.sh
 
 # Check for the presence of the input files:
 hdfs dfs -test -e ${HAIR_EYES_INPUTFILE}
@@ -65,27 +63,29 @@ if [ $? -eq 0 ]
     fi
 fi
 
-echo "Copying new data files to temporary files."
-hdfs dfs -test -d ${HAIR_EYES_INPUTFILE}
-if [ $? -eq 0 ]
-  then
-    echo hdfs dfs -mkdir ${HAIR_EYES_TEMPFILE}
-    hdfs dfs -mkdir ${HAIR_EYES_TEMPFILE}
-    echo hdfs dfs -cp ${HAIR_EYES_INPUTFILE}/'*' ${HAIR_EYES_TEMPFILE}/
-    hdfs dfs -cp ${HAIR_EYES_INPUTFILE}/'*' ${HAIR_EYES_TEMPFILE}/
-  else
-    hdfs dfs -cp ${HAIR_EYES_INPUTFILE} ${HAIR_EYES_TEMPFILE}
-fi
-hdfs dfs -test -d ${NAME_ETHNIC_INPUTFILE}
-if [ $? -eq 0 ]
-  then
-    echo hdfs dfs -mkdir ${NAME_ETHNIC_TEMPFILE}
-    hdfs dfs -mkdir ${NAME_ETHNIC_TEMPFILE}
-    echo hdfs dfs -cp ${NAME_ETHNIC_INPUTFILE}/'*' ${NAME_ETHNIC_TEMPFILE}
-    hdfs dfs -cp ${NAME_ETHNIC_INPUTFILE}/'*' ${NAME_ETHNIC_TEMPFILE}
-  else
-    hdfs dfs -cp ${NAME_ETHNIC_INPUTFILE} ${NAME_ETHNIC_TEMPFILE}/
-fi
+echo Copying ${HAIR_EYES_INPUTFILE} to ${HAIR_EYES_TEMPFILE}
+time spark-submit \
+    --master 'yarn-client' \
+    --num-executors ${NUM_EXECUTORS} \
+    ${DRIVER_JAVA_OPTIONS} \
+    ${DIG_CRF_UTIL}/copySeqFileSpark.py \
+    -- \
+    --input ${HAIR_EYES_INPUTFILE} \
+    --output ${HAIR_EYES_TEMPFILE} \
+    --cache --count --coalesce 50 \
+    --showPartitions --time --verbose
+
+echo Copying ${NAME_ETHNIC_INPUTFILE} to ${NAME_ETHNIC_TEMPFILE}
+time spark-submit \
+    --master 'yarn-client' \
+    --num-executors ${NUM_EXECUTORS} \
+    ${DRIVER_JAVA_OPTIONS} \
+    ${DIG_CRF_UTIL}/copySeqFileSpark.py \
+    -- \
+    --input ${NAME_ETHNIC_INPUTFILE} \
+    --output ${NAME_ETHNIC_TEMPFILE} \
+    --cache --count --coalesce 50 \
+    --showPartitions --time --verbose
 
 echo "Checking for new temporary files."
 hdfs dfs -test -e ${HAIR_EYES_TEMPFILE}

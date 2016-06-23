@@ -13,6 +13,7 @@ from pyspark import SparkContext
 def main(argv=None):
     '''this is called if run from command line'''
     parser = argparse.ArgumentParser()
+    parser.add_argument('--cache', help="Cache the input records.", required=False, action='store_true')
     parser.add_argument('-c','--coalesce', type=int, default=0, help="Reduce the number of partitions on input.", required=False)
     parser.add_argument('--count', help="Count the records.", required=False, action='store_true')
     parser.add_argument('-i','--input', help="Input file.", required=True)
@@ -44,6 +45,10 @@ def main(argv=None):
         print "========================================"
         print "SparkContext created. Application ID: "
         print sc.applicationId
+        if args.time:
+            # TODO: use time.monotonic() in Python >= 3.3
+            duration = time.time() - startTime
+            print "Elapsed time: %s" % str(datetime.timedelta(seconds=duration))
         print "========================================"
 
     inputRDD = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text",  "org.apache.hadoop.io.Text",
@@ -67,6 +72,19 @@ def main(argv=None):
                 print "========================================"
                 print "Not coalescing partitions on input (%d existing <= %d requested)" % (numPartitions, args.coalesce)
                 print "========================================"
+
+    if args.cache:
+        print "========================================"
+        print "Caching records..."
+        inputRDD.cache()
+        print "========================================"
+
+    if args.time:
+        print "========================================"
+        # TODO: use time.monotonic() in Python >= 3.3
+        duration = time.time() - startTime
+        print "Elapsed time: %s" % str(datetime.timedelta(seconds=duration))
+        print "========================================"
 
     if args.count:
         print "========================================"
