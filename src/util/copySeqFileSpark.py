@@ -41,6 +41,12 @@ def main(argv=None):
     inputRDD = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text",  "org.apache.hadoop.io.Text",
                                minSplits=minPartitions)
 
+    if args.verbose:
+        print "========================================"
+        print "Application ID: "
+        print sc.applicationId
+        print "========================================"
+
     if args.showPartitions:
         print "========================================"
         print "There are %d partitions" % inputRDD.getNumPartitions()
