@@ -11,6 +11,6 @@ time spark-submit \
     --master 'yarn-client' \
     --num-executors ${NUM_EXECUTORS} \
     ${DRIVER_JAVA_OPTIONS} \
-    ${DIG_CRF_COUNT}/countGoodKeysJson.py \
+    ${DIG_CRF_COUNT}/countGoodJson.py \
     -- \
     --input ${HDFS_INPUT_DATA_DIR}
