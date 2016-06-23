@@ -91,7 +91,7 @@ def main(argv=None):
         if args.coalesceInput < numPartitions:
             if args.verbose:
                 print "========================================"
-                print "Coalescing %d ==> %d input partitions" % (numPartitions, args.coalesceInput)
+                print "Coalescing partitions on input %d ==> %d" % (numPartitions, args.coalesceInput)
                 print "========================================"
             inputRDD = inputRDD.coalesce(args.coalesceInput)
 
@@ -112,7 +112,7 @@ def main(argv=None):
         if args.coalesceOutput < numPartitions:
             if args.verbose:
                 print "========================================"
-                print "Coalescing %d ==> %d output partitions" % (numPartitions, args.coalesceOutput)
+                print "Coalescing partitions on output %d ==> %d" % (numPartitions, args.coalesceOutput)
                 print "========================================"
             resultsRDD = resultsRDD.coalesce(args.coalesceOutput)
 
