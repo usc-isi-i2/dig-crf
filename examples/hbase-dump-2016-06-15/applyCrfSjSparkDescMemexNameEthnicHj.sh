@@ -10,7 +10,7 @@
 #
 # After the change, it is:
 #
-# --tags B_ethnic:ethnicityType,I_ethnic:ethnicityType,B_workingname:,I_workingname: \
+# --tags B_ethnic:ethnicityType,I_ethnic:ethnicityType \
 
 NUM_EXECUTORS=350
 NUM_PARTITIONS=350
@@ -48,10 +48,9 @@ time spark-submit \
     --featlist ${HDFS_WORK_DIR}/${NAME_ETHNIC_FEATURES_CONFIG_FILE} \
     --model ${HDFS_WORK_DIR}/${NAME_ETHNIC_CRF_MODEL_FILE} \
     --hybridJaccardConfig ${DIG_CRF_DATA_CONFIG_DIR}/${HYBRID_JACCARD_CONFIG_FILE} \
-    --tags B_ethnic:ethnicityType,I_ethnic:ethnicityType,B_workingname:,I_workingname: \
+    --tags B_ethnic:ethnicityType,I_ethnic:ethnicityType \
     --download \
     --input ${WORKING_TITLE_AND_TEXT_TOKENS_FILE} --inputSeq --justTokens \
     --output ${OUTPUTFILE} --outputSeq --embedKey url \
+    --cache --count \
     --verbose --statistics
-
-

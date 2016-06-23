@@ -22,7 +22,7 @@ NAME_ETHNIC_CRF_MODEL_FILE=dig-name-ethnic-train.model
 
 HDFS_WORK_DIR=hdfs:///user/crogers
 HDFS_PRODUCTION_DIR=hdfs:///user/worker/${DATASET_NAME}
-HDFS_INPUT_DATA_DIR=${HDFS_PRODUCTION_DIR}/hbase
+HDFS_INPUT_DATA_DIR=${HDFS_PRODUCTION_DIR}/hbase-filtered
 HDFS_CRF_DATA_DIR=${HDFS_PRODUCTION_DIR}/crf
 
 PYTHON_EGG_CACHE=./python-eggs

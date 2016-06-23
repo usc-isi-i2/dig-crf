@@ -60,8 +60,8 @@ time spark-submit \
     --input ${HDFS_INPUT_DATA_DIR} \
     --key ${KEYS_TO_EXTRACT} \
     --newRddKeyKey ${NEW_RDD_KEY_KEY} \
-    --prune --repartition ${NUM_PARTITIONS} --cache \
-    --count \
     --skipHtmlTags \
+    --prune --repartition ${NUM_PARTITIONS} \
+    --cache --count \
     --output ${WORKING_TITLE_AND_TEXT_TOKENS_FILE} \
     --outputSeq

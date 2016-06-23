@@ -36,16 +36,18 @@ def main(argv=None):
 
     # Open a Spark context.
     if args.time:
-        startTime = time.monotonic() # Start timing here.
+        # TODO: Use time.monotonic() in python >= 3.3
+        startTime = time.time() # Start timing here.
     sc = SparkContext()
-    inputRDD = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text",  "org.apache.hadoop.io.Text",
-                               minSplits=minPartitions)
 
     if args.verbose:
         print "========================================"
-        print "Application ID: "
+        print "SparkContext created. Application ID: "
         print sc.applicationId
         print "========================================"
+
+    inputRDD = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text",  "org.apache.hadoop.io.Text",
+                               minSplits=minPartitions)
 
     if args.showPartitions:
         print "========================================"
@@ -73,6 +75,13 @@ def main(argv=None):
         print "Record count: %d" % recordCount
         print "========================================"
 
+    if args.time:
+        # TODO: use time.monotonic() in Python >= 3.3
+        duration = time.time() - startTime
+        print "========================================"
+        print "Elapsed time: %s" % str(datetime.timedelta(seconds=duration))
+        print "========================================"
+
     if args.verbose:
         print "========================================"
         print "Saving data as a Hadoop SEQ file."
@@ -89,7 +98,8 @@ def main(argv=None):
     sc.stop()
 
     if args.time:
-        duration - startTime = time.monotonic()
+        # TODO: use time.monotonic() in Python >= 3.3
+        duration = time.time() - startTime
         print "========================================"
         print "Elapsed time: %s" % str(datetime.timedelta(seconds=duration))
         print "========================================"

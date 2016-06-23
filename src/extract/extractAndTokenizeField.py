@@ -43,13 +43,19 @@ of the input object.
 """
 
 import argparse
+import datetime
 import json
 import sys
+import time
 from pyspark import SparkContext
 import crf_tokenizer as crft
 
 def main(argv=None):
     '''this is called if run from command line'''
+    print "========================================"
+    print "Starting extractAndTokenizeField"
+    print "========================================"
+
     parser = argparse.ArgumentParser()
     parser.add_argument('-c','--count', help="Optionally report a count of records extracted.", required=False, action='store_true')
     parser.add_argument('--cache', help="Optionally cache the RDD in memory.", required=False, action='store_true')
@@ -76,7 +82,20 @@ def main(argv=None):
     tok.setSkipHtmlTags(args.skipHtmlTags)
     tok.setRecognizeHtmlEntities(True)
 
+    print "========================================"
+    print "Creating SparkContext."
+    print "========================================"
+    # TODO: Use time.monotonic() in python >= 3.3
+    startTime = time.time() # Start timing here.
     sc = SparkContext()
+
+    print "========================================"
+    print "SparkContext created. Application ID: "
+    print sc.applicationId
+    # TODO: use time.monotonic() in Python >= 3.3
+    duration = time.time() - startTime
+    print "Elapsed time: %s" % str(datetime.timedelta(seconds=duration))
+    print "========================================"
 
     global recordCount, valueCount, noValueCount, emptyValueCount
     global exceptionNoValueCount, exceptionEmptyValueCount, extractionKeyPathHitCounts
@@ -245,6 +264,11 @@ def main(argv=None):
         print "Extracting new RDD keys."
         print "========================================"
         data = data.flatMap(extractNewRddKey)
+        print "========================================"
+        # TODO: use time.monotonic() in Python >= 3.3
+        duration = time.time() - startTime
+        print "Elapsed time: %s" % str(datetime.timedelta(seconds=duration))
+        print "========================================"
 
     if args.notokenize:
         print "========================================"
@@ -256,6 +280,12 @@ def main(argv=None):
         print "Extracting and tokenizing"
         print "========================================"
         extractedValuePairs = data.flatMapValues(extractTokenValues)
+
+    print "========================================"
+    # TODO: use time.monotonic() in Python >= 3.3
+    duration = time.time() - startTime
+    print "Elapsed time: %s" % str(datetime.timedelta(seconds=duration))
+    print "========================================"
 
     if args.repartition > 0:
         # Repartition if increasing the number of partitions.
@@ -272,15 +302,33 @@ def main(argv=None):
             print "Coalescing %d ==> %d" % (numPartitions, args.repartition)
             print "========================================"
             extractedValuePairs = extractedValuePairs.coalesce(args.repartition)
+        print "========================================"
+        # TODO: use time.monotonic() in Python >= 3.3
+        duration = time.time() - startTime
+        print "Elapsed time: %s" % str(datetime.timedelta(seconds=duration))
+        print "========================================"
 
     if args.cache:
+        print "========================================"
+        print "Caching the extracted value pairs."
+        print "========================================"
         extractedValuePairs.cache()
+        print "========================================"
+        # TODO: use time.monotonic() in Python >= 3.3
+        duration = time.time() - startTime
+        print "Elapsed time: %s" % str(datetime.timedelta(seconds=duration))
+        print "========================================"
 
     if args.count:
-        print "(Counting records)"
+        print "========================================"
+        print "Counting records..."
+        print "========================================"
         localRecordCount = extractedValuePairs.count()
         print "========================================"
         print "Record count: %d" % localRecordCount
+        # TODO: use time.monotonic() in Python >= 3.3
+        duration = time.time() - startTime
+        print "Elapsed time: %s" % str(datetime.timedelta(seconds=duration))
         print "========================================"
 
     if args.show:
@@ -288,9 +336,21 @@ def main(argv=None):
         for record in extractedValuePairs.collect():
             print record
         print "========================================"
+        print "========================================"
+        # TODO: use time.monotonic() in Python >= 3.3
+        duration = time.time() - startTime
+        print "Elapsed time: %s" % str(datetime.timedelta(seconds=duration))
+        print "========================================"
 
     if args.output != None and len(args.output) > 0:
+        # JSON encode the extracted values:
         encodedValuePairs = extractedValuePairs.mapValues(lambda x: json.dumps(x))
+        print "========================================"
+        # TODO: use time.monotonic() in Python >= 3.3
+        duration = time.time() - startTime
+        print "Elapsed time: %s" % str(datetime.timedelta(seconds=duration))
+        print "========================================"
+
 
         if args.outputSeq:
             print "========================================"
@@ -305,10 +365,22 @@ def main(argv=None):
             print "Saving the results in a keyed JSON Lines text file."
             print args.output
             print "========================================"
+
+            # Join the key and JSON-encoded value, using a tab as the separator:
             keyValueTextRDD = encodedValuePairs.map(lambda x: x[0] + '\t' + x[1])
+            print "========================================"
+            # TODO: use time.monotonic() in Python >= 3.3
+            duration = time.time() - startTime
+            print "Elapsed time: %s" % str(datetime.timedelta(seconds=duration))
+            print "========================================"
+
+            # Save the result as a text file:
             keyValueTextRDD.saveAsTextFile(args.output)
 
     print "========================================"
+    # TODO: use time.monotonic() in Python >= 3.3
+    duration = time.time() - startTime
+    print "Elapsed time: %s" % str(datetime.timedelta(seconds=duration))
     print "recordCount = %d" % recordCount.value
     if newRddKeyKey != None:
         print "newRddCount = %d" % newRddCount.value
