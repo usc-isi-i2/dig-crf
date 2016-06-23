@@ -10,7 +10,7 @@ source ${DIG_CRF_SCRIPT}/checkMemexConnection.sh
 source ${DIG_CRF_SCRIPT}/limitMemexExecutors.sh
 ${DIG_CRF_SCRIPT}/buildPythonFiles.sh
 
-OUTPUTFILE=${WORKING_HAIR_EYES_HJ_FILE}
+OUTPUTFILE=${WORKING_HAIR_EYES_FILE}
 
 # Dangerous!
 echo "Clearing the output folder: ${OUTPUTFILE}"
