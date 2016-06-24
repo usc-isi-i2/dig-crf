@@ -1,5 +1,8 @@
 #! /bin/bash
 
+# Apply CRF for workingName and ethnicityType extraction.
+# Work in the working area, for later release to production.
+
 # This script assumes that "spark-submit" is available on $PATH.
 
 NUM_EXECUTORS=350
@@ -10,10 +13,15 @@ source ${DIG_CRF_SCRIPT}/checkMemexConnection.sh
 ${DIG_CRF_SCRIPT}/buildPythonFiles.sh
 source ${DIG_CRF_SCRIPT}/limitMemexExecutors.sh
 
+INPUTFILE=${WORKING_TITLE_AND_TEXT_TOKENS_FILE}
 OUTPUTFILE=${WORKING_NAME_ETHNIC_FILE}
 
-# Dangerous!
 echo "Clearing the output folder: ${OUTPUTFILE}"
+if [ "x${OUTPUTFILE}" == "x" ]
+  then
+    echo "OUTPUTFILE is not set, exiting"
+    exit 1
+fi
 hadoop fs -rm -r -f ${OUTPUTFILE}
 
 echo "Copying the feature control file and CRF model to Hadoop."
@@ -40,7 +48,7 @@ time spark-submit \
     --hybridJaccardConfig ${DIG_CRF_DATA_CONFIG_DIR}/${HYBRID_JACCARD_CONFIG_FILE} \
     --tags B_ethnic:ethnicityType,I_ethnic:ethnicityType,B_workingname:,I_workingname: \
     --download \
-    --input ${WORKING_TITLE_AND_TEXT_TOKENS_FILE} --inputSeq --justTokens \
+    --input ${INPUTFILE} --inputSeq --justTokens \
     --output ${OUTPUTFILE} --outputSeq --embedKey url \
     --cache --count \
     --verbose --statistics

@@ -1,8 +1,11 @@
 #! /bin/bash
 
+# Apply CRF and hybrid JACCARD for workingName and ethnicityType extraction.
+# Work in the working area, for later release to production.
+
 # This script assumes that "spark-submit" is available on $PATH.
 #
-# 22-Jun-2016: ethnicity reporting has been shut off until we have
+# 22-Jun-2016: workingName reporting has been shut off until we have
 # good hybrid Jaccard filtering for it.  Before this change, the
 # --tags option was:
 #
@@ -20,10 +23,15 @@ source ${DIG_CRF_SCRIPT}/checkMemexConnection.sh
 source ${DIG_CRF_SCRIPT}/limitMemexExecutors.sh
 ${DIG_CRF_SCRIPT}/buildPythonFiles.sh
 
+INPUTFILE=${WORKING_TITLE_AND_TEXT_TOKENS_FILE}
 OUTPUTFILE=${WORKING_NAME_ETHNIC_HJ_FILE}
 
-# Dangerous!
 echo "Clearing the output folder: ${OUTPUTFILE}"
+if [ "x${OUTPUTFILE}" == "x" ]
+  then
+    echo "OUTPUTFILE is not set, exiting"
+    exit 1
+fi
 hadoop fs -rm -r -f ${OUTPUTFILE}
 
 echo "Copying the feature control file and CRF model to Hadoop."
@@ -50,7 +58,7 @@ time spark-submit \
     --hybridJaccardConfig ${DIG_CRF_DATA_CONFIG_DIR}/${HYBRID_JACCARD_CONFIG_FILE} \
     --tags B_ethnic:ethnicityType,I_ethnic:ethnicityType \
     --download \
-    --input ${WORKING_TITLE_AND_TEXT_TOKENS_FILE} --inputSeq --justTokens \
+    --input ${INPUTFILE} --inputSeq --justTokens \
     --output ${OUTPUTFILE} --outputSeq --embedKey url \
     --cache --count \
     --verbose --statistics

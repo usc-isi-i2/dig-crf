@@ -1,9 +1,19 @@
 #! /bin/bash
 
-# Apply CRF and hybrid JACCARD for hairType and eyeColor extraction.
-# Work in the working area, for later release to production.
+# Apply CRF and hybrid JACCARD for workingName and ethnicityType extraction.
+# Work directly in the production area.
 
 # This script assumes that "spark-submit" is available on $PATH.
+#
+# 22-Jun-2016: workingName reporting has been shut off until we have
+# good hybrid Jaccard filtering for it.  Before this change, the
+# --tags option was:
+#
+# --tags B_ethnic:ethnicityType,I_ethnic:ethnicityType,B_workingname:workingname,I_workingname:workingname \
+#
+# After the change, it is:
+#
+# --tags B_ethnic:ethnicityType,I_ethnic:ethnicityType \
 
 NUM_EXECUTORS=350
 NUM_PARTITIONS=350
@@ -13,8 +23,8 @@ source ${DIG_CRF_SCRIPT}/checkMemexConnection.sh
 source ${DIG_CRF_SCRIPT}/limitMemexExecutors.sh
 ${DIG_CRF_SCRIPT}/buildPythonFiles.sh
 
-INPUTFILE=${WORKING_TITLE_AND_TEXT_TOKENS_FILE}
-OUTPUTFILE=${WORKING_HAIR_EYES_HJ_FILE}
+INPUTFILE=${PRODUCTION_TITLE_AND_TEXT_TOKENS_FILE}
+OUTPUTFILE=${PRODUCTION_NAME_ETHNIC_FILE}
 
 echo "Clearing the output folder: ${OUTPUTFILE}"
 if [ "x${OUTPUTFILE}" == "x" ]
@@ -25,10 +35,10 @@ fi
 hadoop fs -rm -r -f ${OUTPUTFILE}
 
 echo "Copying the feature control file and CRF model to Hadoop."
-hadoop fs -copyFromLocal -f ${DIG_CRF_DATA_CONFIG_DIR}/${HAIR_EYE_FEATURES_CONFIG_FILE} \
-                            ${HDFS_WORK_DIR}/${HAIR_EYE_FEATURES_CONFIG_FILE}
-hadoop fs -copyFromLocal -f ${DIG_CRF_DATA_CONFIG_DIR}/${HAIR_EYE_CRF_MODEL_FILE} \
-                            ${HDFS_WORK_DIR}/${HAIR_EYE_CRF_MODEL_FILE}
+hadoop fs -copyFromLocal -f ${DIG_CRF_DATA_CONFIG_DIR}/${NAME_ETHNIC_FEATURES_CONFIG_FILE} \
+                            ${HDFS_WORK_DIR}/${NAME_ETHNIC_FEATURES_CONFIG_FILE}
+hadoop fs -copyFromLocal -f ${DIG_CRF_DATA_CONFIG_DIR}/${NAME_ETHNIC_CRF_MODEL_FILE} \
+                            ${HDFS_WORK_DIR}/${NAME_ETHNIC_CRF_MODEL_FILE}
 
 echo "Creating the Python Egg cache folder: $PYTHON_EGG_CACHE"
 hadoop fs -mkdir -p $PYTHON_EGG_CACHE
@@ -43,9 +53,10 @@ time spark-submit \
     ${DIG_CRF_APPLY}/applyCrfSparkTest.py \
     -- \
     --coalesceOutput ${NUM_PARTITIONS} \
-    --featlist ${HDFS_WORK_DIR}/${HAIR_EYE_FEATURES_CONFIG_FILE} \
-    --model ${HDFS_WORK_DIR}/${HAIR_EYE_CRF_MODEL_FILE} \
+    --featlist ${HDFS_WORK_DIR}/${NAME_ETHNIC_FEATURES_CONFIG_FILE} \
+    --model ${HDFS_WORK_DIR}/${NAME_ETHNIC_CRF_MODEL_FILE} \
     --hybridJaccardConfig ${DIG_CRF_DATA_CONFIG_DIR}/${HYBRID_JACCARD_CONFIG_FILE} \
+    --tags B_ethnic:ethnicityType,I_ethnic:ethnicityType \
     --download \
     --input ${INPUTFILE} --inputSeq --justTokens \
     --output ${OUTPUTFILE} --outputSeq --embedKey url \
