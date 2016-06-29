@@ -544,7 +544,13 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
                 hjResult = hybridJaccardProcessors[tagName].findBestMatchWordsCached(phrase)
                 if hjResult is None:
                     return False
-                sentence.setFilteredPhrase(hjResult)
+                if isinstance(hjResult, list): # Karma is expecting a single string.
+                    sentence.setFilteredPhrase(" ".join(hjResult))
+                elif isinstance(hjResult, basestring):
+                    sentence.setFilteredPhrase(hjResult)
+                else:
+                    # TODO: yell and scream here.
+                    return False
             return True
         return hybridJaccardResultFilter
 
