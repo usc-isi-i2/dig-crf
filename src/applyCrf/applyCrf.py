@@ -401,7 +401,8 @@ count of output phrases, when done.
                                    "taggedPhraseCount", "taggedTokenCount",
                                    "tagMapKeepCount", "tagMapRenameCount", "tagMapDropCount",
                                    "filterAcceptCount", "filterRejectCount",
-                                   "formattedPhraseCount", "formattedTokenCount"]
+                                   "formattedPhraseCount", "formattedTokenCount",
+                                   "coalescedPhraseCount"]
             for statName in self.statisticNames:
                 self.statistics[statName] = 0
 
@@ -514,10 +515,13 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
 
     """
     def __init__(self, featureListFilePath, modelFilePath, hybridJaccardConfigPath=None, tagMap=None,
-                 embedKey=None, debug=False, sumStatistics=False):
-        super(ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines, self).__init__(featureListFilePath, modelFilePath, tagMap, debug, sumStatistics)
+                 coalescePhrases=False, embedKey=None, debug=False, sumStatistics=False):
+        super(ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines, self).__init__(featureListFilePath, modelFilePath,
+                                                                                      tagMap=tagMap, debug=debug,
+                                                                                      sumStatistics=sumStatistics)
         self.embedKey = embedKey
         self.configureHybridJaccard(hybridJaccardConfigPath)
+        self.coalescePhrases = coalescePhrases
 
     def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
         """Extract the tagged phrases and format the result as keys and tagged phrase Json Lines."""
@@ -527,6 +531,15 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
         if self.statistics:
             self.statistics["formattedPhraseCount"] += 1
             self.statistics["formattedTokenCount"] += len(phrase)
+
+        # Per Pedro, Karma expects a single token per phrase, even if
+        # it contains multiple English words (e.g., "pacific
+        # islander").  Reduce phrases to a single token, but still
+        # return the result as a list.
+        if self.coalescePhrases and len(phrase) > 1:
+            phrase = [ " ".join(phrase) ]
+            self.statistics["coalescedPhraseCount"] += 1
+
         taggedPhrase = { }
         taggedPhrase[tagName] = phrase
         key = sentence.getKey()
@@ -544,10 +557,7 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
                 hjResult = hybridJaccardProcessors[tagName].findBestMatchWordsCached(phrase)
                 if hjResult is None:
                     return False
-                # Per Pedro, Karma expects a single token here, even if it contains multiple
-                # English words (e.g., "pacific islander").  Reduce phrases to a single token,
-                # but still return the result as a list:
-                sentence.setFilteredPhrase([ " ".join(hjResult) ])
+                sentence.setFilteredPhrase(hjResult)
             return True
         return hybridJaccardResultFilter
 
@@ -579,9 +589,11 @@ a sequence of tagged phrases in keyed JSON Lines format or paired JSON Lines for
     """
     def __init__ (self, featureListFilePath, modelFilePath, hybridJaccardConfigPath,
                   inputPairs=False, inputKeyed=False, inputJustTokens=False, extractFrom=None,
-                  outputPairs=False, tagMap=None, embedKey=None,
+                  outputPairs=False, tagMap=None, coalescePhrases=False, embedKey=None,
                   debug=False, sumStatistics=False):
-        super(ApplyCrf, self).__init__(featureListFilePath, modelFilePath, hybridJaccardConfigPath, tagMap, embedKey, debug, sumStatistics)
+        super(ApplyCrf, self).__init__(featureListFilePath, modelFilePath, hybridJaccardConfigPath,
+                                       tagMap=tagMap, coalescePhrases=coalescePhrases,
+                                       embedKey=embedKey, debug=debug, sumStatistics=sumStatistics)
         self.inputPairs = inputPairs
         self.inputKeyed = inputKeyed
         self.inputJustTokens = inputJustTokens

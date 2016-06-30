@@ -49,5 +49,6 @@ time spark-submit \
     --download \
     --input ${INPUTFILE} --inputSeq --justTokens \
     --output ${OUTPUTFILE} --outputSeq --embedKey url \
+    --coalescePhrases \
     --cache --count \
     --verbose --statistics

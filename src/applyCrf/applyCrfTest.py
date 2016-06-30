@@ -23,6 +23,7 @@ import crf_sentences as crfs
 def main(argv=None):
     '''this is called if run from command line'''
     parser = argparse.ArgumentParser()
+    parser.add_argument('-c','--coalescePhrases', help="Join each result phrase", required=False, action='store_true')
     parser.add_argument('-d','--debug', help="Give debugging feedback.", required=False, action='store_true')
     parser.add_argument('-e','--embedKey', help="Embed the key in the output.", required=False)
     parser.add_argument('-f','--featlist', help="Input file with features to be extracted, one feature entry per line.", required=True)
@@ -46,7 +47,8 @@ def main(argv=None):
     tagger = applyCrf.ApplyCrf(args.featlist, args.model, args.hybridJaccardConfig,
                                inputPairs=args.pairs, inputKeyed=args.keyed,
                                inputJustTokens=args.justTokens, extractFrom=args.extract,
-                               outputPairs=args.pairs, tagMap=args.tags, embedKey=args.embedKey,
+                               outputPairs=args.pairs, tagMap=args.tags,
+                               coalescePhrases=args.coalescePhrases, embedKey=args.embedKey,
                                debug=args.debug, sumStatistics=args.statistics)
 
     # Read the Web scrapings as keyed JSON Lines, optionally converting them

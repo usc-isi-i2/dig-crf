@@ -26,6 +26,10 @@
 { time ./applyCrfSjSparkDescMemexHairEyesHjProd.sh; } \
 |& tee applyCrfSjSparkDescMemexHairEyesHjProd.log
 
+# Analyze the results of the extraction:
+{ time ./countCrfResultPhrasesFancy-crf-hair-eyes-prod.sh; } \
+|& tee countCrfResultPhrasesFancy-crf-hair-eyes-prod.log
+
 # Apply the ethnicity CRF extraction, with hybrid Jaccard filtering. Run some
 # analyses on the results.  This is a critical step in the production
 # workflow.
@@ -36,3 +40,7 @@
 # file names in "config.sh".
 { time ./applyCrfSjSparkDescMemexNameEthnicHjProd.sh; } \
 |& tee applyCrfSjSparkDescMemexNameEthnicHjProd.log
+
+# Analyze the results of the extraction:
+{ time ./countCrfResultPhrasesFancy-crf-name-ethnic-prod.sh; } \
+|& tee countCrfResultPhrasesFancy-crf-name-ethnic-prod.log
