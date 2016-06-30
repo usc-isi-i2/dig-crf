@@ -2,6 +2,12 @@
 
 # This file must be sourced.
 
+if [ "x${DIG_CRF_HOME}" == "x" ]
+  then
+    echo "Please set the DIG_CRF_HOME envar"
+    exit 1
+fi
+
 DATASET_NAME=hbase-dump-2015-10-01-2015-12-01-aman
 
 DIG_CRF_APPLY=${DIG_CRF_HOME}/src/applyCrf
