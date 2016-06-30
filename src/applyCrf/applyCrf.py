@@ -544,13 +544,10 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
                 hjResult = hybridJaccardProcessors[tagName].findBestMatchWordsCached(phrase)
                 if hjResult is None:
                     return False
-                if isinstance(hjResult, list): # Karma is expecting a single string.
-                    sentence.setFilteredPhrase(" ".join(hjResult))
-                elif isinstance(hjResult, basestring):
-                    sentence.setFilteredPhrase(hjResult)
-                else:
-                    # TODO: yell and scream here.
-                    return False
+                # Per Pedro, Karma expects a single token here, even if it contains multiple
+                # English words (e.g., "pacific islander").  Reduce phrases to a single token,
+                # but still return the result as a list:
+                sentence.setFilteredPhrase([ " ".join(hjResult) ])
             return True
         return hybridJaccardResultFilter
 
