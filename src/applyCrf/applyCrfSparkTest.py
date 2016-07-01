@@ -22,12 +22,12 @@ def main(argv=None):
     parser.add_argument('--cache', help="Optionally cache the RDD in memory.", required=False, action='store_true')
     parser.add_argument('--coalesceInput', type=int, default=0, help="Reduce the number of partitions on input.", required=False)
     parser.add_argument('--coalesceOutput', type=int, default=0, help="Reduce the number of partitions on output.", required=False)
-    parser.add_argument('-c','--coalescePhrases', help="Join each result phrase", required=False, action='store_true')
     parser.add_argument('--count', help="Count the records before writing output.", required=False, action='store_true')
     parser.add_argument('-d','--debug', help="Give debugging feedback.", required=False, action='store_true')
     parser.add_argument('--download', help="Ask Spark to download the feature list and model files to the clients.", required=False, action='store_true')
     parser.add_argument('-e','--embedKey', help="Embed the key in the output.", required=False)
     parser.add_argument('-f','--featlist', help="Input file with features to be extracted, one feature entry per line.", required=True)
+    parser.add_argument(     '--fusePhrases', help="Join each result phrase", required=False, action='store_true')
     parser.add_argument('-k','--keyed', help="The input lines are keyed.", required=False, action='store_true')
     parser.add_argument('--hybridJaccardConfig', help="Configuration file for hybrid Jaccard processing.", required=False)
     parser.add_argument('-i','--input', help="Input file with Web scraping sentences in keyed JSON Lines format.", required=True)
@@ -76,7 +76,7 @@ def main(argv=None):
                                          inputPairs=args.inputPairs or args.pairs or args.inputSeq,
                                          inputKeyed=args.keyed, inputJustTokens=args.justTokens,
                                          extractFrom=args.extract, tagMap=args.tags,
-                                         coalescePhrases=args.coalescePhrases, embedKey=args.embedKey,
+                                         fusePhrases=args.fusePhrases, embedKey=args.embedKey,
                                          outputPairs=args.outputPairs or args.pairs or args.outputSeq,
                                          debug=args.debug, sumStatistics=args.statistics)
     if args.verbose:

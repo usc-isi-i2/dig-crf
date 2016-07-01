@@ -60,6 +60,6 @@ time spark-submit \
     --download \
     --input ${INPUTFILE} --inputSeq --justTokens \
     --output ${OUTPUTFILE} --outputSeq --embedKey url \
-    --coalescePhrases \
+    --fusePhrases \
     --cache --count \
     --verbose --statistics

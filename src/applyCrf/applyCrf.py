@@ -402,7 +402,7 @@ count of output phrases, when done.
                                    "tagMapKeepCount", "tagMapRenameCount", "tagMapDropCount",
                                    "filterAcceptCount", "filterRejectCount",
                                    "formattedPhraseCount", "formattedTokenCount",
-                                   "coalescedPhraseCount"]
+                                   "fusedPhraseCount"]
             for statName in self.statisticNames:
                 self.statistics[statName] = 0
 
@@ -515,13 +515,13 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
 
     """
     def __init__(self, featureListFilePath, modelFilePath, hybridJaccardConfigPath=None, tagMap=None,
-                 coalescePhrases=False, embedKey=None, debug=False, sumStatistics=False):
+                 fusePhrases=False, embedKey=None, debug=False, sumStatistics=False):
         super(ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines, self).__init__(featureListFilePath, modelFilePath,
                                                                                       tagMap=tagMap, debug=debug,
                                                                                       sumStatistics=sumStatistics)
         self.embedKey = embedKey
         self.configureHybridJaccard(hybridJaccardConfigPath)
-        self.coalescePhrases = coalescePhrases
+        self.fusePhrases = fusePhrases
 
     def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
         """Extract the tagged phrases and format the result as keys and tagged phrase Json Lines."""
@@ -536,9 +536,9 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
         # it contains multiple English words (e.g., "pacific
         # islander").  Reduce phrases to a single token, but still
         # return the result as a list.
-        if self.coalescePhrases and len(phrase) > 1:
+        if self.fusePhrases and len(phrase) > 1:
             phrase = [ " ".join(phrase) ]
-            self.statistics["coalescedPhraseCount"] += 1
+            self.statistics["fusedPhraseCount"] += 1
 
         taggedPhrase = { }
         taggedPhrase[tagName] = phrase
@@ -589,10 +589,10 @@ a sequence of tagged phrases in keyed JSON Lines format or paired JSON Lines for
     """
     def __init__ (self, featureListFilePath, modelFilePath, hybridJaccardConfigPath,
                   inputPairs=False, inputKeyed=False, inputJustTokens=False, extractFrom=None,
-                  outputPairs=False, tagMap=None, coalescePhrases=False, embedKey=None,
+                  outputPairs=False, tagMap=None, fusePhrases=False, embedKey=None,
                   debug=False, sumStatistics=False):
         super(ApplyCrf, self).__init__(featureListFilePath, modelFilePath, hybridJaccardConfigPath,
-                                       tagMap=tagMap, coalescePhrases=coalescePhrases,
+                                       tagMap=tagMap, fusePhrases=fusePhrases,
                                        embedKey=embedKey, debug=debug, sumStatistics=sumStatistics)
         self.inputPairs = inputPairs
         self.inputKeyed = inputKeyed

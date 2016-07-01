@@ -23,10 +23,10 @@ import crf_sentences as crfs
 def main(argv=None):
     '''this is called if run from command line'''
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c','--coalescePhrases', help="Join each result phrase", required=False, action='store_true')
     parser.add_argument('-d','--debug', help="Give debugging feedback.", required=False, action='store_true')
     parser.add_argument('-e','--embedKey', help="Embed the key in the output.", required=False)
     parser.add_argument('-f','--featlist', help="Input file with features to be extracted, one feature entry per line.", required=True)
+    parser.add_argument(     '--fusePhrases', help="Join each result phrase", required=False, action='store_true')
     parser.add_argument('-k','--keyed', help="The input lines are keyed.", required=False, action='store_true')
     parser.add_argument('--hybridJaccardConfig', help="Configuration file for hybrid Jaccard processing.", required=False)
     parser.add_argument('-i','--input', help="Input file with Web scraping sentences in keyed JSON Lines format.", required=True)
@@ -48,7 +48,7 @@ def main(argv=None):
                                inputPairs=args.pairs, inputKeyed=args.keyed,
                                inputJustTokens=args.justTokens, extractFrom=args.extract,
                                outputPairs=args.pairs, tagMap=args.tags,
-                               coalescePhrases=args.coalescePhrases, embedKey=args.embedKey,
+                               fusePhrases=args.fusePhrases, embedKey=args.embedKey,
                                debug=args.debug, sumStatistics=args.statistics)
 
     # Read the Web scrapings as keyed JSON Lines, optionally converting them

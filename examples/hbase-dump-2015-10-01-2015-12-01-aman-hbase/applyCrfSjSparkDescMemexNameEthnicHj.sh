@@ -53,7 +53,7 @@ time spark-submit \
     --input ${WORKING_TITLE_AND_TEXT_TOKENS_FILE} --inputSeq --justTokens \
     --output ${OUTPUTFILE} --outputSeq --embedKey url \
     --cache --count \
-    --coalescePhrases \
+    --fusePhrases \
     --verbose --statistics
 
 
