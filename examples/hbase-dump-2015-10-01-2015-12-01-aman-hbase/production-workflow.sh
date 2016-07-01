@@ -20,6 +20,11 @@
 { time ./tokenizeTitleAndTextAndSaveSeq.sh; } \
 |& tee tokenizeTitleAndTextAndSaveSeq.log
 
+# Apply the hair and eyes CRF extraction, without hybrid Jaccard filtering,
+# but with the output phrases fused for Karma.
+{ time ./applyCrfSjSparkDescMemexHairEyesFused.sh; } \
+|& tee applyCrfSjSparkDescMemexHairEyesFused.log
+
 # Apply the hair and eyes CRF extraction, with hybrid Jaccard filtering. Run
 # some analyses on the results.  This is a critical step in the production
 # workflow.
@@ -35,6 +40,16 @@
 
 { time ./countCrfResultTokensFancy-crf-hair-eyes-hj.sh; } \
 |& tee countCrfResultTokensFancy-crf-hair-eyes-hj.log
+
+# Apply the ethnicity CRF extraction without hybrid Jaccard filtering,
+# but with the result phrases fused.
+
+# For the moment, workingname extraction has been disabled, but I left the
+# script names the same.  To re-enable the workingname analysys, edit the
+# extraction script ("applyCrfSjSparkDescMemexNameEthnic.sh") and change the
+# file names in "config.sh".
+{ time ./applyCrfSjSparkDescMemexNameEthnicFused.sh; } \
+|& tee applyCrfSjSparkDescMemexNameEthnicFused.log
 
 # Apply the ethnicity CRF extraction with hybrid Jaccard filtering. Run some
 # analyses on the results.  This is a critical step in the production
