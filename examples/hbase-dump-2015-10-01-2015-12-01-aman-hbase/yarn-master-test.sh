@@ -8,6 +8,8 @@ source ${DIG_CRF_SCRIPT}/limitMemexExecutors.sh
 
 echo "Submitting the job to the Memex cluster."
 time spark-submit \
+    --conf spark.yarn.appMasterEnv.SPARK_HOME=/usr/lib/spark \
+    --conf spark.executorEnvEnv.SPARK_HOME=/usr/lib/spark \
     --master 'yarn' \
     --deploy-mode 'cluster' \
     --num-executors ${NUM_EXECUTORS} \
