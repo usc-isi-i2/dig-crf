@@ -23,30 +23,32 @@
 { time ./countGoodKeys.sh; } \
 |& tee countGoodKeys.log
 
-# Extractions and analyses without hybrid Jaccard processing.
-{ time ./applyCrfSjSparkDescMemexHairEyes.sh; } \
-|& tee applyCrfSjSparkDescMemexHairEyes.log
-
-# Analyze the results of the extraction:
+# Analyze the results of the hair/eyes extraction:
 { time ./countCrfResultPhrases-crf-hair-eyes.sh; } \
 |& tee countCrfResultPhrases-crf-hair-eyes.log
 
 { time ./countCrfResultPhrasesFancy-crf-hair-eyes.sh; } \
 |& tee countCrfResultPhrasesFancy-crf-hair-eyes.log
 
-{ time ./countCrfResultTokensFancy-crf-hair-eyes.sh; } \
-|& tee countCrfResultTokensFancy-crf-hair-eyes.log
-
-# Extractions and analyses without hybrid Jaccard processing.
-{ time ./applyCrfSjSparkDescMemexNameEthnic.sh; } \
-|& tee applyCrfSjSparkDescMemexNameEthnic.log
-
-# Analyze the results of the extraction:
+# Analyze the results of the name/ethnicity extraction:
 { time ./countCrfResultPhrases-crf-name-ethnic.sh; } \
 |& tee countCrfResultPhrases-crf-name-ethnic.log
 
 { time ./countCrfResultPhrasesFancy-crf-name-ethnic.sh; } \
 |& tee countCrfResultPhrasesFancy-crf-name-ethnic.log
+
+# Extractions and analyses without hybrid Jaccard processing,
+# with the result phrases unfused.  Hair/eyes:
+{ time ./applyCrfSjSparkDescMemexHairEyesTokens.sh; } \
+|& tee applyCrfSjSparkDescMemexHairEyesTokens.log
+
+{ time ./countCrfResultTokensFancy-crf-hair-eyes.sh; } \
+|& tee countCrfResultTokensFancy-crf-hair-eyes.log
+
+# Extractions and analyses without hybrid Jaccard processing,
+# with the result phrases unfused.  Name/ethnicity:
+{ time ./applyCrfSjSparkDescMemexNameEthnicTokens.sh; } \
+|& tee applyCrfSjSparkDescMemexNameEthnicTokens.log
 
 { time ./countCrfResultTokensFancy-crf-name-ethnic.sh; } \
 |& tee countCrfResultTokensFancy-crf-name-ethnic.log

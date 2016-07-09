@@ -10,7 +10,7 @@ source ${DIG_CRF_SCRIPT}/checkMemexConnection.sh
 source ${DIG_CRF_SCRIPT}/limitMemexExecutors.sh
 ${DIG_CRF_SCRIPT}/buildPythonFiles.sh
 
-OUTPUTFILE=${WORKING_HAIR_EYES_FILE}
+OUTPUTFILE=${WORKING_HAIR_EYES_TOKENS_FILE}
 
 # Dangerous!
 echo "Clearing the output folder: ${OUTPUTFILE}"
@@ -40,7 +40,6 @@ time spark-submit \
     --download \
     --input ${WORKING_TITLE_AND_TEXT_TOKENS_FILE} --inputSeq --justTokens \
     --output ${OUTPUTFILE} --outputSeq --embedKey url \
-    --fusedPhrases \
     --cache --count \
     --verbose --statistics
 

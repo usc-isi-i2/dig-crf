@@ -12,19 +12,38 @@ source ${DIG_CRF_SCRIPT}/checkMemexConnection.sh
 source ${DIG_CRF_SCRIPT}/limitMemexExecutors.sh
 
 TOKENIZED_INPUTFILE=${WORKING_TITLE_AND_TEXT_TOKENS_FILE}
-HAIR_EYES_INPUTFILE=${WORKING_HAIR_EYES_HJ_FILE}
-NAME_ETHNIC_INPUTFILE=${WORKING_NAME_ETHNIC_HJ_FILE}
+HAIR_EYES_INPUTFILE=${WORKING_HAIR_EYES_FILE}
+NAME_ETHNIC_INPUTFILE=${WORKING_NAME_ETHNIC_FILE}
+HAIR_EYES_HJ_INPUTFILE=${WORKING_HAIR_EYES_HJ_FILE}
+NAME_ETHNIC_HJ_INPUTFILE=${WORKING_NAME_ETHNIC_HJ_FILE}
+
+INPUTFILES=(${TOKENIZED_INPUTFILE} \
+            ${HAIR_EYES_INPUTFILE} ${NAME_ETHNIC_INPUTFILE} \
+            ${HAIR_EYES_HJ_INPUTFILE} ${NAME_ETHNIC_HJ_INPUTFILE})
 
 TOKENIZED_OUTPUTFILE=${PRODUCTION_TITLE_AND_TEXT_TOKENS_FILE}
 HAIR_EYES_OUTPUTFILE=${PRODUCTION_HAIR_EYES_FILE}
 NAME_ETHNIC_OUTPUTFILE=${PRODUCTION_NAME_ETHNIC_FILE}
+HAIR_EYES_HJ_OUTPUTFILE=${PRODUCTION_HAIR_EYES_HJ_FILE}
+NAME_ETHNIC_HJ_OUTPUTFILE=${PRODUCTION_NAME_ETHNIC_HJ_FILE}
+
+OUTPUTFILES=(${TOKENIZED_OUTPUTFILE} \
+            ${HAIR_EYES_OUTPUTFILE} ${NAME_ETHNIC_OUTPUTFILE} \
+            ${HAIR_EYES_HJ_OUTPUTFILE} ${NAME_ETHNIC_HJ_OUTPUTFILE})
+
 TEMPSUFFIX=.TEMP
 TOKENIZED_TEMPFILE=${TOKENIZED_OUTPUTFILE}${TEMPSUFFIX}
 HAIR_EYES_TEMPFILE=${HAIR_EYES_OUTPUTFILE}${TEMPSUFFIX}
 NAME_ETHNIC_TEMPFILE=${NAME_ETHNIC_OUTPUTFILE}${TEMPSUFFIX}
+HAIR_EYES_HJ_TEMPFILE=${HAIR_EYES_HJ_OUTPUTFILE}${TEMPSUFFIX}
+NAME_ETHNIC_HJ_TEMPFILE=${NAME_ETHNIC_HJ_OUTPUTFILE}${TEMPSUFFIX}
+
+TEMPFILES=(${TOKENIZED_TEMPFILE} \
+            ${HAIR_EYES_TEMPFILE} ${NAME_ETHNIC_TEMPFILE} \
+            ${HAIR_EYES_HJ_TEMPFILE} ${NAME_ETHNIC_HJ_TEMPFILE})
 
 echo "Checking for the presence of the input files."
-for INPUTFILE in ${TOKENIZED_INPUTFILE} ${HAIR_EYES_INPUTFILE} ${NAME_ETHNIC_INPUTFILE}; do
+for INPUTFILE in ${INPUTFILES[*]}; do
   echo "  Checking for ${INPUTFILE}"
   hdfs dfs -test -e ${INPUTFILE}
   if [ $? -ne 0 ]
@@ -35,10 +54,10 @@ for INPUTFILE in ${TOKENIZED_INPUTFILE} ${HAIR_EYES_INPUTFILE} ${NAME_ETHNIC_INP
 done
 
 echo "New data files:"
-hdfs dfs -ls -d ${TOKENIZED_INPUTFILE} ${HAIR_EYES_INPUTFILE} ${NAME_ETHNIC_INPUTFILE}
+hdfs dfs -ls -d ${INPUTFILES[*]}
 
 echo "Checking for existing temporary files, and removing any found."
-for TEMPFILE in ${TOKENIZED_TEMPFILE} ${HAIR_EYES_TEMPFILE} ${NAME_ETHNIC_TEMPFILE}; do
+for TEMPFILE in ${TEMPFILES[*]}; do
   echo "  Checking for ${TEMPFILE}"
   hdfs dfs -test -e ${TEMPFILE}
   if [ $? -eq 0 ]
@@ -90,8 +109,32 @@ time spark-submit \
     --cache --count --coalesce 50 \
     --showPartitions --time --verbose
 
+echo Copying ${HAIR_EYES_HJ_INPUTFILE} to ${HAIR_EYES_HJ_TEMPFILE}
+time spark-submit \
+    --master 'yarn-client' \
+    --num-executors ${NUM_EXECUTORS} \
+    ${DRIVER_JAVA_OPTIONS} \
+    ${DIG_CRF_UTIL}/copySeqFileSpark.py \
+    -- \
+    --input ${HAIR_EYES_HJ_INPUTFILE} \
+    --output ${HAIR_EYES_HJ_TEMPFILE} \
+    --cache --count --coalesce 50 \
+    --showPartitions --time --verbose
+
+echo Copying ${NAME_ETHNIC_HJ_INPUTFILE} to ${NAME_ETHNIC_HJ_TEMPFILE}
+time spark-submit \
+    --master 'yarn-client' \
+    --num-executors ${NUM_EXECUTORS} \
+    ${DRIVER_JAVA_OPTIONS} \
+    ${DIG_CRF_UTIL}/copySeqFileSpark.py \
+    -- \
+    --input ${NAME_ETHNIC_HJ_INPUTFILE} \
+    --output ${NAME_ETHNIC_HJ_TEMPFILE} \
+    --cache --count --coalesce 50 \
+    --showPartitions --time --verbose
+
 echo "Checking for new temporary files."
-for TEMPFILE in ${TOKENIZED_TEMPFILE} ${HAIR_EYES_TEMPFILE} ${NAME_ETHNIC_TEMPFILE}; do
+for TEMPFILE in ${TEMPFILES[*]}; do
   echo "  Checking for ${TEMPFILE}"
   hdfs dfs -test -e ${TEMPFILE}
   if [ $? -ne 0 ]
@@ -102,7 +145,7 @@ for TEMPFILE in ${TOKENIZED_TEMPFILE} ${HAIR_EYES_TEMPFILE} ${NAME_ETHNIC_TEMPFI
 done
 
 echo "Checking for existing production files, and removing any found."
-for OUTPUTFILE in ${TOKENIZED_OUTPUTFILE} ${HAIR_EYES_OUTPUTFILE} ${NAME_ETHNIC_OUTPUTFILE}; do
+for OUTPUTFILE in ${OUTPUTFILES[*]}; do
  echo "  Checking for ${OUTPUTFILE}"
  hdfs dfs -test -e ${OUTPUTFILE}
   if [ $? -eq 0 ]
@@ -122,9 +165,11 @@ echo "Renaming temporary files to new production files."
 hdfs dfs -mv ${TOKENIZED_TEMPFILE}   ${TOKENIZED_OUTPUTFILE}
 hdfs dfs -mv ${HAIR_EYES_TEMPFILE}   ${HAIR_EYES_OUTPUTFILE}
 hdfs dfs -mv ${NAME_ETHNIC_TEMPFILE} ${NAME_ETHNIC_OUTPUTFILE}
+hdfs dfs -mv ${HAIR_EYES_HJ_TEMPFILE}   ${HAIR_EYES_HJ_OUTPUTFILE}
+hdfs dfs -mv ${NAME_ETHNIC_HJ_TEMPFILE} ${NAME_ETHNIC_HJ_OUTPUTFILE}
 
 echo "Checking for new production files."
-for OUTPUTFILE in ${TOKENIZED_OUTPUTFILE} ${HAIR_EYES_OUTPUTFILE} ${NAME_ETHNIC_OUTPUTFILE}; do
+for OUTPUTFILE in ${OUTPUTFILES[*]}; do
   echo "  Checking for ${OUTPUTFILE}"
   hdfs dfs -test -e ${OUTPUTFILE}
   if [ $? -ne 0 ]
@@ -135,4 +180,4 @@ for OUTPUTFILE in ${TOKENIZED_OUTPUTFILE} ${HAIR_EYES_OUTPUTFILE} ${NAME_ETHNIC_
 done
 
 echo "New production data files:"
-hdfs dfs -ls -d ${TOKENIZED_OUTPUTFILE} ${HAIR_EYES_OUTPUTFILE} ${NAME_ETHNIC_OUTPUTFILE}
+hdfs dfs -ls -d ${OUTPUTFILE[*]}

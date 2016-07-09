@@ -11,57 +11,79 @@ source config.sh
 source ${DIG_CRF_SCRIPT}/checkMemexConnection.sh
 source ${DIG_CRF_SCRIPT}/limitMemexExecutors.sh
 
-HAIR_EYES_INPUTFILE=${WORKING_HAIR_EYES_HJ_FILE}
-NAME_ETHNIC_INPUTFILE=${WORKING_NAME_ETHNIC_HJ_FILE}
+TOKENIZED_INPUTFILE=${WORKING_TITLE_AND_TEXT_TOKENS_FILE}
+HAIR_EYES_INPUTFILE=${WORKING_HAIR_EYES_FILE}
+NAME_ETHNIC_INPUTFILE=${WORKING_NAME_ETHNIC_FILE}
+HAIR_EYES_HJ_INPUTFILE=${WORKING_HAIR_EYES_HJ_FILE}
+NAME_ETHNIC_HJ_INPUTFILE=${WORKING_NAME_ETHNIC_HJ_FILE}
 
+INPUTFILES=(${TOKENIZED_INPUTFILE} \
+            ${HAIR_EYES_INPUTFILE} ${NAME_ETHNIC_INPUTFILE} \
+            ${HAIR_EYES_HJ_INPUTFILE} ${NAME_ETHNIC_HJ_INPUTFILE})
+
+TOKENIZED_OUTPUTFILE=${PRODUCTION_TITLE_AND_TEXT_TOKENS_FILE}
 HAIR_EYES_OUTPUTFILE=${PRODUCTION_HAIR_EYES_FILE}
 NAME_ETHNIC_OUTPUTFILE=${PRODUCTION_NAME_ETHNIC_FILE}
+HAIR_EYES_HJ_OUTPUTFILE=${PRODUCTION_HAIR_EYES_HJ_FILE}
+NAME_ETHNIC_HJ_OUTPUTFILE=${PRODUCTION_NAME_ETHNIC_HJ_FILE}
+
+OUTPUTFILES=(${TOKENIZED_OUTPUTFILE} \
+            ${HAIR_EYES_OUTPUTFILE} ${NAME_ETHNIC_OUTPUTFILE} \
+            ${HAIR_EYES_HJ_OUTPUTFILE} ${NAME_ETHNIC_HJ_OUTPUTFILE})
+
 TEMPSUFFIX=.TEMP
+TOKENIZED_TEMPFILE=${TOKENIZED_OUTPUTFILE}${TEMPSUFFIX}
 HAIR_EYES_TEMPFILE=${HAIR_EYES_OUTPUTFILE}${TEMPSUFFIX}
 NAME_ETHNIC_TEMPFILE=${NAME_ETHNIC_OUTPUTFILE}${TEMPSUFFIX}
+HAIR_EYES_HJ_TEMPFILE=${HAIR_EYES_HJ_OUTPUTFILE}${TEMPSUFFIX}
+NAME_ETHNIC_HJ_TEMPFILE=${NAME_ETHNIC_HJ_OUTPUTFILE}${TEMPSUFFIX}
 
-# Check for the presence of the input files:
-hdfs dfs -test -e ${HAIR_EYES_INPUTFILE}
-if [ $? -ne 0 ]
-  then
-    echo "${HAIR_EYES_INPUTFILE} is missing, giving up."
-    exit 1
-fi
+TEMPFILES=(${TOKENIZED_TEMPFILE} \
+            ${HAIR_EYES_TEMPFILE} ${NAME_ETHNIC_TEMPFILE} \
+            ${HAIR_EYES_HJ_TEMPFILE} ${NAME_ETHNIC_HJ_TEMPFILE})
 
-hdfs dfs -test -e ${NAME_ETHNIC_INPUTFILE}
-if [ $? -ne 0 ]
-  then
-    echo "${NAME_ETHNIC_INPUTFILE} is missing, giving up."
-    exit 1
-fi
+echo "Checking for the presence of the input files."
+for INPUTFILE in ${INPUTFILES[*]}; do
+  echo "  Checking for ${INPUTFILE}"
+  hdfs dfs -test -e ${INPUTFILE}
+  if [ $? -ne 0 ]
+    then
+      echo "${INPUTFILE} is missing, giving up."
+      exit 1
+  fi
+done
 
 echo "New data files:"
-hdfs dfs -ls -d ${HAIR_EYES_INPUTFILE}
-hdfs dfs -ls -d ${NAME_ETHNIC_INPUTFILE}
+hdfs dfs -ls -d ${INPUTFILES[*]}
 
 echo "Checking for existing temporary files, and removing any found."
-hdfs dfs -test -e ${HAIR_EYES_TEMPFILE}
-if [ $? -eq 0 ]
-  then
-    hdfs dfs -rm -r ${HAIR_EYES_TEMPFILE}
-    hdfs dfs -test -e ${HAIR_EYES_TEMPFILE}
-    if [ $? -eq 0 ]
-      then
-        echo "Unable to remove ${HAIR_EYES_TEMPFILE}"
-        exit 1
-    fi
-fi
-hdfs dfs -test -e ${NAME_ETHNIC_TEMPFILE}
-if [ $? -eq 0 ]
-  then
-    hdfs dfs -rm -r ${NAME_ETHNIC_TEMPFILE}
-    hdfs dfs -test -e ${NAME_ETHNIC_TEMPFILE}
-    if [ $? -eq 0 ]
-      then
-        echo "Unable to remove ${NAME_ETHNIC_TEMPFILE}"
-        exit 1
-    fi
-fi
+for TEMPFILE in ${TEMPFILES[*]}; do
+  echo "  Checking for ${TEMPFILE}"
+  hdfs dfs -test -e ${TEMPFILE}
+  if [ $? -eq 0 ]
+    then
+      echo "    Removing ${TEMPFILE}"
+      hdfs dfs -rm -r ${TEMPFILE}
+      hdfs dfs -test -e ${TEMPFILE}
+      if [ $? -eq 0 ]
+        then
+          echo "Unable to remove ${TEMPFILE}"
+          exit 1
+      fi
+  fi
+done
+
+echo Copying ${TOKENIZED_INPUTFILE} to ${TOKENIZED_TEMPFILE}
+time spark-submit \
+    --master 'yarn-client' \
+    --num-executors ${NUM_EXECUTORS} \
+    ${DRIVER_JAVA_OPTIONS} \
+    ${DIG_CRF_UTIL}/copySeqFileSpark.py \
+    -- \
+    --input ${TOKENIZED_INPUTFILE} \
+    --output ${TOKENIZED_TEMPFILE} \
+    --cache --count \
+    --showPartitions --time --verbose
 
 echo Copying ${HAIR_EYES_INPUTFILE} to ${HAIR_EYES_TEMPFILE}
 time spark-submit \
@@ -87,62 +109,75 @@ time spark-submit \
     --cache --count --coalesce 50 \
     --showPartitions --time --verbose
 
+echo Copying ${HAIR_EYES_HJ_INPUTFILE} to ${HAIR_EYES_HJ_TEMPFILE}
+time spark-submit \
+    --master 'yarn-client' \
+    --num-executors ${NUM_EXECUTORS} \
+    ${DRIVER_JAVA_OPTIONS} \
+    ${DIG_CRF_UTIL}/copySeqFileSpark.py \
+    -- \
+    --input ${HAIR_EYES_HJ_INPUTFILE} \
+    --output ${HAIR_EYES_HJ_TEMPFILE} \
+    --cache --count --coalesce 50 \
+    --showPartitions --time --verbose
+
+echo Copying ${NAME_ETHNIC_HJ_INPUTFILE} to ${NAME_ETHNIC_HJ_TEMPFILE}
+time spark-submit \
+    --master 'yarn-client' \
+    --num-executors ${NUM_EXECUTORS} \
+    ${DRIVER_JAVA_OPTIONS} \
+    ${DIG_CRF_UTIL}/copySeqFileSpark.py \
+    -- \
+    --input ${NAME_ETHNIC_HJ_INPUTFILE} \
+    --output ${NAME_ETHNIC_HJ_TEMPFILE} \
+    --cache --count --coalesce 50 \
+    --showPartitions --time --verbose
+
 echo "Checking for new temporary files."
-hdfs dfs -test -e ${HAIR_EYES_TEMPFILE}
-if [ $? -ne 0 ]
-  then
-    echo "Copy failed to create ${HAIR_EYES_TEMPFILE}."
-    exit 1
-fi
-hdfs dfs -test -e ${NAME_ETHNIC_TEMPFILE}
-if [ $? -ne 0 ]
-  then
-    echo "Copy failed to create ${NAME_ETHNIC_TEMPFILE}."
-    exit 1
-fi
+for TEMPFILE in ${TEMPFILES[*]}; do
+  echo "  Checking for ${TEMPFILE}"
+  hdfs dfs -test -e ${TEMPFILE}
+  if [ $? -ne 0 ]
+    then
+      echo "Copy failed to create ${TEMPFILE}."
+      exit 1
+  fi
+done
 
 echo "Checking for existing production files, and removing any found."
-hdfs dfs -test -e ${HAIR_EYES_OUTPUTFILE}
-if [ $? -eq 0 ]
-  then
-    hdfs dfs -rm -r ${HAIR_EYES_OUTPUTFILE}
-    hdfs dfs -test -e ${HAIR_EYES_OUTPUTFILE}
-    if [ $? -eq 0 ]
-      then
-        echo "Unable to remove ${HAIR_EYES_OUTPUTFILE}"
-        exit 1
-    fi
-fi
-hdfs dfs -test -e ${NAME_ETHNIC_OUTPUTFILE}
-if [ $? -eq 0 ]
-  then
-    hdfs dfs -rm -r ${NAME_ETHNIC_OUTPUTFILE}
-    hdfs dfs -test -e ${NAME_ETHNIC_OUTPUTFILE}
-    if [ $? -eq 0 ]
-      then
-        echo "Unable to remove ${NAME_ETHNIC_OUTPUTFILE}"
-        exit 1
-    fi
-fi
+for OUTPUTFILE in ${OUTPUTFILES[*]}; do
+ echo "  Checking for ${OUTPUTFILE}"
+ hdfs dfs -test -e ${OUTPUTFILE}
+  if [ $? -eq 0 ]
+    then
+      echo "    Removing ${OUTPUTFILE}"
+      hdfs dfs -rm -r ${OUTPUTFILE}
+      hdfs dfs -test -e ${OUTPUTFILE}
+      if [ $? -eq 0 ]
+        then
+          echo "Unable to remove ${OUTPUTFILE}"
+          exit 1
+      fi
+  fi
+done
 
 echo "Renaming temporary files to new production files."
+hdfs dfs -mv ${TOKENIZED_TEMPFILE}   ${TOKENIZED_OUTPUTFILE}
 hdfs dfs -mv ${HAIR_EYES_TEMPFILE}   ${HAIR_EYES_OUTPUTFILE}
 hdfs dfs -mv ${NAME_ETHNIC_TEMPFILE} ${NAME_ETHNIC_OUTPUTFILE}
+hdfs dfs -mv ${HAIR_EYES_HJ_TEMPFILE}   ${HAIR_EYES_HJ_OUTPUTFILE}
+hdfs dfs -mv ${NAME_ETHNIC_HJ_TEMPFILE} ${NAME_ETHNIC_HJ_OUTPUTFILE}
 
 echo "Checking for new production files."
-hdfs dfs -test -e ${HAIR_EYES_OUTPUTFILE}
-if [ $? -ne 0 ]
-  then
-    echo "Failed to install ${HAIR_EYES_OUTPUTFILE}."
-    exit 1
-fi
-hdfs dfs -test -e ${NAME_ETHNIC_OUTPUTFILE}
-if [ $? -ne 0 ]
-  then
-    echo "Failed to install ${NAME_ETHNIC_OUTPUTFILE}."
-    exit 1
-fi
+for OUTPUTFILE in ${OUTPUTFILES[*]}; do
+  echo "  Checking for ${OUTPUTFILE}"
+  hdfs dfs -test -e ${OUTPUTFILE}
+  if [ $? -ne 0 ]
+    then
+      echo "Failed to install ${OUTPUTFILE}."
+      exit 1
+  fi
+done
 
 echo "New production data files:"
-hdfs dfs -ls -d ${HAIR_EYES_OUTPUTFILE}
-hdfs dfs -ls -d ${NAME_ETHNIC_OUTPUTFILE}
+hdfs dfs -ls -d ${OUTPUTFILE[*]}
