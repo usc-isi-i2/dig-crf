@@ -133,7 +133,12 @@ def main(argv=None):
         print "noTitleAttribsTargetCount = %d" % noTitleAttribsTargetCount.value
     print "========================================"
 
+    priorDomain = None
     for k in sorted(keyCounts):
+        newDomain, key = k.split(":")
+        if priorDomain is not None and priorDomain != newDomain:
+            print
+        priorDomain = newDomain
         print k, keyCounts[k]
     print "========================================"
 
