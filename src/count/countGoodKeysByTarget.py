@@ -135,7 +135,7 @@ def main(argv=None):
 
     priorDomain = None
     for k in sorted(keyCounts):
-        newDomain, key = k.split(":")
+        newDomain, key = k.split(":", 1)
         if priorDomain is not None and priorDomain != newDomain:
             print
         priorDomain = newDomain
