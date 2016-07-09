@@ -15,8 +15,9 @@
 { time ./countGoodKeysByTarget.sh; } \
 |& tee countGoodKeysByTarget.log
 
-# Extract title and text results, tokenize, and save.  This is a critical step
-# in the production workflow.
+# The next five steps are the critical steps in the workflow:
+
+# Extract title and text results, tokenize, and save.
 { time ./tokenizeTitleAndTextAndSaveSeq.sh; } \
 |& tee tokenizeTitleAndTextAndSaveSeq.log
 
@@ -25,21 +26,10 @@
 { time ./applyCrfSjSparkDescMemexHairEyes.sh; } \
 |& tee applyCrfSjSparkDescMemexHairEyes.log
 
-# Apply the hair and eyes CRF extraction with hybrid Jaccard filtering. Run
-# some analyses on the results.  This is a critical step in the production
-# workflow.
+# Apply the hair and eyes CRF extraction with hybrid Jaccard filtering and
+# with the output phrases fused for Karma.
 { time ./applyCrfSjSparkDescMemexHairEyesHj.sh; } \
 |& tee applyCrfSjSparkDescMemexHairEyesHj.log
-
-# Analyze the results of the extraction:
-{ time ./countCrfResultPhrases-crf-hair-eyes-hj.sh; } \
-|& tee countCrfResultPhrases-crf-hair-eyes-hj.log
-
-{ time ./countCrfResultPhrasesFancy-crf-hair-eyes-hj.sh; } \
-|& tee countCrfResultPhrasesFancy-crf-hair-eyes-hj.log
-
-{ time ./countCrfResultTokensFancy-crf-hair-eyes-hj.sh; } \
-|& tee countCrfResultTokensFancy-crf-hair-eyes-hj.log
 
 # Apply the ethnicity CRF extraction without hybrid Jaccard filtering,
 # but with the result phrases fused.
@@ -51,9 +41,8 @@
 { time ./applyCrfSjSparkDescMemexNameEthnic.sh; } \
 |& tee applyCrfSjSparkDescMemexNameEthnic.log
 
-# Apply the ethnicity CRF extraction with hybrid Jaccard filtering. Run some
-# analyses on the results.  This is a critical step in the production
-# workflow.
+# Apply the ethnicity CRF extraction with hybrid Jaccard filtering and with
+# the output phrases fused for Karma.
 
 # For the moment, workingname extraction has been disabled, but I left the
 # script names the same.  To re-enable the workingname analysys, edit the
@@ -62,12 +51,35 @@
 { time ./applyCrfSjSparkDescMemexNameEthnicHj.sh; } \
 |& tee applyCrfSjSparkDescMemexNameEthnicHj.log
 
-# Analyze the results of the extraction:
-{ time ./countCrfResultPhrases-crf-name-ethnic-hj.sh; } \
-|& tee countCrfResultPhrases-crf-name-ethnic-hj.log
+# Analyze the results of the hair and eyes extractions without hybrid Jaccard
+# processing:
+{ time ./countCrfResultTokens-crf-hair-eyes.sh; } \
+|& tee countCrfResultTokens-crf-hair-eyes.log
 
-{ time ./countCrfResultPhrasesFancy-crf-name-ethnic-hj.sh; } \
-|& tee countCrfResultPhrasesFancy-crf-name-ethnic-hj.log
+{ time ./countCrfResultTokensFancy-crf-hair-eyes.sh; } \
+|& tee countCrfResultTokensFancy-crf-hair-eyes.log
+
+# Analyze the results of the hair and eyes extractions with hybrid Jaccard
+# processing:
+{ time ./countCrfResultTokens-crf-hair-eyes-hj.sh; } \
+|& tee countCrfResultTokens-crf-hair-eyes-hj.log
+
+{ time ./countCrfResultTokensFancy-crf-hair-eyes-hj.sh; } \
+|& tee countCrfResultTokensFancy-crf-hair-eyes-hj.log
+
+# Analyze the results of the name and ethnicity extraction without hybrid Jaccard
+# processing:
+
+{ time ./countCrfResultTokens-crf-name-ethnic.sh; } \
+|& tee countCrfResultTokens-crf-name-ethnic.log
+
+{ time ./countCrfResultTokensFancy-crf-name-ethnic.sh; } \
+|& tee countCrfResultTokensFancy-crf-name-ethnic.log
+
+# Analyze the results of the name and ethnicity extraction with hybrid Jaccard
+# processing:
+{ time ./countCrfResultTokens-crf-name-ethnic-hj.sh; } \
+|& tee countCrfResultTokens-crf-name-ethnic-hj.log
 
 { time ./countCrfResultTokensFancy-crf-name-ethnic-hj.sh; } \
 |& tee countCrfResultTokensFancy-crf-name-ethnic-hj.log

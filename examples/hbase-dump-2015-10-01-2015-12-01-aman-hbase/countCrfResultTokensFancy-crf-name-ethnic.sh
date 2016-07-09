@@ -13,5 +13,5 @@ time spark-submit \
     ${DRIVER_JAVA_OPTIONS} \
     ${DIG_CRF_COUNT}/countCrfResultTokensFancy.py \
     -- \
-    --input ${WORKING_NAME_ETHNIC_TOKENS_FILE} \
+    --input ${WORKING_NAME_ETHNIC_FILE} \
     --excludeTags url

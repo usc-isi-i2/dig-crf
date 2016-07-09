@@ -11,8 +11,7 @@ time spark-submit \
     --master 'yarn-client' \
     --num-executors ${NUM_EXECUTORS} \
     ${DRIVER_JAVA_OPTIONS} \
-    ${DIG_CRF_COUNT}/countCrfResultPhrases.py \
+    ${DIG_CRF_COUNT}/countCrfResultTokensFancy.py \
     -- \
     --input ${WORKING_NAME_ETHNIC_HJ_FILE} \
-    --printToLog \
     --excludeTags url

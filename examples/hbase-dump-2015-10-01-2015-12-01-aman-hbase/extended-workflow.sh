@@ -24,12 +24,6 @@
 |& tee countGoodKeys.log
 
 # Analyze the results of the hair/eyes extraction:
-{ time ./countCrfResultPhrases-crf-hair-eyes.sh; } \
-|& tee countCrfResultPhrases-crf-hair-eyes.log
-
-{ time ./countCrfResultPhrasesFancy-crf-hair-eyes.sh; } \
-|& tee countCrfResultPhrasesFancy-crf-hair-eyes.log
-
 # Analyze the results of the name/ethnicity extraction:
 { time ./countCrfResultPhrases-crf-name-ethnic.sh; } \
 |& tee countCrfResultPhrases-crf-name-ethnic.log
@@ -52,3 +46,13 @@
 
 { time ./countCrfResultTokensFancy-crf-name-ethnic.sh; } \
 |& tee countCrfResultTokensFancy-crf-name-ethnic.log
+
+
+
+
+{ time ./countCrfResultTokensFancy-crf-hair-eyes-hj.sh; } \
+|& tee countCrfResultTokensFancy-crf-hair-eyes-hj.log
+
+
+{ time ./countCrfResultTokensFancy-crf-name-ethnic-hj.sh; } \
+|& tee countCrfResultTokensFancy-crf-name-ethnic-hj.log
