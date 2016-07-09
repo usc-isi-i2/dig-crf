@@ -1,4 +1,4 @@
-;s #! /bin/bash
+#! /bin/bash
 
 # |& is available in bash version 4.  It copies both STDERR and STDOUT to a
 # pipe, as |& does in csh.
