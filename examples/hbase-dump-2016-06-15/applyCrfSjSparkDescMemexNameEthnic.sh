@@ -4,6 +4,16 @@
 # Work in the working area, for later release to production.
 
 # This script assumes that "spark-submit" is available on $PATH.
+#
+# 22-Jun-2016: workingName reporting has been shut off until we have
+# good hybrid Jaccard filtering for it.  Before this change, the
+# --tags option was:
+#
+# --tags B_ethnic:ethnicityType,I_ethnic:ethnicityType,B_workingname:workingname,I_workingname:workingname \
+#
+# After the change, it is:
+#
+# --tags B_ethnic:ethnicityType,I_ethnic:ethnicityType \
 
 NUM_EXECUTORS=350
 NUM_PARTITIONS=350
@@ -46,7 +56,7 @@ time spark-submit \
     --featlist ${HDFS_WORK_DIR}/${NAME_ETHNIC_FEATURES_CONFIG_FILE} \
     --model ${HDFS_WORK_DIR}/${NAME_ETHNIC_CRF_MODEL_FILE} \
     --hybridJaccardConfig ${DIG_CRF_DATA_CONFIG_DIR}/${HYBRID_JACCARD_CONFIG_FILE} \
-    --tags B_ethnic:ethnicityType,I_ethnic:ethnicityType,B_workingname:,I_workingname: \
+    --tags B_ethnic:ethnicityType,I_ethnic:ethnicityType \
     --download \
     --input ${INPUTFILE} --inputSeq --justTokens \
     --output ${OUTPUTFILE} --outputSeq --embedKey url \
