@@ -1,10 +1,14 @@
 #! /bin/bash
 
-NUM_EXECUTORS=350
+#NUM_EXECUTORS=350
+NUM_EXECUTORS=10
 
 source config.sh
 source ${DIG_CRF_SCRIPT}/checkMemexConnection.sh
 source ${DIG_CRF_SCRIPT}/limitMemexExecutors.sh
+
+hadoop fs -copyFromLocal -f ${DIG_CRF_DATA_CONFIG_DIR}/${QUIETER_LOG4J_PROPERTIES_FILE} \
+                            ${HDFS_WORK_DIR}/${QUIETER_LOG4J_PROPERTIES_FILE}
 
 echo "Submitting the job to the Memex cluster."
 time spark-submit \
@@ -13,7 +17,7 @@ time spark-submit \
     --master 'yarn' \
     --deploy-mode 'cluster' \
     --num-executors ${NUM_EXECUTORS} \
-    ${DRIVER_JAVA_OPTIONS} \
+    --driver-java-options -Dlog4j.configuration=${HDFS_WORK_DIR}/${QUIETER_LOG4J_PROPERTIES_FILE} \
     ${DIG_CRF_COUNT}/countGoodKeysByTarget.py \
     -- \
     --byUrl \
