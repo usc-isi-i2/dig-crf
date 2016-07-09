@@ -1,4 +1,4 @@
-#! /bin/bash
+;s #! /bin/bash
 
 # |& is available in bash version 4.  It copies both STDERR and STDOUT to a
 # pipe, as |& does in csh.
@@ -23,18 +23,13 @@
 { time ./countGoodKeys.sh; } \
 |& tee countGoodKeys.log
 
-# Analyze the results of the hair/eyes extraction:
-# Analyze the results of the name/ethnicity extraction:
-{ time ./countCrfResultPhrases-crf-name-ethnic.sh; } \
-|& tee countCrfResultPhrases-crf-name-ethnic.log
-
-{ time ./countCrfResultPhrasesFancy-crf-name-ethnic.sh; } \
-|& tee countCrfResultPhrasesFancy-crf-name-ethnic.log
-
 # Extractions and analyses without hybrid Jaccard processing,
 # with the result phrases unfused.  Hair/eyes:
 { time ./applyCrfSjSparkDescMemexHairEyesTokens.sh; } \
 |& tee applyCrfSjSparkDescMemexHairEyesTokens.log
+
+{ time ./countCrfResultTokens-crf-hair-eyes-tokens.sh; } \
+|& tee countCrfResultTokens-crf-hair-eyes-tokens.log
 
 { time ./countCrfResultTokensFancy-crf-hair-eyes-tokens.sh; } \
 |& tee countCrfResultTokensFancy-crf-hair-eyes-tokens.log
@@ -46,6 +41,9 @@
 # with the result phrases unfused.  Name/ethnicity:
 { time ./applyCrfSjSparkDescMemexNameEthnicTokens.sh; } \
 |& tee applyCrfSjSparkDescMemexNameEthnicTokens.log
+
+{ time ./countCrfResultTokens-crf-name-ethnic-tokens.sh; } \
+|& tee countCrfResultTokens-crf-name-ethnic-tokens.log
 
 { time ./countCrfResultTokensFancy-crf-name-ethnic-tokens.sh; } \
 |& tee countCrfResultTokensFancy-crf-name-ethnic-tokens.log
