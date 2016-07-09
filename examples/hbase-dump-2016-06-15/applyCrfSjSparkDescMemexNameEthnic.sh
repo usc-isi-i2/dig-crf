@@ -20,8 +20,8 @@ NUM_PARTITIONS=350
 
 source config.sh
 source ${DIG_CRF_SCRIPT}/checkMemexConnection.sh
-${DIG_CRF_SCRIPT}/buildPythonFiles.sh
 source ${DIG_CRF_SCRIPT}/limitMemexExecutors.sh
+${DIG_CRF_SCRIPT}/buildPythonFiles.sh
 
 INPUTFILE=${WORKING_TITLE_AND_TEXT_TOKENS_FILE}
 OUTPUTFILE=${WORKING_NAME_ETHNIC_FILE}
@@ -55,7 +55,6 @@ time spark-submit \
     --coalesceOutput ${NUM_PARTITIONS} \
     --featlist ${HDFS_WORK_DIR}/${NAME_ETHNIC_FEATURES_CONFIG_FILE} \
     --model ${HDFS_WORK_DIR}/${NAME_ETHNIC_CRF_MODEL_FILE} \
-    --hybridJaccardConfig ${DIG_CRF_DATA_CONFIG_DIR}/${HYBRID_JACCARD_CONFIG_FILE} \
     --tags B_ethnic:ethnicityType,I_ethnic:ethnicityType \
     --download \
     --input ${INPUTFILE} --inputSeq --justTokens \

@@ -1,5 +1,8 @@
 #! /bin/bash
 
+# Apply CRF for hairType and eyeColor extraction.
+# Work in the working area, for later release to production.
+
 # This script assumes that "spark-submit" is available on $PATH.
 
 NUM_EXECUTORS=350
@@ -10,10 +13,15 @@ source ${DIG_CRF_SCRIPT}/checkMemexConnection.sh
 source ${DIG_CRF_SCRIPT}/limitMemexExecutors.sh
 ${DIG_CRF_SCRIPT}/buildPythonFiles.sh
 
-OUTPUTFILE=${WORKING_HAIR_EYES_TOKENS_FILE}
+INPUTFILE=${WORKING_TITLE_AND_TEXT_TOKENS_FILE}
+OUTPUTFILE=${WORKING_HAIR_EYES_FILE}
 
-# Dangerous!
 echo "Clearing the output folder: ${OUTPUTFILE}"
+if [ "x${OUTPUTFILE}" == "x" ]
+  then
+    echo "OUTPUTFILE is not set, exiting"
+    exit 1
+fi
 hadoop fs -rm -r -f ${OUTPUTFILE}
 
 echo "Copying the feature control file and CRF model to Hadoop."
@@ -38,9 +46,7 @@ time spark-submit \
     --featlist ${HDFS_WORK_DIR}/${HAIR_EYE_FEATURES_CONFIG_FILE} \
     --model ${HDFS_WORK_DIR}/${HAIR_EYE_CRF_MODEL_FILE} \
     --download \
-    --input ${WORKING_TITLE_AND_TEXT_TOKENS_FILE} --inputSeq --justTokens \
+    --input ${INPUTFILE} --inputSeq --justTokens \
     --output ${OUTPUTFILE} --outputSeq --embedKey url \
     --cache --count \
     --verbose --statistics
-
-
