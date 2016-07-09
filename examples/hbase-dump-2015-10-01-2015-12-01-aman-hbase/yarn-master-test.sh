@@ -1,7 +1,6 @@
 #! /bin/bash
 
-#NUM_EXECUTORS=350
-NUM_EXECUTORS=10
+NUM_EXECUTORS=350
 
 source config.sh
 source ${DIG_CRF_SCRIPT}/checkMemexConnection.sh
@@ -18,7 +17,7 @@ time spark-submit \
     --deploy-mode 'cluster' \
     --num-executors ${NUM_EXECUTORS} \
     --driver-java-options -Dlog4j.configuration=${HDFS_WORK_DIR}/${QUIETER_LOG4J_PROPERTIES_FILE} \
+    --py-files ${ARGPARSE_PY_PATH} \
     ${DIG_CRF_COUNT}/countGoodKeysByTarget.py \
-    -- \
     --byUrl \
     --input ${HDFS_INPUT_DATA_DIR}
