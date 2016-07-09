@@ -36,23 +36,19 @@
 { time ./applyCrfSjSparkDescMemexHairEyesTokens.sh; } \
 |& tee applyCrfSjSparkDescMemexHairEyesTokens.log
 
-{ time ./countCrfResultTokensFancy-crf-hair-eyes.sh; } \
-|& tee countCrfResultTokensFancy-crf-hair-eyes.log
+{ time ./countCrfResultTokensFancy-crf-hair-eyes-tokens.sh; } \
+|& tee countCrfResultTokensFancy-crf-hair-eyes-tokens.log
+
+{ time ./countCrfResultPhrasesFancy-crf-hair-eyes-tokens.sh; } \
+|& tee countCrfResultPhrasesFancy-crf-hair-eyes-tokens.log
 
 # Extractions and analyses without hybrid Jaccard processing,
 # with the result phrases unfused.  Name/ethnicity:
 { time ./applyCrfSjSparkDescMemexNameEthnicTokens.sh; } \
 |& tee applyCrfSjSparkDescMemexNameEthnicTokens.log
 
-{ time ./countCrfResultTokensFancy-crf-name-ethnic.sh; } \
-|& tee countCrfResultTokensFancy-crf-name-ethnic.log
+{ time ./countCrfResultTokensFancy-crf-name-ethnic-tokens.sh; } \
+|& tee countCrfResultTokensFancy-crf-name-ethnic-tokens.log
 
-
-
-
-{ time ./countCrfResultTokensFancy-crf-hair-eyes-hj.sh; } \
-|& tee countCrfResultTokensFancy-crf-hair-eyes-hj.log
-
-
-{ time ./countCrfResultTokensFancy-crf-name-ethnic-hj.sh; } \
-|& tee countCrfResultTokensFancy-crf-name-ethnic-hj.log
+{ time ./countCrfResultPhrasesFancy-crf-name-ethnic-tokens.sh; } \
+|& tee countCrfResultPhrasesFancy-crf-name-ethnic-tokens.log
