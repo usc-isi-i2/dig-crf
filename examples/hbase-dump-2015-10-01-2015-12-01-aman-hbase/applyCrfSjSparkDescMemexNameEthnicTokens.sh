@@ -14,7 +14,7 @@ ${DIG_CRF_SCRIPT}/buildPythonFiles.sh
 source ${DIG_CRF_SCRIPT}/limitMemexExecutors.sh
 
 INPUTFILE=${WORKING_TITLE_AND_TEXT_TOKENS_FILE}
-OUTPUTFILE=${WORKING_NAME_ETHNIC_FILE}
+OUTPUTFILE=${WORKING_NAME_ETHNIC_TOKENS_FILE}
 
 echo "Clearing the output folder: ${OUTPUTFILE}"
 if [ "x${OUTPUTFILE}" == "x" ]
