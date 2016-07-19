@@ -641,7 +641,7 @@ multiple times to process multiple sources.
 
         results = [ ]
         sentence = crfs.CrfSentence(key="", tokens=tokens) # Dummy key.
-        for key, taggedPhrase in super(ApplyCrfTokens, self).process(iter([ sentence ])):
+        for key, taggedPhrase in super(ApplyCrf, self).process(iter([ sentence ])):
             results.append(taggedPhrase)
 
         # Restore tagged phrase results and return.
