@@ -579,27 +579,7 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhrases (ApplyCrfToSentencesYieldi
         self.setResultFilter(self.getHybridJaccardResultFilter(hybridJaccardProcessors))
 
 
-class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentencesYieldingKeysAndTaggedPhrases):
-    """Apply CRF++ to a source of sentences, returning a sequence of keys and
-    tagged phrase structures.  The tagged phrase structures are encoded as JSON Lines.
-
-    yields: (key, taggedPhraseJsonLine)
-
-    This class is separate from its parent to allow the easy
-    introduction of alternate resultFormatter(...) routines.  For
-    example, it may be desirable to carry embed the results in a more
-    complex data structure.
-
-    """
-    def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
-        key, taggedPhrase = super(ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines, self).resultFormatter(sentence,
-                                                                                                                 tagName,
-                                                                                                                 phraseFirstTokenIdx,
-                                                                                                                 phraseTokenCount)
-        return key, json.dumps(taggedPhrase, indent=None)
-
-
-class ApplyCrf (ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines):
+class ApplyCrf (ApplyCrfToSentencesYieldingKeysAndTaggedPhrases):
     """Apply CRF++ to a source of sentences in keyed, unkeyed, or paired JSON Lines format, returning
 a sequence of tagged phrases in keyed JSON Lines format or paired JSON Lines format.
 
@@ -609,7 +589,7 @@ a sequence of tagged phrases in keyed JSON Lines format or paired JSON Lines for
     """
     def __init__ (self, featureListFilePath, modelFilePath, hybridJaccardConfigPath,
                   inputPairs=False, inputKeyed=False, inputJustTokens=False, extractFrom=None,
-                  outputPairs=False, tagMap=None, fusePhrases=False, embedKey=None,
+                  outputPairs=False, tagMap=None, fusePhrases=False, embedKey=None, taggedPhraseResults=False,
                   debug=False, sumStatistics=False):
         super(ApplyCrf, self).__init__(featureListFilePath, modelFilePath, hybridJaccardConfigPath,
                                        tagMap=tagMap, fusePhrases=fusePhrases,
@@ -619,11 +599,17 @@ a sequence of tagged phrases in keyed JSON Lines format or paired JSON Lines for
         self.inputJustTokens = inputJustTokens
         self.outputPairs = outputPairs
         self.extractFrom = extractFrom
+        self.taggedPhraseResults = taggedPhraseResults
 
     def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
         """Format the result as keyed or paired Json Lines."""
-        key, taggedPhraseJsonLine = super(ApplyCrf, self).resultFormatter(sentence, tagName, phraseFirstTokenIdx, phraseTokenCount)
-        # TODO: Optimize, why perform this test on each record?
+        key, taggedPhrase = super(ApplyCrf, self).resultFormatter(sentence, tagName, phraseFirstTokenIdx, phraseTokenCount)
+
+        # TODO: Optimize, why perform these tests on each record?
+        if self.taggedPhraseResults:
+            return key, taggedPhrase
+
+        taggedPhraseJsonLine = json.dumps(taggedPhrase, indent=None)
         if self.outputPairs:
             return key, taggedPhraseJsonLine
         elif self.embedKey != None:
@@ -640,3 +626,23 @@ multiple times to process multiple sources.
         """
         sentences = crfs.CrfSentencesFromJsonLinesSource(source, pairs=self.inputPairs, keyed=self.inputKeyed, justTokens=self.inputJustTokens, extractFrom=self.extractFrom)
         return super(ApplyCrf, self).process(sentences)
+
+
+    def processTokens(self, tokens):
+        """Process a sequence of tokens, returning a sequence of tagged phrases.
+
+        yields: [ taggedPhrase... ]
+        where taggedPhrase is: { tag: [token...] }
+        """
+        # Force tagged phrase results for the dureation of this call.
+        saveTaggedPhraseResults = self.taggedPhraseResults
+        self.taggedPhraseResults = True
+
+        results = [ ]
+        sentence = crfs.CrfSentence(key="", tokens=tokens)
+        for key, taggedPhrase in super(ApplyCrfTokens, self).process(iter([ sentence ])):
+            results.append(taggedPhrase)
+
+        # Restore tagged phrase results and return.
+        self.taggedPhraseResults = saveTaggedPhraseResults
+        return results

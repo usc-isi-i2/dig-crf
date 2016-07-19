@@ -29,10 +29,10 @@ class CrfSentence:
     ANNOTATION_SET_MARKER = "annotationSet" # Not used yet.
     URI_MARKER = "uri"
 
-    def __init__ (self, sentence, key=None):
+    def __init__ (self, sentence=None, key=None, tokens=None):
         self.sentence = sentence
         self.key = key
-        self.tokens = None
+        self.tokens = tokens
         self.filteredPhrase = None
 
     def getText (self):
