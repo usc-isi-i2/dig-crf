@@ -632,6 +632,23 @@ multiple times to process multiple sources.
     def processTokens(self, tokens):
         """Process a sequence of tokens, returning a sequence of tagged phrases.
 
+        When using this routine, the following initialization parameters will be
+        ignored:
+
+        inputPairs, inputKeyed, inputJustTokens, extractFrom, outputPairs, embedKey
+
+        A typical usage would be:
+
+        crf = ApplyCrf(featureListFilePath, modelFilePath, hybridJaccardConfigPath, tagMap, fusePhrases=True)
+        results1 = crf.processTokens([tokens...])
+        results2 = crf.processTokens([tokens...])
+        ...
+
+        When used in a Spark context through ApplyCrfSpark, The usual rule applies that
+        the CRF object should be created in the driver, Spark download must be requested,
+        and the calls to processTokens(...) must take place in a worker that should
+        have been started through mapPartitions(...)
+
         yields: [ taggedPhrase... ]
         where taggedPhrase is: { tag: [token...] }
         """
@@ -639,11 +656,16 @@ multiple times to process multiple sources.
         saveTaggedPhraseResults = self.taggedPhraseResults
         self.taggedPhraseResults = True
 
+        # Do not attempt to embed a key for the duraton of this call:
+        saveEmbedKey = self.embedKey
+        self.embedKey = None
+
         results = [ ]
         sentence = crfs.CrfSentence(key="", tokens=tokens) # Dummy key.
         for key, taggedPhrase in super(ApplyCrf, self).process(iter([ sentence ])):
             results.append(taggedPhrase)
 
-        # Restore tagged phrase results and return.
+        # Restore tagged phrase results, embedKey, and return.
         self.taggedPhraseResults = saveTaggedPhraseResults
+        self.embedKey = saveEmbedKey
         return results
