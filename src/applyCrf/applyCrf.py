@@ -610,6 +610,7 @@ a sequence of tagged phrases in keyed JSON Lines format or paired JSON Lines for
             return key, taggedPhrase
 
         taggedPhraseJsonLine = json.dumps(taggedPhrase, indent=None)
+        # TODO: Optimize, why perform these tests on each record?
         if self.outputPairs:
             return key, taggedPhraseJsonLine
         elif self.embedKey != None:
@@ -634,12 +635,12 @@ multiple times to process multiple sources.
         yields: [ taggedPhrase... ]
         where taggedPhrase is: { tag: [token...] }
         """
-        # Force tagged phrase results for the dureation of this call.
+        # Force tagged phrase results for the duration of this call.
         saveTaggedPhraseResults = self.taggedPhraseResults
         self.taggedPhraseResults = True
 
         results = [ ]
-        sentence = crfs.CrfSentence(key="", tokens=tokens)
+        sentence = crfs.CrfSentence(key="", tokens=tokens) # Dummy key.
         for key, taggedPhrase in super(ApplyCrfTokens, self).process(iter([ sentence ])):
             results.append(taggedPhrase)
 
