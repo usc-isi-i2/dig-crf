@@ -502,11 +502,11 @@ count of output phrases, when done.
             for statName in self.statisticNames:
                 print "%s = %d" % (statName, self.statistics[statName])
 
-class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentencesYieldingTaggedPhraseTuples):
+class ApplyCrfToSentencesYieldingKeysAndTaggedPhrases (ApplyCrfToSentencesYieldingTaggedPhraseTuples):
     """Apply CRF++ to a source of sentences, returning a sequence of keys and
-    tagged phrase structures.  The tagged phrase structures are encoded as JSON Lines.
+    tagged phrase structures.
 
-    yields: (key, taggedPhraseJsonLine)
+    yields: (key, taggedPhrase)
 
     This class is separate from its parent to allow the easy
     introduction of alternate resultFormatter(...) routines.  For
@@ -516,7 +516,7 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
     """
     def __init__(self, featureListFilePath, modelFilePath, hybridJaccardConfigPath=None, tagMap=None,
                  fusePhrases=False, embedKey=None, debug=False, sumStatistics=False):
-        super(ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines, self).__init__(featureListFilePath, modelFilePath,
+        super(ApplyCrfToSentencesYieldingKeysAndTaggedPhrases, self).__init__(featureListFilePath, modelFilePath,
                                                                                       tagMap=tagMap, debug=debug,
                                                                                       sumStatistics=sumStatistics)
         self.embedKey = embedKey
@@ -545,7 +545,7 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
         key = sentence.getKey()
         if self.embedKey:
             taggedPhrase[self.embedKey] = key
-        return key, json.dumps(taggedPhrase, indent=None)
+        return key, taggedPhrase
 
     def getHybridJaccardResultFilter(self, hybridJaccardProcessors):
         """Return a hybrid Jaccard resultFilter with access to hybridJaccardProcessors."""
@@ -577,6 +577,26 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentenc
                 hybridJaccardProcessors[tagType] = hj
         # Tell the tagger to use hybrid Jaccard result filtering:
         self.setResultFilter(self.getHybridJaccardResultFilter(hybridJaccardProcessors))
+
+
+class ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines (ApplyCrfToSentencesYieldingKeysAndTaggedPhrases):
+    """Apply CRF++ to a source of sentences, returning a sequence of keys and
+    tagged phrase structures.  The tagged phrase structures are encoded as JSON Lines.
+
+    yields: (key, taggedPhraseJsonLine)
+
+    This class is separate from its parent to allow the easy
+    introduction of alternate resultFormatter(...) routines.  For
+    example, it may be desirable to carry embed the results in a more
+    complex data structure.
+
+    """
+    def resultFormatter(self, sentence, tagName, phraseFirstTokenIdx, phraseTokenCount):
+        key, taggedPhrase = super(ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines, self).resultFormatter(sentence,
+                                                                                                                 tagName,
+                                                                                                                 phraseFirstTokenIdx,
+                                                                                                                 phraseTokenCount)
+        return key, json.dumps(taggedPhrase, indent=None)
 
 
 class ApplyCrf (ApplyCrfToSentencesYieldingKeysAndTaggedPhraseJsonLines):
