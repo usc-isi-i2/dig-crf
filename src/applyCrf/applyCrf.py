@@ -651,12 +651,16 @@ multiple times to process multiple sources.
 
         yields: [ taggedPhrase... ]
         where taggedPhrase is: { tag: [token...] }
+
+        Typical output for hair-eye processing:
+        [{"eyeColor": ["amazing hazel eye"]}, {"hairType": ["brunette"]}, {"eyeColor": ["blue eye"]}, {"hairType": ["blonde"]}]
+
         """
         # Force tagged phrase results for the duration of this call.
         saveTaggedPhraseResults = self.taggedPhraseResults
         self.taggedPhraseResults = True
 
-        # Do not attempt to embed a key for the duraton of this call:
+        # Do not attempt to embed a key for the duration of this call:
         saveEmbedKey = self.embedKey
         self.embedKey = None
 
