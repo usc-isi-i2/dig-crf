@@ -257,6 +257,7 @@ create their own classes.
         ntokens = tagger.size()
         if ntokens != len(tokens):
             print "received %d tokens , expected %d" % (ntokens, len(tokens))
+            # print json.dumps(tokens)
         nfeatures = tagger.xsize()
 
         # Accumulate interesting tokens into tagged phrases which are sent as results.
@@ -599,6 +600,7 @@ a sequence of tagged phrases in keyed JSON Lines format or paired JSON Lines for
         self.inputKeyed = inputKeyed
         self.inputJustTokens = inputJustTokens
         self.outputPairs = outputPairs
+        self.outputTuples = outputTuples
         self.extractFrom = extractFrom
         self.taggedPhraseResults = taggedPhraseResults
 
