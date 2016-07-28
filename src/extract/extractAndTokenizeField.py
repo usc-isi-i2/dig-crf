@@ -68,6 +68,7 @@ def main(argv=None):
     parser.add_argument(     '--outputSeq', help="Optionally use a SEQ file for output.", required=False, action='store_true')
     parser.add_argument(     '--outputTuples', help="Optionally use a tuple file for output.", required=False, action='store_true')
     parser.add_argument(     '--prune', help="Optionally remove records without the extraction key.", required=False, action='store_true')
+    parser.add_argument('--recognizeHtmlTags', help="Recognize HTML tags.", required=False, action='store_true')
     parser.add_argument('-r','--repartition', type=int, default=0, help="Optionally repartition or coalesce.", required=False)
     parser.add_argument('-s','--show', help="Optionally print the results.", required=False, action='store_true')
     parser.add_argument('--skipHtmlTags', help="Skip HTML tags.", required=False, action='store_true')
@@ -80,7 +81,7 @@ def main(argv=None):
 
     tok = crft.CrfTokenizer()
     tok.setGroupPunctuation(True)
-    tok.setRecognizeHtmlTags(True)
+    tok.setRecognizeHtmlTags(args.recognizeHtmlTags)
     tok.setSkipHtmlTags(args.skipHtmlTags)
     tok.setRecognizeHtmlEntities(True)
 
