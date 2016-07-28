@@ -13,4 +13,4 @@ time spark-submit \
     --input ${WORKING_HAIR_EYES_HJ_FILE} \
     --inputTuples \
     --printToLog \
-    --excludeTags url
+    --excludeTags _id

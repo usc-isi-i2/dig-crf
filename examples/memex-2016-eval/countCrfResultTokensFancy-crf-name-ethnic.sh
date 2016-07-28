@@ -12,4 +12,4 @@ time spark-submit \
     ${DIG_CRF_COUNT}/countCrfResultTokensFancy.py \
     --input ${WORKING_NAME_ETHNIC_FILE} \
     --inputTuples \
-    --excludeTags url
+    --excludeTags _id

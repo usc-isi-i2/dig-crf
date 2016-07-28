@@ -13,4 +13,4 @@ time spark-submit \
     --input ${WORKING_NAME_ETHNIC_FILE} \
     --inputTuples \
     --printToLog \
-    --excludeTags url
+    --excludeTags _id
