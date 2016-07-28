@@ -1,7 +1,9 @@
 """Given a SEQ(Text, Text) input file to use as an RDD, where the
 value field is supposed to be a dictionary in JSON, count the number
-of occurances of each unique key in the set of dictionaries.  Print
-the resulting map (key => count), sorted by key."""
+of non-empty occurances of each unique key in the set of dictionaries.
+Print the resulting map (key => count), sorted by key.
+
+"""
 
 import argparse
 import json
@@ -13,7 +15,18 @@ def getKeys(value):
     try:
         d = json.loads(value)
         goodJsonRecords += 1
-        return iter(d.keys())
+        goodKeys = { }
+        for key in d.keys():
+            v = d[key]
+            if isinstance(v, basestring):
+                if len(v):
+                    goodKeys[key] = True
+            elif isinstance(v, list):
+                if len(v):
+                    goodKeys[key] = True
+            else:
+                goodKeys[key] = True
+        return iter(goodKeys.keys())
     except:
         badJsonRecords += 1
         return iter([])
