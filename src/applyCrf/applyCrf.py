@@ -588,13 +588,14 @@ a sequence of tagged phrases in keyed JSON Lines format or paired JSON Lines for
 
     """
     def __init__ (self, featureListFilePath, modelFilePath, hybridJaccardConfigPath,
-                  inputPairs=False, inputKeyed=False, inputJustTokens=False, extractFrom=None,
-                  outputPairs=False, tagMap=None, fusePhrases=False, embedKey=None, taggedPhraseResults=False,
+                  inputPairs=False, inputTuples=False, inputKeyed=False, inputJustTokens=False, extractFrom=None,
+                  outputPairs=False, outputTuples=False, tagMap=None, fusePhrases=False, embedKey=None, taggedPhraseResults=False,
                   debug=False, sumStatistics=False):
         super(ApplyCrf, self).__init__(featureListFilePath, modelFilePath, hybridJaccardConfigPath,
                                        tagMap=tagMap, fusePhrases=fusePhrases,
                                        embedKey=embedKey, debug=debug, sumStatistics=sumStatistics)
         self.inputPairs = inputPairs
+        self.inputTuples = inputTuples
         self.inputKeyed = inputKeyed
         self.inputJustTokens = inputJustTokens
         self.outputPairs = outputPairs
@@ -613,6 +614,8 @@ a sequence of tagged phrases in keyed JSON Lines format or paired JSON Lines for
         # TODO: Optimize, why perform these tests on each record?
         if self.outputPairs:
             return key, taggedPhraseJsonLine
+        elif self.outputTuples:
+            return str((key, taggedPhraseJsonLine))
         elif self.embedKey != None:
             return taggedPhraseJsonLine
         else:
@@ -625,7 +628,7 @@ sentence JSON Lines format, or other choices.  This method may be called
 multiple times to process multiple sources.
 
         """
-        sentences = crfs.CrfSentencesFromJsonLinesSource(source, pairs=self.inputPairs, keyed=self.inputKeyed, justTokens=self.inputJustTokens, extractFrom=self.extractFrom)
+        sentences = crfs.CrfSentencesFromJsonLinesSource(source, pairs=self.inputPairs, tuples=self.inputTuples, keyed=self.inputKeyed, justTokens=self.inputJustTokens, extractFrom=self.extractFrom)
         return super(ApplyCrf, self).process(sentences)
 
 

@@ -112,9 +112,10 @@ insufficient, as it will not have a key.
         The source is accessed as needed.
 
     """
-    def __init__ (self, source, pairs=False, keyed=False, justTokens=False, extractFrom=None):
+    def __init__ (self, source, pairs=False, tuples=False, keyed=False, justTokens=False, extractFrom=None):
         self.source = source
         self.pairs = pairs
+        self.tuples = tuples
         self.keyed = keyed
         self.justTokens = justTokens
         self.extractFrom = extractFrom
@@ -152,7 +153,10 @@ re-iterate fromt he beginning."""
             if line == None:
                 self.finish() # cleans up and raises StopIteration
 
-            if self.keyed:
+            if self.tuples:
+                # Evaluate the data to get a (key, value) pair:
+                key, jsonData = eval(line)
+            elif self.keyed:
                 # Split the line into the key and JSON data.
                 key, jsonData = line.split('\t', 1)
             else:
@@ -210,10 +214,10 @@ def CrfSentencesPairedJsonLinesReader(keyedJsonFilename):
 
 class CrfSentencesFromJsonLinesFile (CrfSentencesFromJsonLinesSource):
     """Load a Web scrapings file in keyed JSON Lines format with UTF-8 encoding. The file is read as needed for iteration."""
-    def __init__ (self, jsonFilename, pairs=False, keyed=False, justTokens=False, extractFrom=None):
+    def __init__ (self, jsonFilename, pairs=False, tuples=False, keyed=False, justTokens=False, extractFrom=None):
         if pairs:
             source = CrfSentencesPairedJsonLinesReader(jsonFilename)
         else:
             source = CrfSentencesJsonLinesReader(jsonFilename)
 
-        super(CrfSentencesFromJsonLinesFile, self).__init__(source, pairs=pairs, keyed=keyed, justTokens=justTokens, extractFrom=extractFrom)
+        super(CrfSentencesFromJsonLinesFile, self).__init__(source, pairs=pairs, tuples=tuples, keyed=keyed, justTokens=justTokens, extractFrom=extractFrom)

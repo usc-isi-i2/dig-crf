@@ -61,11 +61,13 @@ def main(argv=None):
     parser.add_argument('--cache', help="Optionally cache the RDD in memory.", required=False, action='store_true')
     parser.add_argument('-k','--key', help="The key for the value being extracted.", required=True)
     parser.add_argument('-K','--newRddKeyKey', help="The key for the value to use as the new RDD key.", required=False)
-    parser.add_argument('-i','--input', help="Required Seq input file on cluster.", required=True)
+    parser.add_argument('-i','--input', help="Required Seq or tuple input file on cluster.", required=True)
+    parser.add_argument(     '--inputTuples', help="The input file is in tuple format.", required=False, action='store_true')
     parser.add_argument('-n','--notokenize', help="Optionally do not tokenize.", required=False, action='store_true')
     parser.add_argument('-o','--output', help="Optionally save in an output file.", required=False)
-    parser.add_argument('--outputSeq', help="Optionally use a SEQ file for output.", required=False, action='store_true')
-    parser.add_argument('--prune', help="Optionally remove records without the extraction key.", required=False, action='store_true')
+    parser.add_argument(     '--outputSeq', help="Optionally use a SEQ file for output.", required=False, action='store_true')
+    parser.add_argument(     '--outputTuples', help="Optionally use a tuple file for output.", required=False, action='store_true')
+    parser.add_argument(     '--prune', help="Optionally remove records without the extraction key.", required=False, action='store_true')
     parser.add_argument('-r','--repartition', type=int, default=0, help="Optionally repartition or coalesce.", required=False)
     parser.add_argument('-s','--show', help="Optionally print the results.", required=False, action='store_true')
     parser.add_argument('--skipHtmlTags', help="Skip HTML tags.", required=False, action='store_true')
@@ -254,8 +256,12 @@ def main(argv=None):
             extractNewRddExceptionCount += 1
             return iter(())
 
-    # Open the input file, a HadoopFS sequence file.
-    data = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
+    if args.inputTuples:
+        data = sc.textFile(args.input).map(lambda x: eval(x))
+    else:
+        # Open the input file, a HadoopFS sequence file.
+        data = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
+
     if args.take > 0:
         data = sc.parallelize(data.take(args.take))
 
@@ -360,6 +366,13 @@ def main(argv=None):
             encodedValuePairs.saveAsNewAPIHadoopFile(args.output,
                                                      "org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat",
                                                      "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
+        elif args.outputTuples:
+            print "========================================"
+            print "Saving the results as tuples in a text file."
+            print args.output
+            print "========================================"
+            # Save the result as a text file:
+            encodedValuePairs.saveAsTextFile(args.output)
         else:
             print "========================================"
             print "Saving the results in a keyed JSON Lines text file."

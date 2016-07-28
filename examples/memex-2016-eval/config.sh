@@ -8,7 +8,7 @@ if [ "x${DIG_CRF_HOME}" == "x" ]
     exit 1
 fi
 
-DATASET_NAME=all_extractions_old
+DATASET_NAME=all_extractions
 
 DIG_CRF_APPLY=${DIG_CRF_HOME}/src/applyCrf
 DIG_CRF_COUNT=${DIG_CRF_HOME}/src/count

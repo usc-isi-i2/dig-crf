@@ -33,12 +33,14 @@ def main(argv=None):
     parser.add_argument('-i','--input', help="Input file with Web scraping sentences in keyed JSON Lines format.", required=True)
     parser.add_argument('--inputPairs', help="Test the paired input data processing path.", required=False, action='store_true')
     parser.add_argument('--inputSeq', help="Read input from a Hadooop SEQ data file.", required=False, action='store_true')
+    parser.add_argument('--inputTuples', help="The input pairs are encoded as tuples", required=False, action='store_true')
     parser.add_argument('-j','--justTokens', help="The input JSON line data is just tokens.", required=False, action='store_true')
     parser.add_argument('-m','--model', help="Input model file.", required=True)
     parser.add_argument('-o','--output', help="Output file of phrases in keyed JSON Lines format.", required=True)
     parser.add_argument('--outputCompressionClass', help="Compression class for text files.", required=False)
     parser.add_argument('--outputPairs', help="Test the paired output data processing path.", required=False, action='store_true')
     parser.add_argument('--outputSeq', help="Write output to a Hadooop SEQ data file.", required=False, action='store_true')
+    parser.add_argument('--outputTuples', help="The outout pairs are encoded as tuples", required=False, action='store_true')
     parser.add_argument('--pairs', help="Test the paired data processing path.", required=False, action='store_true')
     parser.add_argument('-p', '--partitions', help="Number of partitions.", required=False, type=int, default=1)
     parser.add_argument('-s','--statistics', help="Report use statistics.", required=False, action='store_true')
@@ -74,10 +76,12 @@ def main(argv=None):
     #  Set up a CRF tagger object:
     tagger = applyCrfSpark.ApplyCrfSpark(args.featlist, args.model, args.hybridJaccardConfig,
                                          inputPairs=args.inputPairs or args.pairs or args.inputSeq,
+                                         inputTuples=args.inputTuples,
                                          inputKeyed=args.keyed, inputJustTokens=args.justTokens,
                                          extractFrom=args.extract, tagMap=args.tags,
                                          fusePhrases=args.fusePhrases, embedKey=args.embedKey,
                                          outputPairs=args.outputPairs or args.pairs or args.outputSeq,
+                                         outputTuples=args.outputTuples,
                                          debug=args.debug, sumStatistics=args.statistics)
     if args.verbose:
         print "========================================"
