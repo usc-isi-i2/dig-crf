@@ -52,7 +52,7 @@ rm -rf ${WORKING_TITLE_AND_TEXT_TOKENS_FILE}
 echo "Running the job locally."
 #    --conf "spark.executor.memory=4g" \
 time spark-submit \
-    --master 'local[32]' \
+    --master ${SPARK_MASTER_MODE} \
     --num-executors ${NUM_EXECUTORS} \
     --py-files ${DIG_CRF_PYTHON_ZIP_FILE} \
     ${DRIVER_JAVA_OPTIONS} \
