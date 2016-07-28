@@ -6,3 +6,6 @@ Requires
 pyspark
 HybridJaccard
 htmltoken
+
+
+See the "notes/" folder for installation notes.

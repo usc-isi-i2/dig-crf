@@ -1,0 +1,570 @@
+							Craig Milo Rogers
+							15-Mar-2016
+
+			Installing crf++
+
+1)	This memo describes work done on jib.isi.edu (openSUSE 13.2).
+
+2)	I downloaded CRF++ version 0.58 from:
+
+https://taku910.github.io/crfpp
+
+	Destination:
+
+jib:/home//rogers/effect/crf++/CRF++-0.58.tar.gz
+
+3)	I untarred the file.
+
+cd /home//rogers/effect/crf++
+tar xvzf CRF++-0.58.tar.gz
+cd CRF++-0.58
+
+4)	Per the INSTALL file, the installation sequence is:
+
+./configure
+make
+make check
+make install
+
+112% ./configure
+checking for a BSD-compatible install... /usr/bin/install -c
+checking whether build environment is sane... yes
+checking for a thread-safe mkdir -p... /usr/bin/mkdir -p
+checking for gawk... gawk
+checking whether make sets $(MAKE)... yes
+checking for gcc... gcc
+checking whether the C compiler works... yes
+checking for C compiler default output file name... a.out
+checking for suffix of executables... 
+checking whether we are cross compiling... no
+checking for suffix of object files... o
+checking whether we are using the GNU C compiler... yes
+checking whether gcc accepts -g... yes
+checking for gcc option to accept ISO C89... none needed
+checking for style of include used by make... GNU
+checking dependency style of gcc... gcc3
+checking for g++... g++
+checking whether we are using the GNU C++ compiler... yes
+checking whether g++ accepts -g... yes
+checking dependency style of g++... gcc3
+checking how to run the C preprocessor... gcc -E
+checking for grep that handles long lines and -e... /usr/bin/grep
+checking for egrep... /usr/bin/grep -E
+checking whether gcc needs -traditional... no
+checking whether make sets $(MAKE)... (cached) yes
+checking for library containing strerror... none required
+checking build system type... x86_64-unknown-linux-gnu
+checking host system type... x86_64-unknown-linux-gnu
+checking how to print strings... printf
+checking for a sed that does not truncate output... /usr/bin/sed
+checking for fgrep... /usr/bin/grep -F
+checking for ld used by gcc... /usr/x86_64-suse-linux/bin/ld
+checking if the linker (/usr/x86_64-suse-linux/bin/ld) is GNU ld... yes
+checking for BSD- or MS-compatible name lister (nm)... /usr/bin/nm -B
+checking the name lister (/usr/bin/nm -B) interface... BSD nm
+checking whether ln -s works... yes
+checking the maximum length of command line arguments... 1572864
+checking whether the shell understands some XSI constructs... yes
+checking whether the shell understands "+="... yes
+checking how to convert x86_64-unknown-linux-gnu file names to x86_64-unknown-linux-gnu format... func_convert_file_noop
+checking how to convert x86_64-unknown-linux-gnu file names to toolchain format... func_convert_file_noop
+checking for /usr/x86_64-suse-linux/bin/ld option to reload object files... -r
+checking for objdump... objdump
+checking how to recognize dependent libraries... pass_all
+checking for dlltool... no
+checking how to associate runtime and link libraries... printf %s\n
+checking for ar... ar
+checking for archiver @FILE support... @
+checking for strip... strip
+checking for ranlib... ranlib
+checking command to parse /usr/bin/nm -B output from gcc object... ok
+checking for sysroot... no
+checking for mt... mt
+checking if mt is a manifest tool... no
+checking for ANSI C header files... no
+checking for sys/types.h... yes
+checking for sys/stat.h... yes
+checking for stdlib.h... yes
+checking for string.h... yes
+checking for memory.h... yes
+checking for strings.h... yes
+checking for inttypes.h... yes
+checking for stdint.h... yes
+checking for unistd.h... yes
+checking for dlfcn.h... yes
+checking for objdir... .libs
+checking if gcc supports -fno-rtti -fno-exceptions... no
+checking for gcc option to produce PIC... -fPIC -DPIC
+checking if gcc PIC flag -fPIC -DPIC works... yes
+checking if gcc static flag -static works... no
+checking if gcc supports -c -o file.o... yes
+checking if gcc supports -c -o file.o... (cached) yes
+checking whether the gcc linker (/usr/x86_64-suse-linux/bin/ld -m elf_x86_64) supports shared libraries... yes
+checking whether -lc should be explicitly linked in... no
+checking dynamic linker characteristics... GNU/Linux ld.so
+checking how to hardcode library paths into programs... immediate
+checking whether stripping libraries is possible... yes
+checking if libtool supports shared libraries... yes
+checking whether to build shared libraries... yes
+checking whether to build static libraries... yes
+checking how to run the C++ preprocessor... g++ -E
+checking for ld used by g++... /usr/x86_64-suse-linux/bin/ld -m elf_x86_64
+checking if the linker (/usr/x86_64-suse-linux/bin/ld -m elf_x86_64) is GNU ld... yes
+checking whether the g++ linker (/usr/x86_64-suse-linux/bin/ld -m elf_x86_64) supports shared libraries... yes
+checking for g++ option to produce PIC... -fPIC -DPIC
+checking if g++ PIC flag -fPIC -DPIC works... yes
+checking if g++ static flag -static works... no
+checking if g++ supports -c -o file.o... yes
+checking if g++ supports -c -o file.o... (cached) yes
+checking whether the g++ linker (/usr/x86_64-suse-linux/bin/ld -m elf_x86_64) supports shared libraries... yes
+checking dynamic linker characteristics... (cached) GNU/Linux ld.so
+checking how to hardcode library paths into programs... immediate
+checking for ANSI C header files... (cached) no
+checking for string.h... (cached) yes
+checking for stdlib.h... (cached) yes
+checking for unistd.h... (cached) yes
+checking fcntl.h usability... yes
+checking fcntl.h presence... yes
+checking for fcntl.h... yes
+checking for sys/stat.h... (cached) yes
+checking sys/mman.h usability... yes
+checking sys/mman.h presence... yes
+checking for sys/mman.h... yes
+checking sys/times.h usability... yes
+checking sys/times.h presence... yes
+checking for sys/times.h... yes
+checking ctype.h usability... yes
+checking ctype.h presence... yes
+checking for ctype.h... yes
+checking for sys/types.h... (cached) yes
+checking math.h usability... yes
+checking math.h presence... yes
+checking for math.h... yes
+checking pthread.h usability... yes
+checking pthread.h presence... yes
+checking for pthread.h... yes
+checking for size_t... yes
+checking for pow in -lm... yes
+checking for exp in -lm... yes
+checking for log in -lm... yes
+checking for pthread_create in -lpthread... yes
+checking for pthread_join in -lpthread... yes
+checking for stdlib.h... (cached) yes
+checking for unistd.h... (cached) yes
+checking for sys/param.h... yes
+checking for getpagesize... yes
+checking for working mmap... yes
+checking whether make is GNU Make... yes
+checking if g++ supports stl <string> (required)... yes
+checking if g++ supports stl <vector> (required)... yes
+checking if g++ supports stl <map> (required)... yes
+checking if g++ supports stl <set> (required)... yes
+checking if g++ supports stl <iostream> (required)... yes
+checking if g++ supports stl <fstream> (required)... yes
+checking if g++ supports stl <sstream> (required)... yes
+checking if g++ supports stl <stdexcept> (required)... yes
+checking if g++ supports template <class T> (required)... yes
+checking if g++ supports const_cast<> (required)... yes
+checking if g++ supports static_cast<> (required)... yes
+checking if g++ supports dynamic_cast<> (required)... yes
+checking if g++ supports exception handler (required)... yes
+checking if g++ supports namespaces (required) ... yes
+checking if g++ supports __thread (optional)... yes
+checking if g++ supports _SC_NPROCESSORS_CONF (optional)... yes
+checking if g++ environment provides all required features... yes
+configure: creating ./config.status
+config.status: creating Makefile
+config.status: creating Makefile.msvc
+config.status: creating swig/version.h
+config.status: creating config.h
+config.status: executing depfiles commands
+config.status: executing libtool commands
+113% 
+113% make
+make  all-am
+make[1]: Entering directory '/home/rogers/effect/crf++/CRF++-0.58'
+/bin/sh ./libtool --tag=CXX   --mode=compile g++ -DHAVE_CONFIG_H -I.     -O3 -Wall -c -o libcrfpp.lo libcrfpp.cpp
+libtool: compile:  g++ -DHAVE_CONFIG_H -I. -O3 -Wall -c libcrfpp.cpp  -fPIC -DPIC -o .libs/libcrfpp.o
+libtool: compile:  g++ -DHAVE_CONFIG_H -I. -O3 -Wall -c libcrfpp.cpp -o libcrfpp.o >/dev/null 2>&1
+/bin/sh ./libtool --tag=CXX   --mode=compile g++ -DHAVE_CONFIG_H -I.     -O3 -Wall -c -o lbfgs.lo lbfgs.cpp
+libtool: compile:  g++ -DHAVE_CONFIG_H -I. -O3 -Wall -c lbfgs.cpp  -fPIC -DPIC -o .libs/lbfgs.o
+libtool: compile:  g++ -DHAVE_CONFIG_H -I. -O3 -Wall -c lbfgs.cpp -o lbfgs.o >/dev/null 2>&1
+/bin/sh ./libtool --tag=CXX   --mode=compile g++ -DHAVE_CONFIG_H -I.     -O3 -Wall -c -o param.lo param.cpp
+libtool: compile:  g++ -DHAVE_CONFIG_H -I. -O3 -Wall -c param.cpp  -fPIC -DPIC -o .libs/param.o
+libtool: compile:  g++ -DHAVE_CONFIG_H -I. -O3 -Wall -c param.cpp -o param.o >/dev/null 2>&1
+/bin/sh ./libtool --tag=CXX   --mode=compile g++ -DHAVE_CONFIG_H -I.     -O3 -Wall -c -o encoder.lo encoder.cpp
+libtool: compile:  g++ -DHAVE_CONFIG_H -I. -O3 -Wall -c encoder.cpp  -fPIC -DPIC -o .libs/encoder.o
+libtool: compile:  g++ -DHAVE_CONFIG_H -I. -O3 -Wall -c encoder.cpp -o encoder.o >/dev/null 2>&1
+/bin/sh ./libtool --tag=CXX   --mode=compile g++ -DHAVE_CONFIG_H -I.     -O3 -Wall -c -o feature.lo feature.cpp
+libtool: compile:  g++ -DHAVE_CONFIG_H -I. -O3 -Wall -c feature.cpp  -fPIC -DPIC -o .libs/feature.o
+libtool: compile:  g++ -DHAVE_CONFIG_H -I. -O3 -Wall -c feature.cpp -o feature.o >/dev/null 2>&1
+/bin/sh ./libtool --tag=CXX   --mode=compile g++ -DHAVE_CONFIG_H -I.     -O3 -Wall -c -o feature_cache.lo feature_cache.cpp
+libtool: compile:  g++ -DHAVE_CONFIG_H -I. -O3 -Wall -c feature_cache.cpp  -fPIC -DPIC -o .libs/feature_cache.o
+libtool: compile:  g++ -DHAVE_CONFIG_H -I. -O3 -Wall -c feature_cache.cpp -o feature_cache.o >/dev/null 2>&1
+/bin/sh ./libtool --tag=CXX   --mode=compile g++ -DHAVE_CONFIG_H -I.     -O3 -Wall -c -o feature_index.lo feature_index.cpp
+libtool: compile:  g++ -DHAVE_CONFIG_H -I. -O3 -Wall -c feature_index.cpp  -fPIC -DPIC -o .libs/feature_index.o
+libtool: compile:  g++ -DHAVE_CONFIG_H -I. -O3 -Wall -c feature_index.cpp -o feature_index.o >/dev/null 2>&1
+/bin/sh ./libtool --tag=CXX   --mode=compile g++ -DHAVE_CONFIG_H -I.     -O3 -Wall -c -o node.lo node.cpp
+libtool: compile:  g++ -DHAVE_CONFIG_H -I. -O3 -Wall -c node.cpp  -fPIC -DPIC -o .libs/node.o
+libtool: compile:  g++ -DHAVE_CONFIG_H -I. -O3 -Wall -c node.cpp -o node.o >/dev/null 2>&1
+/bin/sh ./libtool --tag=CXX   --mode=compile g++ -DHAVE_CONFIG_H -I.     -O3 -Wall -c -o path.lo path.cpp
+libtool: compile:  g++ -DHAVE_CONFIG_H -I. -O3 -Wall -c path.cpp  -fPIC -DPIC -o .libs/path.o
+libtool: compile:  g++ -DHAVE_CONFIG_H -I. -O3 -Wall -c path.cpp -o path.o >/dev/null 2>&1
+/bin/sh ./libtool --tag=CXX   --mode=compile g++ -DHAVE_CONFIG_H -I.     -O3 -Wall -c -o tagger.lo tagger.cpp
+libtool: compile:  g++ -DHAVE_CONFIG_H -I. -O3 -Wall -c tagger.cpp  -fPIC -DPIC -o .libs/tagger.o
+libtool: compile:  g++ -DHAVE_CONFIG_H -I. -O3 -Wall -c tagger.cpp -o tagger.o >/dev/null 2>&1
+/bin/sh ./libtool --tag=CXX   --mode=link g++  -O3 -Wall   -o libcrfpp.la -rpath /usr/local/lib libcrfpp.lo lbfgs.lo param.lo encoder.lo feature.lo feature_cache.lo feature_index.lo node.lo path.lo tagger.lo  -lpthread -lpthread -lm -lm -lm 
+libtool: link: g++  -fPIC -DPIC -shared -nostdlib /usr/lib64/gcc/x86_64-suse-linux/4.8/../../../../lib64/crti.o /usr/lib64/gcc/x86_64-suse-linux/4.8/crtbeginS.o  .libs/libcrfpp.o .libs/lbfgs.o .libs/param.o .libs/encoder.o .libs/feature.o .libs/feature_cache.o .libs/feature_index.o .libs/node.o .libs/path.o .libs/tagger.o   -lpthread -L/usr/lib64/gcc/x86_64-suse-linux/4.8 -L/usr/lib64/gcc/x86_64-suse-linux/4.8/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/usr/lib64/gcc/x86_64-suse-linux/4.8/../../../../x86_64-suse-linux/lib -L/usr/lib64/gcc/x86_64-suse-linux/4.8/../../.. -lstdc++ -lm -lc -lgcc_s /usr/lib64/gcc/x86_64-suse-linux/4.8/crtendS.o /usr/lib64/gcc/x86_64-suse-linux/4.8/../../../../lib64/crtn.o  -O3   -Wl,-soname -Wl,libcrfpp.so.0 -o .libs/libcrfpp.so.0.0.0
+libtool: link: (cd ".libs" && rm -f "libcrfpp.so.0" && ln -s "libcrfpp.so.0.0.0" "libcrfpp.so.0")
+libtool: link: (cd ".libs" && rm -f "libcrfpp.so" && ln -s "libcrfpp.so.0.0.0" "libcrfpp.so")
+libtool: link: ar cru .libs/libcrfpp.a  libcrfpp.o lbfgs.o param.o encoder.o feature.o feature_cache.o feature_index.o node.o path.o tagger.o
+libtool: link: ranlib .libs/libcrfpp.a
+libtool: link: ( cd ".libs" && rm -f "libcrfpp.la" && ln -s "../libcrfpp.la" "libcrfpp.la" )
+g++ -DHAVE_CONFIG_H -I.     -O3 -Wall -c -o crf_learn.o crf_learn.cpp
+/bin/sh ./libtool --tag=CXX   --mode=link g++  -O3 -Wall   -o crf_learn crf_learn.o libcrfpp.la -lpthread -lpthread -lm -lm -lm 
+libtool: link: g++ -O3 -Wall -o .libs/crf_learn crf_learn.o  ./.libs/libcrfpp.so -lpthread -lm
+g++ -DHAVE_CONFIG_H -I.     -O3 -Wall -c -o crf_test.o crf_test.cpp
+/bin/sh ./libtool --tag=CXX   --mode=link g++  -O3 -Wall   -o crf_test crf_test.o libcrfpp.la  -lpthread -lpthread -lm -lm -lm 
+libtool: link: g++ -O3 -Wall -o .libs/crf_test crf_test.o  ./.libs/libcrfpp.so -lpthread -lm
+make[1]: Leaving directory '/home/rogers/effect/crf++/CRF++-0.58'
+15.863u 1.060s 0:17.23 98.2%    0+0k 2336+5584io 7pf+0w
+114% 
+114% make check
+115%
+116% sudo make install
+root's password:
+make[1]: Entering directory '/home/rogers/effect/crf++/CRF++-0.58'
+test -z "/usr/local/lib" || /usr/bin/mkdir -p "/usr/local/lib"
+ /bin/sh ./libtool   --mode=install /usr/bin/install -c   libcrfpp.la '/usr/local/lib'
+libtool: install: /usr/bin/install -c .libs/libcrfpp.so.0.0.0 /usr/local/lib/libcrfpp.so.0.0.0
+libtool: install: (cd /usr/local/lib && { ln -s -f libcrfpp.so.0.0.0 libcrfpp.so.0 || { rm -f libcrfpp.so.0 && ln -s libcrfpp.so.0.0.0 libcrfpp.so.0; }; })
+libtool: install: (cd /usr/local/lib && { ln -s -f libcrfpp.so.0.0.0 libcrfpp.so || { rm -f libcrfpp.so && ln -s libcrfpp.so.0.0.0 libcrfpp.so; }; })
+libtool: install: /usr/bin/install -c .libs/libcrfpp.lai /usr/local/lib/libcrfpp.la
+libtool: install: /usr/bin/install -c .libs/libcrfpp.a /usr/local/lib/libcrfpp.a
+libtool: install: chmod 644 /usr/local/lib/libcrfpp.a
+libtool: install: ranlib /usr/local/lib/libcrfpp.a
+libtool: finish: PATH="/usr/sbin:/usr/bin:/sbin:/bin:/sbin" ldconfig -n /usr/local/lib
+----------------------------------------------------------------------
+Libraries have been installed in:
+   /usr/local/lib
+
+If you ever happen to want to link against installed libraries
+in a given directory, LIBDIR, you must either use libtool, and
+specify the full pathname of the library, or use the `-LLIBDIR'
+flag during linking and do at least one of the following:
+   - add LIBDIR to the `LD_LIBRARY_PATH' environment variable
+     during execution
+   - add LIBDIR to the `LD_RUN_PATH' environment variable
+     during linking
+   - use the `-Wl,-rpath -Wl,LIBDIR' linker flag
+   - have your system administrator add LIBDIR to `/etc/ld.so.conf'
+
+See any operating system documentation about shared libraries for
+more information, such as the ld(1) and ld.so(8) manual pages.
+----------------------------------------------------------------------
+test -z "/usr/local/bin" || /usr/bin/mkdir -p "/usr/local/bin"
+  /bin/sh ./libtool   --mode=install /usr/bin/install -c crf_learn crf_test '/usr/local/bin'
+libtool: install: /usr/bin/install -c .libs/crf_learn /usr/local/bin/crf_learn
+libtool: install: /usr/bin/install -c .libs/crf_test /usr/local/bin/crf_test
+test -z "/usr/local/include" || /usr/bin/mkdir -p "/usr/local/include"
+ /usr/bin/install -c -m 644 crfpp.h '/usr/local/include'
+make[1]: Leaving directory '/home/rogers/effect/crf++/CRF++-0.58'
+117% 
+
+5)	The "make check" didn't produce output.  The "make install"
+	required root.
+
+6)	The "example" folder contains 4 examples.
+
+126% dir example/
+basenp/  chunking/  JapaneseNE/  seg/
+127%
+
+7)	Running "example/basenp"
+
+129% cd example/basenp
+Directory: /home/rogers/effect/crf++/CRF++-0.58/example/basenp
+connected to /home/rogers/effect/crf++/CRF++-0.58/example/basenp
+130%
+
+132% ./exec.sh
+...
+Wells   NNP     B       B
+Fargo   NNP     I       I
+&       CC      I       I
+Co.     NNP     I       I
+of      IN      O       O
+San     NNP     B       B
+Francisco       NNP     I       I
+posted  VBD     O       O
+a       DT      B       B
+17      CD      I       I
+%       NN      I       I
+jump    NN      I       I
+.       .       O       O
+
+PNC     NNP     B       B
+Financial       NNP     I       I
+Corp.   NNP     I       I
+,       ,       O       O
+the     DT      B       B
+parent  NN      I       I
+of      IN      O       O
+Pittsburgh      NNP     B       B
+National        NNP     I       I
+Bank    NNP     I       I
+,       ,       O       O
+reported        VBD     O       O
+net     JJ      B       B
+income  NN      I       I
+climbed VBD     O       O
+9.8     CD      B       B
+%       NN      I       I
+,       ,       O       O
+while   IN      O       O
+net     JJ      B       B
+for     IN      O       O
+Banc    NNP     B       B
+One     CD      I       I
+Corp.   NNP     I       I
+of      IN      O       O
+Columbus        NNP     B       B
+,       ,       O       O
+Ohio    NNP     B       B
+,       ,       O       O
+grew    VBD     O       O
+3.8     CD      B       B
+%       NN      I       I
+.       .       O       O
+133%
+
+8)	It's an example, not a test for correct results.
+
+====================== Wed 16 Mar 2016 ==============================
+
+9)	From "/python/README":
+
+1. Installation
+
+  % python setup.py build
+  % su
+  # python setup.py install
+  
+  You can change the install directory with the --prefix option. For example:
+
+  % python setup.py install --prefix=/tmp/pybuild/foobar
+  
+2. How to use?
+
+   see 'test.py' as a sample program.
+
+
+10)	Try the python build:
+
+python setup.py build
+
+140% python setup.py build
+running build
+running build_py
+creating build
+creating build/lib.linux-x86_64-2.7
+copying CRFPP.py -> build/lib.linux-x86_64-2.7
+running build_ext
+building '_CRFPP' extension
+creating build/temp.linux-x86_64-2.7
+gcc -pthread -fno-strict-aliasing -fmessage-length=0 -grecord-gcc-switches -O2
+-Wall -D_FORTIFY_SOURCE=2 -fstack-protector -funwind-tables
+-fasynchronous-unwind-tables -g -DNDEBUG -fmessage-length=0
+-grecord-gcc-switches -O2 -Wall -D_FORTIFY_SOURCE=2 -fstack-protector
+-funwind-tables -fasynchronous-unwind-tables -g -DOPENSSL_LOAD_CONF -fPIC
+-I/usr/include/python2.7 -c CRFPP_wrap.cxx -o
+build/temp.linux-x86_64-2.7/CRFPP_wrap.o
+CRFPP_wrap.cxx: In function ‘void init_CRFPP()’:
+CRFPP_wrap.cxx:5872:21: warning: variable ‘md’ set but not used
+[-Wunused-but-set-variable]
+   PyObject *m, *d, *md;
+                     ^
+g++ -pthread -shared build/temp.linux-x86_64-2.7/CRFPP_wrap.o -L/usr/lib64
+-lcrfpp -lpthread -lpython2.7 -o build/lib.linux-x86_64-2.7/_CRFPP.so
+141% 
+
+11)	The delicious question: where will it install itself?
+
+sudo python setup.py install
+
+141% sudo python setup.py install
+root's password:
+running install
+running build
+running build_py
+running build_ext
+running install_lib
+copying build/lib.linux-x86_64-2.7/CRFPP.py ->
+/usr/lib64/python2.7/site-packages
+copying build/lib.linux-x86_64-2.7/_CRFPP.so ->
+/usr/lib64/python2.7/site-packages
+byte-compiling /usr/lib64/python2.7/site-packages/CRFPP.py to CRFPP.pyc
+running install_egg_info
+Writing /usr/lib64/python2.7/site-packages/mecab_python-0.0.0-py2.7.egg-info
+142% 
+
+12)	Will it work?
+
+python test.py
+
+144% python test.py
+Traceback (most recent call last):
+  File "test.py", line 3, in <module>
+    import CRFPP
+  File "/home/rogers/effect/crf++/CRF++-0.58/python/CRFPP.py", line 26, in <module>
+    _CRFPP = swig_import_helper()
+  File "/home/rogers/effect/crf++/CRF++-0.58/python/CRFPP.py", line 18, in swig_import_helper
+    import _CRFPP
+ImportError: libcrfpp.so.0: cannot open shared object file: No such file or directory
+145% 
+
+13)	I'm guessing that this I need to update LD_LIBRARY_PATH to fix this.
+
+echo $LD_LIBRARY_PATH
+
+150% echo $LD_LIBRARY_PATH
+/usr/lib64/mpi/gcc/openmpi/lib64
+151% 
+
+setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/usr/local/lib
+
+154% setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/usr/local/lib
+155% 
+
+12)	Try again.
+
+python test.py
+
+155% python test.py
+RuntimeError:  feature_index.cpp(193) [mmap_.open(model_filename)] mmap.h(153) [(fd = ::open(filename, flag | O_BINARY)) >= 0] open failed: ../model
+156% 
+
+13)	Odd.  Here's the source of the problem near the top of
+	"python/test.py":
+
+    tagger = CRFPP.Tagger("-m ../model -v 3 -n2")
+
+	Poorly documented, poorly checked code.
+
+
+14)	I switched to "example/basenp", ran the training command, leaving the model in
+	place.  I created a temporary folder, changed there, and ran the Python test code.
+
+186% more exec.sh 
+#!/bin/sh
+../../crf_learn -c 10.0 template train.data model
+../../crf_test  -m model test.data
+
+../../crf_learn -a MIRA template train.data model
+../../crf_test  -m model test.data
+rm -f model
+187% ../../crf_learn -c 10.0 template train.data model
+CRF++: Yet Another CRF Tool Kit
+Copyright (C) 2005-2013 Taku Kudo, All rights reserved.
+
+reading training data: 
+Done!0.03 s
+
+Number of sentences: 77
+Number of features:  32970
+Number of thread(s): 8
+Freq:                1
+eta:                 0.00010
+C:                   10.00000
+shrinking size:      20
+iter=0 terr=0.74947 serr=1.00000 act=32970 obj=2082.96890 diff=1.00000
+iter=1 terr=0.14768 serr=0.87013 act=32970 obj=1359.87913 diff=0.34714
+iter=2 terr=0.12816 serr=0.81818 act=32970 obj=576.15545 diff=0.57632
+iter=3 terr=0.08228 serr=0.74026 act=32970 obj=385.75422 diff=0.33047
+iter=4 terr=0.06118 serr=0.61039 act=32970 obj=288.44232 diff=0.25226
+iter=5 terr=0.04536 serr=0.50649 act=32970 obj=196.73519 diff=0.31794
+iter=6 terr=0.01793 serr=0.28571 act=32970 obj=114.12793 diff=0.41989
+iter=7 terr=0.01160 serr=0.14286 act=32970 obj=64.61649 diff=0.43382
+iter=8 terr=0.00422 serr=0.07792 act=32970 obj=44.66665 diff=0.30874
+iter=9 terr=0.00158 serr=0.03896 act=32970 obj=33.71286 diff=0.24523
+iter=10 terr=0.00000 serr=0.00000 act=32970 obj=26.77626 diff=0.20576
+iter=11 terr=0.00000 serr=0.00000 act=32970 obj=24.49355 diff=0.08525
+iter=12 terr=0.00000 serr=0.00000 act=32970 obj=22.99529 diff=0.06117
+iter=13 terr=0.00000 serr=0.00000 act=32970 obj=22.21827 diff=0.03379
+iter=14 terr=0.00000 serr=0.00000 act=32970 obj=20.98799 diff=0.05537
+iter=15 terr=0.00000 serr=0.00000 act=32970 obj=20.86265 diff=0.00597
+iter=16 terr=0.00000 serr=0.00000 act=32970 obj=20.40616 diff=0.02188
+iter=17 terr=0.00000 serr=0.00000 act=32970 obj=20.33481 diff=0.00350
+iter=18 terr=0.00000 serr=0.00000 act=32970 obj=20.16595 diff=0.00830
+iter=19 terr=0.00000 serr=0.00000 act=32970 obj=20.01640 diff=0.00742
+iter=20 terr=0.00000 serr=0.00000 act=32970 obj=20.17607 diff=0.00798
+iter=21 terr=0.00000 serr=0.00000 act=32970 obj=19.95123 diff=0.01114
+iter=22 terr=0.00000 serr=0.00000 act=32970 obj=19.86867 diff=0.00414
+iter=23 terr=0.00000 serr=0.00000 act=32970 obj=19.81692 diff=0.00260
+iter=24 terr=0.00000 serr=0.00000 act=32970 obj=19.79515 diff=0.00110
+iter=25 terr=0.00000 serr=0.00000 act=32970 obj=19.77454 diff=0.00104
+iter=26 terr=0.00000 serr=0.00000 act=32970 obj=19.75684 diff=0.00090
+iter=27 terr=0.00000 serr=0.00000 act=32970 obj=19.74207 diff=0.00075
+iter=28 terr=0.00000 serr=0.00000 act=32970 obj=19.72924 diff=0.00065
+iter=29 terr=0.00000 serr=0.00000 act=32970 obj=19.71954 diff=0.00049
+iter=30 terr=0.00000 serr=0.00000 act=32970 obj=19.71489 diff=0.00024
+iter=31 terr=0.00000 serr=0.00000 act=32970 obj=19.71006 diff=0.00025
+iter=32 terr=0.00000 serr=0.00000 act=32970 obj=19.70650 diff=0.00018
+iter=33 terr=0.00000 serr=0.00000 act=32970 obj=19.70277 diff=0.00019
+iter=34 terr=0.00000 serr=0.00000 act=32970 obj=19.70237 diff=0.00002
+iter=35 terr=0.00000 serr=0.00000 act=32970 obj=19.70003 diff=0.00012
+iter=36 terr=0.00000 serr=0.00000 act=32970 obj=19.69958 diff=0.00002
+iter=37 terr=0.00000 serr=0.00000 act=32970 obj=19.69887 diff=0.00004
+iter=38 terr=0.00000 serr=0.00000 act=32970 obj=19.69855 diff=0.00002
+
+Done!0.35 s
+
+188% dir
+exec.sh*  model  output  template  test.data  train.data
+189% ../../python/test.py 
+../../python/test.py:6: syntax error, unexpected ':', expecting end-of-input
+190% python ../../python/test.py
+RuntimeError:  feature_index.cpp(193) [mmap_.open(model_filename)] mmap.h(153) [(fd = ::open(filename, flag | O_BINARY)) >= 0] open failed: ../model
+191% mkdir xxx
+192% cd xxx
+Directory: /home/rogers/effect/crf++/CRF++-0.58/example/basenp/xxx
+connected to /home/rogers/effect/crf++/CRF++-0.58/example/basenp/xxx
+193% python ../../../python/test.py
+column size:  2
+token size:  17
+tag size:  3
+tagset information:
+tag  0   B
+tag  1   I
+conditional prob= 0.955736327465  log(Z)= 84.8638814951
+Confidence      B       Details         B /prob= 0.983423514729 /alpha= 3.60232520103 /beta= 84.8471660825      I /prob= 0.00626403306523 /alpha= -0.857792377472 /beta= 79.7909504534 
+in      O       Details         B /prob= 6.80922263845e-06 /alpha= 0.196718952844 /beta= 71.3176665927  I /prob= 0.000103812158319 /alpha= 2.29048961229 /beta= 70.5611950213 
+the     B       Details         B /prob= 0.999823791185 /alpha= 13.6941678893 /beta= 74.7265675825      I /prob= 2.88168522655e-05 /alpha= 3.10633532957 /beta= 69.2078941384 
+pound   I       Details         B /prob= 0.000413686095267 /alpha= 11.8648674366 /beta= 65.1945848574   I /prob= 0.999481761426 /alpha= 20.2507243796 /beta= 69.6548292944 
+is      O       Details         B /prob= 8.31844598295e-05 /alpha= 16.9021182513 /beta= 56.6265670472   I /prob= 0.000372966806842 /alpha= 18.9971141266 /beta= 55.0713628366 
+widely  O       Details         B /prob= 0.00253380522112 /alpha= 25.6454075015 /beta= 52.1621240005    I /prob= 2.64906191435e-06 /alpha= 19.3675285411 /beta= 50.1954351325 
+expected        O       Details         B /prob= 0.000162493457307 /alpha= 28.3927755989 /beta= 44.0791297859   I /prob= 4.26465947614e-05 /alpha= 27.6452980427 /beta= 47.1318384437 
+to      O       Details         B /prob= 0.000618325277761 /alpha= 34.9785671816 /beta= 39.9242027905   I /prob= 1.0579587482e-05 /alpha= 31.4994578702 /beta= 41.0280856146 
+take    O       Details         B /prob= 0.000526714049122 /alpha= 41.274038805 /beta= 34.5135645238    I /prob= 1.54487333565e-05 /alpha= 37.1030638864 /beta= 35.9723287011 
+another         B       Details         B /prob= 0.999853820268 /alpha= 50.8776654292 /beta= 38.0256011064      I /prob= 7.20329873868e-05 /alpha= 41.2057216487 /beta= 32.274235083 
+sharp   I       Details         B /prob= 0.000686188530922 /alpha= 47.6557902345 /beta= 28.7058506051   I /prob= 0.999235685831 /alpha= 54.8062916708 /beta= 32.4710727307 
+dive    I       Details         B /prob= 6.76656536221e-05 /alpha= 51.6010164311 /beta= 21.6600315986   I /prob= 0.999722767682 /alpha= 61.7974949594 /beta= 28.4090000044 
+if      O       Details         B /prob= 4.36640709547e-05 /alpha= 58.656677147 /beta= 14.4349939143    I /prob= 0.000714341120371 /alpha= 61.0646741233 /beta= 14.1746302996 
+trade   B       Details         B /prob= 0.999359952027 /alpha= 70.8969409301 /beta= 17.3211851751      I /prob= 0.000574091611123 /alpha= 63.3014181336 /beta= 14.1604102569 
+figures         I       Details         B /prob= 0.00100658337254 /alpha= 68.8078914457 /beta= 9.10653975278    I /prob= 0.99793677093 /alpha= 76.3031433468 /beta= 12.4499996922 
+for     O       Details         B /prob= 4.9895954513e-05 /alpha= 73.8468443905 /beta= 0.0595701405421  I /prob= 0.000126893158269 /alpha= 74.4195936742 /beta= -2.05948752862 
+nbest outputs:
+nbest n= 0      conditional prob= 0.955736327465
+nbest n= 1      conditional prob= 0.018438084508
+nbest n= 2      conditional prob= 0.0100224678323
+nbest n= 3      conditional prob= 0.0060868996902
+nbest n= 4      conditional prob= 0.00240448709896
+nbest n= 5      conditional prob= 0.00100772739995
+nbest n= 6      conditional prob= 0.000912296362303
+nbest n= 7      conditional prob= 0.000598192906662
+nbest n= 8      conditional prob= 0.000587780465753
+Done
+194% pwd
+/home/rogers/effect/crf++/CRF++-0.58/example/basenp/xxx
+195% 
+
