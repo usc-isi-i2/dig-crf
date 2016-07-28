@@ -33,6 +33,10 @@
 # perhaps reading in the data poisons the cache used by the data
 # extraction program.
 
+# 28-Jul-2016
+# I removed the --skipHtmlTags option because examination of the
+# tokenized results showed raw open angle brackets.
+
 source config.sh
 
 KEYS_TO_EXTRACT=description,readability_text
@@ -56,7 +60,6 @@ time spark-submit \
     --input ${HDFS_INPUT_DATA_DIR} \
     --inputTuples \
     --key ${KEYS_TO_EXTRACT} \
-    --skipHtmlTags \
     --prune --repartition ${NUM_PARTITIONS} \
     --output ${WORKING_TITLE_AND_TEXT_TOKENS_FILE} \
     --outputTuples
