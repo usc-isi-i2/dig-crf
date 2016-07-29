@@ -67,8 +67,8 @@ time spark-submit \
     --input ${INPUTFILE} \
     --key ${KEYS_TO_EXTRACT} \
     --newRddKeyKey ${NEW_RDD_KEY_KEY} \
+    --skipHtmlTags \
     --prune --repartition ${NUM_PARTITIONS} --cache \
     --count \
-    --skipHtmlTags \
     --output ${OUTPUTFILE} \
     --outputSeq
