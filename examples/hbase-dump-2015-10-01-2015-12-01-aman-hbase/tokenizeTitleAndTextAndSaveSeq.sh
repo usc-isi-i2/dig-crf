@@ -40,12 +40,19 @@ NEW_RDD_KEY_KEY=url
 NUM_EXECUTORS=350
 NUM_PARTITIONS=350
 
+INPUTFILE=${HDFS_INPUT_DATA_DIR}
+OUTPUTFILE=${WORKING_TITLE_AND_TEXT_TOKENS_FILE}
+
 source ${DIG_CRF_SCRIPT}/checkMemexConnection.sh
 ${DIG_CRF_SCRIPT}/buildPythonFiles.sh
 source ${DIG_CRF_SCRIPT}/limitMemexExecutors.sh
 
-# Dangerous!
-echo "Clearing the output folder: $WORKING_TITLE_AND_TEXT_TOKENS_FILE}"
+echo "Clearing the output folder: ${OUTPUTFILE}"
+if [ "x${OUTPUTFILE}" == "x" ]
+  then
+    echo "OUTPUTFILE is not set, exiting"
+    exit 1
+fi
 hadoop fs -rm -r -f ${WORKING_TITLE_AND_TEXT_TOKENS_FILE}
 
 echo "Submitting the job to the Memex cluster."
@@ -57,11 +64,11 @@ time spark-submit \
     ${DRIVER_JAVA_OPTIONS} \
     ${DIG_CRF_EXTRACT}/extractAndTokenizeField.py \
     -- \
-    --input ${HDFS_INPUT_DATA_DIR} \
+    --input ${INPUTFILE} \
     --key ${KEYS_TO_EXTRACT} \
     --newRddKeyKey ${NEW_RDD_KEY_KEY} \
     --skipHtmlTags \
     --prune --repartition ${NUM_PARTITIONS} \
     --cache --count \
-    --output ${WORKING_TITLE_AND_TEXT_TOKENS_FILE} \
+    --output ${OUTPUTFILE} \
     --outputSeq
