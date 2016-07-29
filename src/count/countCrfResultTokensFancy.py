@@ -51,7 +51,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('-e','--excludeTags', help="Comma-separated list of tags to exclude.", required=False)
     parser.add_argument(     '--includeTags', help="Comma-separated list of tags to include.", required=False)
-    parser.add_argument('-i','--input', help="Seq input file on cluster.", required=True)
+    parser.add_argument('-i','--input', help="Seq or tuple input data file.", required=True)
+    parser.add_argument(     '--inputTuples', help="The input file is in tuple format.", required=False, action='store_true')
     args = parser.parse_args()
 
     if args.excludeTags and args.includeTags:
@@ -67,7 +68,10 @@ def main(argv=None):
     includedTagCount = sc.accumulator(0)
     tokenCount = sc.accumulator(0)
 
-    data = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
+   if args.inputTuples:
+        data = sc.textFile(args.input).map(lambda x: eval(x))
+    else:
+        data = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
     tagTokenCounts = data.values().flatMap(getTokensMaker(args.includeTags, args.excludeTags)).countByValue()
     sc.stop()
 
