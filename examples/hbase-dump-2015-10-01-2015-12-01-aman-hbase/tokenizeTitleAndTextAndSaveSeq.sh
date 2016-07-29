@@ -53,7 +53,7 @@ if [ "x${OUTPUTFILE}" == "x" ]
     echo "OUTPUTFILE is not set, exiting"
     exit 1
 fi
-hadoop fs -rm -r -f ${WORKING_TITLE_AND_TEXT_TOKENS_FILE}
+hadoop fs -rm -r -f ${OUTPUTFILE}
 
 echo "Submitting the job to the Memex cluster."
 #    --conf "spark.executor.memory=4g" \
@@ -68,7 +68,7 @@ time spark-submit \
     --key ${KEYS_TO_EXTRACT} \
     --newRddKeyKey ${NEW_RDD_KEY_KEY} \
     --skipHtmlTags \
-    --prune --repartition ${NUM_PARTITIONS} \
-    --cache --count \
+    --prune --repartition ${NUM_PARTITIONS} --cache \
+    --count \
     --output ${OUTPUTFILE} \
     --outputSeq
