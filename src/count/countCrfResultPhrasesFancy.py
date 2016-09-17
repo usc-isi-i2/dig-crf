@@ -69,7 +69,7 @@ def main(argv=None):
     includedTagCount = sc.accumulator(0)
     tokenCount = sc.accumulator(0)
 
-   if args.inputTuples:
+    if args.inputTuples:
         data = sc.textFile(args.input).map(lambda x: eval(x))
     else:
         data = sc.sequenceFile(args.input, "org.apache.hadoop.io.Text", "org.apache.hadoop.io.Text")
