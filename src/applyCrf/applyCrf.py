@@ -539,7 +539,8 @@ class ApplyCrfToSentencesYieldingKeysAndTaggedPhrases (ApplyCrfToSentencesYieldi
         # return the result as a list.
         if self.fusePhrases and len(phrase) > 1:
             phrase = [ " ".join(phrase) ]
-            self.statistics["fusedPhraseCount"] += 1
+            if self.statistics:
+                self.statistics["fusedPhraseCount"] += 1
 
         taggedPhrase = { }
         taggedPhrase[tagName] = phrase
